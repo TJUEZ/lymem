@@ -1,0 +1,108 @@
+# 麟忆尽智 lymem
+
+> 面向银河麒麟桌面 OS Agent 的多源融合偏好与知识记忆优化方案（Rust 实现）
+>
+> 参赛选题：XA-202612「OS Agent 记忆优化及高效应用研究」
+
+## 定位
+
+对标 memmy-agent 的**记忆管理模块**，以纯 Rust 实现端侧轻量化部署，深度适配银河麒麟 AI 端侧能力（文本嵌入 SDK / kytensor 推理后端 / 向量引擎）。
+
+## 架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     接入层（lymem-server / lymem-cli）        │
+│   REST API · MCP(规划) · /v1/embeddings 代理 · Web 管理界面  │
+├─────────────────────────────────────────────────────────────┤
+│                       lymem-core 记忆核心                    │
+│                                                              │
+│  四层记忆体系          管道                    检索            │
+│  ┌──────────┐   多源接入 ingest      三路混合检索            │
+│  │ 工作记忆  │──flush──┐  (清洗/去重    ┌ 向量 ANN (sqlite-vec)│
+│  │ (短期)    │         ▼   /敏感分级)   │ BM25    (tantivy)   │
+│  │ 情景记忆  │──consolidate──┐         │ 图扩展  (实体/边)    │
+│  │ (中期)    │               ▼         └──RRF 融合→偏好重排   │
+│  │ 知识记忆  │◄──── 蒸馏 ──┘ 冲突管道                          │
+│  │ (长期)    │        (检测→分类→仲裁→版本化)                  │
+│  │ 偏好记忆  │   偏好双通道(规则+LLM) + 版本时间线             │
+│  └──────────┘   遗忘(墓碑/硬清除) + 审计                       │
+├─────────────────────────────────────────────────────────────┤
+│  lymem-kylin 麒麟端侧绑定       lymem-llm (OpenAI 兼容)      │
+│  DBus SDK 通道 + kytensor 直连   MiniMax 预设，未配置则规则兜底│
+├─────────────────────────────────────────────────────────────┤
+│        SQLite (WAL) + sqlite-vec + tantivy 单机存储          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 赛题条款映射
+
+| 赛题条款 | 实现 | 指标 |
+|---|---|---|
+| (1) 多源数据整合 | `ingest`：工具结果/行为/配置/会话统一接入，清洗+去重+敏感分级 | — |
+| (2) 偏好动态捕捉 | `preference`：规则快通道 + LLM 慢通道 + 版本链 + 跨场景适配 | 提取准确率 ≥85% |
+| (3) 知识结构化整合 | `conflict` 四步管道 + `retrieval` 三路混合检索 | 冲突正确率 ≥88%，召回率 ≥85% |
+| (4) 端侧部署 | 麒麟嵌入 SDK 直连 + SQLite 单文件存储 | 检索响应 ≤500ms |
+| (5) 敏感与遗忘 | `sensitive` 规则识别 + `forget` 自然语言遗忘（软删/硬清除） | — |
+| (6) 短中期记忆流转 | `promotion`：工作→情景→知识晋升管道 | — |
+| (7) 量化评测 | 评测框架（bench/ 目录，迭代中）+ 检索通道消融开关 | 完整测试报告 |
+
+## 快速开始
+
+```bash
+# 构建（首次约数分钟）
+cargo build --release
+
+# 状态
+./target/release/lymem status
+
+# 接入示例事件
+echo '[{"type":"tool_result","data":{"tool":"libreoffice","task":"doc_edit","ok":true,"output":"导出 pdf 成功","scene":"office"}}]' \
+  | ./target/release/lymem ingest
+
+# 检索
+./target/release/lymem search "pdf 导出"
+
+# 偏好
+./target/release/lymem pref mine-rules
+./target/release/lymem pref list
+
+# 遗忘（先预览再执行）
+./target/release/lymem forget "忘掉关于doc_edit的一切" --preview
+./target/release/lymem forget "忘掉关于doc_edit的一切" --exec
+
+# 蒸馏
+./target/release/lymem consolidate
+
+# HTTP 服务 + 管理界面（浏览器打开 http://127.0.0.1:8801/viewer）
+LYMEM_PORT=8801 ./target/release/lymem-server
+```
+
+## 环境变量
+
+| 变量 | 说明 | 默认 |
+|---|---|---|
+| `LYMEM_DATA_DIR` | 数据目录 | `~/.local/share/lymem` |
+| `LYMEM_EMBEDDER` | `auto`（麒麟）/ `hash`（离线） | `auto` |
+| `LYMEM_KYLIN_RUNTIME_SOCK` | 麒麟 runtime DBus 地址 | 按当前 uid 推导 |
+| `LYMEM_KYLIN_KYTENSOR_URL` | kytensor Triton 基址 | `http://127.0.0.1:8000` |
+| `LYMEM_KYLIN_MODEL` | 嵌入模型 | `ensemble-embd_gte-base_uint8-text` |
+| `LYMEM_LLM_BASE_URL` | LLM OpenAI 兼容基址 | `https://api.minimaxi.com/v1` |
+| `LYMEM_LLM_API_KEY` | LLM 密钥（缺省则规则兜底） | — |
+| `LYMEM_LLM_MODEL` | 模型名 | `MiniMax-M2` |
+| `LYMEM_PORT` | 服务端口 | `8801` |
+
+## Workspace 结构
+
+```
+crates/
+├── lymem-core/    记忆核心（模型/存储/检索/管道，零异步依赖）
+├── lymem-kylin/   麒麟端侧绑定（DBus SDK + kytensor 直连双通道）
+├── lymem-llm/     LLM 提供方（OpenAI 兼容，MiniMax 预设）
+├── lymem-server/  HTTP 服务（REST + 嵌入代理 + 管理界面）
+└── lymem-cli/     命令行工具（lymem）
+```
+
+## License
+
+MIT

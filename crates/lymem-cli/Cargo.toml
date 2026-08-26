@@ -1,0 +1,20 @@
+[package]
+name = "lymem-cli"
+description = "麟忆尽智命令行工具"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "lymem"
+path = "src/main.rs"
+
+[dependencies]
+lymem-core = { path = "../lymem-core" }
+lymem-kylin = { path = "../lymem-kylin" }
+lymem-llm = { path = "../lymem-llm" }
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

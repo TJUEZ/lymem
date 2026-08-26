@@ -1,0 +1,19 @@
+[package]
+name = "lymem-bench"
+description = "麟忆尽智评测框架：benchmark 适配器 + 检索指标 + 消融 + 结果缓存"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "lymem-bench"
+path = "src/main.rs"
+
+[dependencies]
+lymem-core = { path = "../lymem-core" }
+lymem-kylin = { path = "../lymem-kylin" }
+serde.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

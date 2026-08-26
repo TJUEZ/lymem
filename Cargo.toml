@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/lymem-core",
+    "crates/lymem-kylin",
+    "crates/lymem-llm",
+    "crates/lymem-server",
+    "crates/lymem-cli",
+    "crates/lymem-bench",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+chrono = "0.4"
+regex = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+sqlite-vec = "0.1"
+tantivy = "0.22"
+zbus = { version = "5", features = ["blocking", "p2p"] }
+ureq = { version = "2", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

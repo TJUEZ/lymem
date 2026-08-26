@@ -1,0 +1,15 @@
+[package]
+name = "lymem-kylin"
+description = "银河麒麟 AI 端侧能力绑定：文本嵌入（DBus SDK 通道 + kytensor 直连通道）"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+lymem-core = { path = "../lymem-core" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+zbus.workspace = true
+ureq.workspace = true
