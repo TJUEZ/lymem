@@ -15,6 +15,7 @@ tracing.workspace = true
 rusqlite.workspace = true
 sqlite-vec.workspace = true
 tantivy.workspace = true
+rust-stemmers.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

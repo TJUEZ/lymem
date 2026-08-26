@@ -246,12 +246,31 @@ impl OpenAiCompat {
     }
 }
 
+/// 剥离推理模型的 <think>...</think> 思考块（MiniMax-M2/M3 等）
+fn strip_think(text: &str) -> String {
+    let mut out = text.to_string();
+    // 有闭合标签的块
+    while let Some(start) = out.find("<think>") {
+        if let Some(end_rel) = out[start..].find("</think>") {
+            let end = start + end_rel + "</think>".len();
+            out.replace_range(start..end, "");
+        } else {
+            // 未闭合：截掉后续
+            out.truncate(start);
+            break;
+        }
+    }
+    out.trim().to_string()
+}
+
 impl LlmJudge for OpenAiCompat {
     fn complete(&self, system: &str, user: &str) -> Option<String> {
         if !self.cfg.available() {
             return None;
         }
-        self.rt.block_on(async { self.complete_async(system, user).await.ok() })
+        self.rt
+            .block_on(async { self.complete_async(system, user).await.ok() })
+            .map(|t| strip_think(&t))
     }
 }
 

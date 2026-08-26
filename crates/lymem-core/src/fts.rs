@@ -25,8 +25,30 @@ impl Tokenizer for CjkBigramTokenizer {
     }
 }
 
-/// 预切词：英文/数字连串为一个词，连续中文按 bigram 展开
+/// 英文停用词表（BM25 查询/文档降噪；中文无停用词概念，不处理）
+const STOPWORDS: &[&str] = &[
+    "a", "an", "the", "and", "or", "but", "if", "then", "else", "when", "at", "by",
+    "for", "with", "about", "into", "through", "during", "before", "after", "to",
+    "from", "up", "down", "in", "out", "on", "off", "over", "under", "again",
+    "further", "once", "here", "there", "all", "any", "both", "each", "few", "more",
+    "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same",
+    "so", "than", "too", "very", "can", "will", "just", "did", "does", "do", "is",
+    "are", "was", "were", "be", "been", "being", "have", "has", "had", "having",
+    "of", "as", "it", "its", "this", "that", "these", "those", "i", "you", "he",
+    "she", "we", "they", "them", "his", "her", "their", "what", "which", "who",
+    "whom", "how", "why", "where",
+];
+
+fn is_stopword(w: &str) -> bool {
+    STOPWORDS.binary_search(&w).is_ok() || STOPWORDS.contains(&w)
+}
+
+/// 预切词：英文/数字连串为一个词（附 Snowball 词干），连续中文按 bigram 展开
 fn pre_tokenize(text: &str) -> Vec<(String, usize, usize)> {
+    use std::sync::OnceLock;
+    use rust_stemmers::{Algorithm, Stemmer};
+    static EN_STEMMER: OnceLock<Stemmer> = OnceLock::new();
+    let stemmer = EN_STEMMER.get_or_init(|| Stemmer::create(Algorithm::English));
     let mut out = Vec::new();
     let chars: Vec<(usize, char)> = text.char_indices().collect();
     let mut i = 0usize;
@@ -38,7 +60,25 @@ fn pre_tokenize(text: &str) -> Vec<(String, usize, usize)> {
                 j += 1;
             }
             let byte_end = chars[j - 1].0 + chars[j - 1].1.len_utf8();
-            out.push((text[byte_start..byte_end].to_lowercase(), byte_start, byte_end));
+            let lower = text[byte_start..byte_end].to_lowercase();
+            // 停用词跳过（含词干化后仍为停用词的，如 doing → do）
+            if lower.chars().all(|c| c.is_ascii_alphabetic()) && is_stopword(&lower) {
+                i = j;
+                continue;
+            }
+            let stemmed = if lower.chars().all(|c| c.is_ascii_alphabetic()) && lower.len() > 3 {
+                stemmer.stem(&lower).to_string()
+            } else {
+                lower.clone()
+            };
+            if is_stopword(&stemmed) {
+                i = j;
+                continue;
+            }
+            // 英文词干化（仅词干，避免双 token 虚增文档长度扭曲 BM25 归一化；
+            // 短词/专名保留原词以防过度归并）
+            let emit = if stemmed != lower && lower.len() > 3 { stemmed } else { lower };
+            out.push((emit, byte_start, byte_end));
             i = j;
         } else if ('\u{4e00}'..='\u{9fff}').contains(&c) {
             // 中文区间：滑动二元
@@ -212,6 +252,16 @@ mod tests {
         assert!(texts.contains(&"rust"));
         assert!(texts.contains(&"记忆"));
         assert!(texts.contains(&"忆模"));
+        // 英文词干化
+        let toks2 = pre_tokenize("painted a painting");
+        let texts2: Vec<&str> = toks2.iter().map(|t| t.0.as_str()).collect();
+        assert!(texts2.contains(&"paint"));
+        // 停用词过滤
+        assert!(!texts2.contains(&"a"));
+        let toks3 = pre_tokenize("When did she go there");
+        let texts3: Vec<&str> = toks3.iter().map(|t| t.0.as_str()).collect();
+        assert!(!texts3.contains(&"when") && !texts3.contains(&"did") && !texts3.contains(&"she") && !texts3.contains(&"there"));
+        assert!(texts3.contains(&"go"), "go 非停用词应保留");
     }
 
     #[test]

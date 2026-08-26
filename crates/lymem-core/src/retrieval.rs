@@ -153,30 +153,33 @@ impl MemoryStore {
             let id = rec.id;
             let (mut score, mut rv, mut rb, mut rg) = (0.0, None, None, None);
             let mut snippet = String::new();
+            let w_vec = std::env::var("LYMEM_W_VEC").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
             for (rank, (mid, dist, chunk)) in vec_rank.iter().enumerate() {
                 if *mid == id {
                     rv = Some(rank + 1);
-                    score += 1.0 / (p.rrf_k + rank as f64 + 1.0);
+                    score += w_vec / (p.rrf_k + rank as f64 + 1.0);
                     // 余弦相似度展示用
                     snippet = self.chunk_content(*chunk).unwrap_or_default().unwrap_or_default();
                     let _ = dist;
                     break;
                 }
             }
+            let w_bm25 = std::env::var("LYMEM_W_BM25").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
             for (rank, (mid, _, _, snip)) in bm25_rank.iter().enumerate() {
                 if *mid == id {
                     rb = Some(rank + 1);
-                    score += 1.0 / (p.rrf_k + rank as f64 + 1.0);
+                    score += w_bm25 / (p.rrf_k + rank as f64 + 1.0);
                     if snippet.is_empty() {
                         snippet = snip.clone();
                     }
                     break;
                 }
             }
+            let w_graph = std::env::var("LYMEM_W_GRAPH").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
             for (rank, (mid, _hop)) in graph_rank.iter().enumerate() {
                 if *mid == id {
                     rg = Some(rank + 1);
-                    score += 1.0 / (p.rrf_k + rank as f64 + 1.0);
+                    score += w_graph / (p.rrf_k + rank as f64 + 1.0);
                     break;
                 }
             }

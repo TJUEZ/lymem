@@ -182,10 +182,20 @@ fn run_eval(
     // ---- 检索评测阶段 ----
     let mut params = SearchParams::default();
     params.top_k = top_k;
+    if let Some(m) = std::env::var("LYMEM_BENCH_CAND").ok().and_then(|v| v.parse().ok()) {
+        params.candidate_multiplier = m;
+    }
+    if let Some(k) = std::env::var("LYMEM_BENCH_RRFK").ok().and_then(|v| v.parse().ok()) {
+        params.rrf_k = k;
+    }
     match ablation {
         "nov" => params.use_vec = false,
         "nob" => params.use_bm25 = false,
         "nog" => params.use_graph = false,
+        "novnog" => {
+            params.use_vec = false;
+            params.use_graph = false;
+        }
         "nop" => params.preference_rerank = false,
         "all" => {}
         other => return Err(format!("未知消融配置: {other}").into()),

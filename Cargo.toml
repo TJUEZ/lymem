@@ -26,6 +26,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"]
 rusqlite = { version = "0.32", features = ["bundled"] }
 sqlite-vec = "0.1"
 tantivy = "0.22"
+rust-stemmers = "1"
 zbus = { version = "5", features = ["blocking", "p2p"] }
 ureq = { version = "2", features = ["json"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

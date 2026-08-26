@@ -26,7 +26,7 @@ use serde_json::{json, Value};
 /// 共享应用状态
 struct AppState {
     store: MemoryStore,
-    judge: Box<dyn LlmJudge>,
+    judge: Arc<dyn LlmJudge>,
     embedder_name: String,
     llm_name: String,
 }
@@ -60,12 +60,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let store = build_store()?;
-    let judge = lymem_llm::judge_from_env();
+    let judge: Arc<dyn LlmJudge> = Arc::from(lymem_llm::judge_from_env());
     let embedder_name = match std::env::var("LYMEM_EMBEDDER").ok().as_deref() {
         Some("hash") => "hash".to_string(),
         _ => "kylin(auto)".to_string(),
     };
-    let llm_name = if judge_complete_probe(judge.as_ref()) { "llm-ready".into() } else { "rules-only".into() };
+    // 探测含阻塞 LLM 调用，须移出 async 运行时
+    let probe = judge.clone();
+    let llm_ok = tokio::task::spawn_blocking(move || judge_complete_probe(probe.as_ref()))
+        .await
+        .unwrap_or(false);
+    let llm_name = if llm_ok { "llm-ready".into() } else { "rules-only".into() };
     let state = Arc::new(AppState {
         store,
         judge,
@@ -87,6 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/forget/exec", post(forget_exec))
         .route("/api/v1/audit", get(list_audit))
         .route("/v1/embeddings", post(openai_embeddings))
+        .route("/v1/chat/completions", post(chat_completions_gateway))
         .route("/viewer", get(viewer))
         .with_state(state);
 
@@ -341,6 +347,69 @@ async fn openai_embeddings(State(st): State<Arc<AppState>>, Json(req): Json<Embe
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": {"message": format!("任务失败: {e}")}})),
+        ),
+    }
+}
+
+// ---------------- LLM 网关（OpenAI 兼容透传） ----------------
+///
+/// 供 mem0 等基线使用：剥离目标服务不支持的参数（response_format 等），
+/// 把 JSON 约束转写为系统指令后转发上游（默认 MiniMax）。
+/// 环境变量：LYMEM_LLM_UPSTREAM（默认 https://api.minimaxi.com/v1），
+/// LYMEM_LLM_API_KEY / LYMEM_LLM_MODEL 同 lymem-llm。
+async fn chat_completions_gateway(
+    State(_st): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+    Json(mut body): Json<Value>,
+) -> impl IntoResponse {
+    let upstream = std::env::var("LYMEM_LLM_UPSTREAM")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "https://api.minimaxi.com/v1".into());
+    let server_key = std::env::var("LYMEM_LLM_API_KEY").unwrap_or_default();
+    if server_key.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": {"message": "服务端未配置 LYMEM_LLM_API_KEY"}})));
+    }
+    // 允许调用方自带 Bearer key（脚本直连场景）
+    let api_key = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&server_key)
+        .to_string();
+
+    // 参数清洗：response_format / strict 转 JSON 指令
+    let mut json_required = false;
+    if let Some(obj) = body.as_object_mut() {
+        if obj.remove("response_format").is_some() {
+            json_required = true;
+        }
+        obj.remove("strict");
+        let model_empty = obj.get("model").and_then(|m| m.as_str()).map(|m| m.is_empty()).unwrap_or(true);
+        if model_empty {
+            obj.insert("model".into(), json!(std::env::var("LYMEM_LLM_MODEL").unwrap_or_else(|_| "MiniMax-Text-01".into())));
+        }
+        if json_required {
+            if let Some(msgs) = obj.get_mut("messages").and_then(|m| m.as_array_mut()) {
+                msgs.insert(0, json!({"role": "system", "content": "只输出合法 JSON，不要输出任何其他文字或代码块标记。"}));
+            }
+        }
+    }
+
+    let url = format!("{}/chat/completions", upstream.trim_end_matches('/'));
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
+    match client.post(&url).bearer_auth(&api_key).json(&body).send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            let txt = resp.text().await.unwrap_or_default();
+            let code = StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+            let json_out: Value = serde_json::from_str(&txt).unwrap_or(json!({"raw": txt}));
+            (code, Json(json_out))
+        }
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"error": {"message": format!("上游请求失败: {e}")}})),
         ),
     }
 }
