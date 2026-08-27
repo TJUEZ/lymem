@@ -29,8 +29,9 @@ tantivy = "0.22"
 rust-stemmers = "1"
 zbus = { version = "5", features = ["blocking", "p2p"] }
 ureq = { version = "2", features = ["json"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 axum = "0.8"
+futures-util = "0.3"
 tower-http = { version = "0.6", features = ["cors", "fs"] }
 clap = { version = "4", features = ["derive"] }
 

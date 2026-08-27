@@ -629,14 +629,14 @@ async fn chat_completions_gateway(
     State(_st): State<Arc<AppState>>,
     headers: axum::http::HeaderMap,
     Json(mut body): Json<Value>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     let upstream = std::env::var("LYMEM_LLM_UPSTREAM")
         .ok()
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| "https://api.minimaxi.com/v1".into());
     let server_key = std::env::var("LYMEM_LLM_API_KEY").unwrap_or_default();
     if server_key.is_empty() {
-        return (StatusCode::BAD_REQUEST, Json(json!({"error": {"message": "服务端未配置 LYMEM_LLM_API_KEY"}})));
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": {"message": "服务端未配置 LYMEM_LLM_API_KEY"}}))).into_response();
     }
     // 允许调用方自带 Bearer key（脚本直连场景）
     let api_key = headers
@@ -665,20 +665,38 @@ async fn chat_completions_gateway(
         }
     }
 
+    let want_stream = body.get("stream").and_then(|v| v.as_bool()).unwrap_or(false);
     let url = format!("{}/chat/completions", upstream.trim_end_matches('/'));
-    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(600)).build().unwrap();
     match client.post(&url).bearer_auth(&api_key).json(&body).send().await {
         Ok(resp) => {
-            let status = resp.status();
-            let txt = resp.text().await.unwrap_or_default();
-            let code = StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
-            let json_out: Value = serde_json::from_str(&txt).unwrap_or(json!({"raw": txt}));
-            (code, Json(json_out))
+            let status = StatusCode::from_u16(resp.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+            if want_stream {
+                // SSE 透传：DSH 等 agent 框架默认流式调用
+                use axum::body::Body;
+                use futures_util::StreamExt;
+                let ct = resp
+                    .headers()
+                    .get("content-type")
+                    .cloned()
+                    .unwrap_or_else(|| "text/event-stream".parse().unwrap());
+                let stream = resp.bytes_stream().map(|r| r.map_err(|e| {
+                    std::io::Error::new(std::io::ErrorKind::Other, e)
+                }));
+                let mut resp = axum::response::Response::new(Body::from_stream(stream));
+                resp.headers_mut().insert("content-type", ct);
+                resp
+            } else {
+                let txt = resp.text().await.unwrap_or_default();
+                let json_out: Value = serde_json::from_str(&txt).unwrap_or(json!({"raw": txt}));
+                (status, Json(json_out)).into_response()
+            }
         }
         Err(e) => (
             StatusCode::BAD_GATEWAY,
             Json(json!({"error": {"message": format!("上游请求失败: {e}")}})),
-        ),
+        )
+            .into_response(),
     }
 }
 
