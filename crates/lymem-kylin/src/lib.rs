@@ -229,11 +229,16 @@ impl Embedder for KylinTritonEmbedder {
 
 // ---------------- 自动选择 ----------------
 
-/// 自动通道嵌入器：DBus 优先，kytensor 兜底。
-/// 内部持有实际后端；`which()` 便于诊断与报告。
-pub enum KylinEmbedder {
-    Dbus(KylinDbusEmbedder),
+enum KylinChannel {
+    Dbus(KylinDbusEmbedder, Option<KylinTritonEmbedder>),
     Triton(KylinTritonEmbedder),
+}
+
+/// 自动通道嵌入器：DBus 优先，kytensor 兜底；DBus 运行期出错自动降级。
+/// 通道封装在 Mutex 中以支持运行期切换（自愈）。
+pub struct KylinEmbedder {
+    channel: std::sync::Mutex<KylinChannel>,
+    dim_cache: AtomicUsize,
 }
 
 impl KylinEmbedder {
@@ -255,38 +260,104 @@ impl KylinEmbedder {
         match rx.recv_timeout(Duration::from_secs(8)) {
             Ok(Ok(d)) => {
                 tracing::info!("麒麟嵌入：DBus SDK 通道就绪");
-                Ok(KylinEmbedder::Dbus(d))
+                Ok(KylinEmbedder::from_channel(KylinChannel::Dbus(d, None)))
             }
             Ok(Err(e)) => {
                 tracing::warn!("DBus 通道不可用（{e}），切换 kytensor 直连");
-                KylinTritonEmbedder::connect(&cfg).map(KylinEmbedder::Triton)
+                KylinTritonEmbedder::connect(&cfg).map(|t| KylinEmbedder::from_channel(KylinChannel::Triton(t)))
             }
             Err(_) => {
                 tracing::warn!("DBus 通道探测超时（引擎可能卡死），切换 kytensor 直连；探测线程将随进程退出回收");
-                KylinTritonEmbedder::connect(&cfg).map(KylinEmbedder::Triton)
+                KylinTritonEmbedder::connect(&cfg).map(|t| KylinEmbedder::from_channel(KylinChannel::Triton(t)))
             }
         }
     }
 
     pub fn which(&self) -> &'static str {
-        match self {
-            KylinEmbedder::Dbus(_) => "kylin-dbus",
-            KylinEmbedder::Triton(_) => "kylin-kytensor",
+        match self.channel.lock().as_deref() {
+            Ok(KylinChannel::Dbus(..)) => "kylin-dbus",
+            Ok(KylinChannel::Triton(_)) => "kylin-kytensor",
+            Err(_) => "kylin-unknown",
+        }
+    }
+}
+
+impl KylinEmbedder {
+    fn from_channel(ch: KylinChannel) -> Self {
+        KylinEmbedder {
+            channel: std::sync::Mutex::new(ch),
+            dim_cache: AtomicUsize::new(768),
+        }
+    }
+
+    fn refresh_dim(&self, v: &[Vec<f32>]) {
+        if let Some(first) = v.first() {
+            if !first.is_empty() {
+                self.dim_cache.store(first.len(), Ordering::Relaxed);
+            }
+        }
+    }
+
+    /// DBus 通道运行期连续出错时降级到 kytensor 直连（运行时引擎偶发崩溃/
+    /// 后端拒连的自愈能力），降级动作只做一次。
+    fn embed_with_failover(
+        inner: &mut KylinChannel,
+        dim_cache: &AtomicUsize,
+        texts: &[&str],
+    ) -> lymem_core::Result<Vec<Vec<f32>>> {
+        let done = |v: Vec<Vec<f32>>, dim_cache: &AtomicUsize| {
+            if let Some(first) = v.first() {
+                if !first.is_empty() {
+                    dim_cache.store(first.len(), Ordering::Relaxed);
+                }
+            }
+            v
+        };
+        match inner {
+            KylinChannel::Triton(t) => Ok(done(t.embed(texts)?, dim_cache)),
+            KylinChannel::Dbus(d, fallback) => match d.embed(texts) {
+                Ok(v) => Ok(v),
+                Err(e) => {
+                    tracing::warn!("DBus 嵌入失败（{e}），重试一次");
+                    if let Ok(v) = d.embed(texts) {
+                        return Ok(v);
+                    }
+                    // 降级 kytensor（只构造一次）
+                    let triton = match fallback.take() {
+                        Some(t) => Some(t),
+                        None => {
+                            tracing::warn!("降级到 kytensor 直连通道");
+                            KylinTritonEmbedder::connect(&KylinConfig::default()).ok()
+                        }
+                    };
+                    match triton {
+                        Some(t) => {
+                            let res = t.embed(texts);
+                            if res.is_ok() {
+                                // 永久切换到 kytensor 通道
+                                *inner = KylinChannel::Triton(t);
+                            }
+                            res
+                        }
+                        None => Err(lymem_core::embedding::embed_err(format!(
+                            "DBus 失败且 kytensor 兜底不可用: {e}"
+                        ))),
+                    }
+                }
+            },
         }
     }
 }
 
 impl Embedder for KylinEmbedder {
     fn dim(&self) -> usize {
-        match self {
-            KylinEmbedder::Dbus(d) => d.dim(),
-            KylinEmbedder::Triton(t) => t.dim(),
-        }
+        self.dim_cache.load(Ordering::Relaxed)
     }
     fn embed(&self, texts: &[&str]) -> lymem_core::Result<Vec<Vec<f32>>> {
-        match self {
-            KylinEmbedder::Dbus(d) => d.embed(texts),
-            KylinEmbedder::Triton(t) => t.embed(texts),
-        }
+        let mut inner = self
+            .channel
+            .lock()
+            .map_err(|_| lymem_core::embedding::embed_err("通道锁中毒"))?;
+        Self::embed_with_failover(&mut inner, &self.dim_cache, texts)
     }
 }

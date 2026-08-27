@@ -16,6 +16,8 @@ pub struct Turn {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
     pub turns: Vec<Turn>,
+    /// 会话时间提示（如 LoCoMo 的 session_N_date_time），用于时序增强
+    pub date_hint: String,
 }
 
 /// 一个评测问题

@@ -130,7 +130,7 @@ fn run_eval(
 
     // ---- 接入阶段：逐 session 写入（模拟多会话累积）；复用模式跳过 ----
     let t0 = Instant::now();
-    let mut dia_index: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+    let mut dia_index: std::collections::HashMap<String, Vec<i64>> = std::collections::HashMap::new();
     if reuse {
         // 从既有库重建 dia_id → memory_id 映射
         let conn = store.conn.lock().unwrap();
@@ -144,7 +144,7 @@ fn run_eval(
                 if let Some(d) = v.get("dia_id").and_then(|x| x.as_str()) {
                     // source 形如 "locomo/<conv_id>"
                     let conv_id = source.strip_prefix("locomo/").unwrap_or("");
-                    dia_index.insert(format!("{conv_id}/{d}"), id);
+                    dia_index.entry(format!("{conv_id}/{d}")).or_default().push(id);
                 }
             }
         }
@@ -152,28 +152,50 @@ fn run_eval(
     }
     for conv in &convs {
         if reuse { break; }
-        for (si, session) in conv.sessions.iter().enumerate() {
-            let events: Vec<lymem_core::ingest::IngestEvent> = session
-                .turns
+        // 展平全部轮次（带会话序号），便于跨 session 边界取邻近窗口
+        let flat: Vec<(usize, &crate::dataset::Turn)> = conv
+            .sessions
+            .iter()
+            .enumerate()
+            .flat_map(|(si, sess)| sess.turns.iter().map(move |t| (si, t)))
+            .collect();
+        for (ti, &(si, t)) in flat.iter().enumerate() {
+            // 滑窗内容：前一轮 + 本轮 + 后一轮（短轮次的上下文增强；
+            // 会话日期注入增强时序问题的可检索性）
+            let window: Vec<String> = flat[ti.saturating_sub(1)..(ti + 2).min(flat.len())]
                 .iter()
-                .map(|t| lymem_core::ingest::IngestEvent::Conversation {
+                .map(|&(_, w)| format!("[{}] {}", w.speaker, w.text))
+                .collect();
+            let date_hint = conv.sessions[si].date_hint.clone();
+            let content = if date_hint.is_empty() {
+                window.join("\n")
+            } else {
+                format!("[Session {} {}]\n{}", si + 1, date_hint, window.join("\n"))
+            };
+            // 双视图索引：窗口内容（含邻轮+日期）供 BM25 词法匹配，
+            // 原始轮次供向量语义匹配 —— 通道各取所长
+            let events = vec![
+                lymem_core::ingest::IngestEvent::Conversation {
                     role: t.speaker.clone(),
-                    text: t.text.clone(),
+                    text: content,
                     scene: "locomo".into(),
                     source: format!("locomo/{}", conv.id),
-                    meta: Some(serde_json::json!({"dia_id": t.dia_id})),
-                })
-                .collect();
+                    meta: Some(serde_json::json!({"dia_id": t.dia_id, "view": "window"})),
+                },
+                lymem_core::ingest::IngestEvent::Conversation {
+                    role: t.speaker.clone(),
+                    text: format!("[{}] {}", t.speaker, t.text),
+                    scene: "locomo".into(),
+                    source: format!("locomo/{}", conv.id),
+                    meta: Some(serde_json::json!({"dia_id": t.dia_id, "view": "raw"})),
+                },
+            ];
             let ids = lymem_core::ingest::ingest_events(&store, &events)?;
-            // dia_id → memory_id 映射（逐条对应；被去重跳过时回退文本匹配）
-            let mut it = ids.into_iter();
-            for t in &session.turns {
-                if let Some(id) = it.next() {
-                    dia_index.insert(format!("{}/{}", conv.id, t.dia_id), id);
-                }
+            for id in ids {
+                dia_index.entry(format!("{}/{}", conv.id, t.dia_id)).or_default().push(id);
             }
-            if si % 4 == 3 {
-                eprintln!("  接入进度：conv {} session {}/{}", conv.id, si + 1, conv.sessions.len());
+            if ti % 200 == 199 {
+                eprintln!("  接入进度：conv {} 轮次 {}/{}", conv.id, ti + 1, flat.len());
             }
         }
     }
@@ -218,8 +240,12 @@ fn run_eval(
             // 证据比对：命中 dia_id 集合
             let gold: std::collections::HashSet<String> =
                 q.evidence.iter().map(|d| format!("{}/{}", conv.id, d)).collect();
-            let gold_ids: std::collections::HashSet<i64> =
-                gold.iter().filter_map(|d| dia_index.get(d.as_str()).copied()).collect();
+            let gold_ids: std::collections::HashSet<i64> = gold
+                .iter()
+                .filter_map(|d| dia_index.get(d.as_str()))
+                .flatten()
+                .copied()
+                .collect();
             let mut hit_any = false;
             let mut hit_count = 0usize;
             let mut mrr_term = 0.0f64;

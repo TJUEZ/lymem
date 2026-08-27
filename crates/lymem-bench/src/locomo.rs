@@ -87,7 +87,13 @@ impl crate::dataset::Dataset for LoCoMo {
                     })
                     .collect();
                 if !turns.is_empty() {
-                    sessions.push(Session { turns });
+                    let date_hint = rc
+                        .conversation
+                        .get(&format!("session_{n}_date_time"))
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    sessions.push(Session { turns, date_hint });
                 }
             }
             let questions: Vec<Question> = rc
