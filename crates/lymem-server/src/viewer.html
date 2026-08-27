@@ -6,63 +6,74 @@
 <title>麟忆尽智 · 记忆总管</title>
 <style>
 :root{
-  --bg:#f4f6fb;--card:#fff;--ink:#1c2333;--sub:#5b6478;--line:#e6eaf2;
-  --blue:#1e6fff;--blue-weak:#e8f0ff;--green:#0aa870;--amber:#e8930c;--red:#e5484d;
-  --violet:#7c5cff;--radius:14px;
+  --bg:#f3f5fa;--card:#ffffff;--ink:#17203a;--sub:#61708b;--line:#e4e9f4;
+  --blue:#2f5fe0;--blue-weak:#e9efff;--green:#0b9e6e;--green-weak:#e4f6ef;
+  --amber:#d97e00;--amber-weak:#fdf1dd;--red:#d64545;--red-weak:#fdecec;
+  --violet:#6f4fd8;--violet-weak:#efeaff;--sidebar:#141c33;--radius:12px;
+  --shadow:0 1px 2px rgba(23,32,58,.05),0 2px 8px rgba(23,32,58,.04);
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:14px 26px;background:#fff;border-bottom:1px solid var(--line)}
-header .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
-header h1{font-size:17px;margin:0}
-header .sub{color:var(--sub);font-size:12px}
-header .spacer{flex:1}
-.pill{padding:3px 12px;border-radius:99px;font-size:12px;background:var(--blue-weak);color:var(--blue)}
-.pill.ok{background:#e6f7f0;color:var(--green)}
-.pill.warn{background:#fdf3e3;color:var(--amber)}
-nav{display:flex;gap:4px;padding:10px 26px 0;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
-nav button{border:0;background:none;padding:10px 16px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;border-radius:8px 8px 0 0}
-nav button.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
-nav button:hover{color:var(--ink)}
-main{padding:22px 26px;max-width:1240px;margin:0 auto}
+body{margin:0;display:flex;min-height:100vh;font-family:"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+aside{width:212px;flex-shrink:0;background:var(--sidebar);color:#aab4d0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:11px;align-items:center;padding:20px 18px 16px}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#2f5fe0,#6f4fd8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;flex-shrink:0}
+.brand b{color:#fff;font-size:15px;display:block}
+.brand small{font-size:11px;color:#7d8db0;display:block;margin-top:2px}
+nav{flex:1;padding:6px 10px;overflow:auto}
+nav .sec{font-size:10.5px;color:#5e6c8f;padding:14px 10px 6px;letter-spacing:.12em}
+nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;color:#aab4d0;padding:9px 12px;font-size:13.5px;cursor:pointer;border-radius:8px}
+nav button .ic{width:17px;text-align:center;opacity:.85}
+nav button:hover{background:#1d2947;color:#e8edf8}
+nav button.on{background:linear-gradient(90deg,#2f5fe0,#4a52e0);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(47,95,224,.35)}
+aside .foot{padding:12px 16px;border-top:1px solid #1f2a4a;font-size:11px;color:#5e6c8f;line-height:1.8}
+aside .foot .st{display:flex;justify-content:space-between}
+aside .foot .st b{color:#8fe3bd;font-weight:600}
+main{flex:1;min-width:0;padding:24px 30px;max-width:1220px}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.topbar h2{font-size:20px;margin:0;letter-spacing:.02em}
+.topbar .desc{color:var(--sub);font-size:12.5px;margin-left:4px}
+.pill{padding:4px 13px;border-radius:99px;font-size:12px;background:var(--blue-weak);color:var(--blue);font-weight:500}
+.pill.ok{background:var(--green-weak);color:var(--green)}
+.pill.warn{background:var(--amber-weak);color:var(--amber)}
 .grid{display:grid;gap:16px}
 .g4{grid-template-columns:repeat(4,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
 .g2-1{grid-template-columns:2fr 1fr}
-@media(max-width:960px){.g4,.g3,.g2-1{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
-.card h3{margin:0 0 12px;font-size:14px;color:var(--ink)}
+@media(max-width:980px){.g4,.g3,.g2-1{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 12px;font-size:14px;font-weight:700}
 .card h3 .hint{font-weight:400;color:var(--sub);font-size:12px;margin-left:8px}
 .kpi{display:flex;align-items:baseline;gap:8px}
-.kpi .num{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .num{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .kpi .lab{color:var(--sub);font-size:12px}
-.tier-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:9px;font-size:13px;background:var(--blue-weak);color:var(--blue)}
-button.act{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer}
-button.act:hover{filter:brightness(.95)}
+.tier-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;font-size:12.5px;font-weight:600}
+button.act{background:var(--blue);color:#fff;border:0;border-radius:9px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:500}
+button.act:hover{filter:brightness(1.08)}
 button.act.ghost{background:var(--blue-weak);color:var(--blue)}
 button.act.danger{background:var(--red)}
-button.act:disabled{opacity:.5;cursor:not-allowed}
-input[type=text],select,textarea{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink)}
+button.act:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],select,textarea{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:#fff;color:var(--ink);outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,95,224,.12)}
 textarea{resize:vertical;font-family:inherit}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{color:var(--sub);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 10px;border-bottom:1px solid #f2f4f9;vertical-align:top}
+th{color:var(--sub);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid #f1f4fa;vertical-align:top}
 tbody tr{cursor:pointer}
-tbody tr:hover td{background:#fafbfe}
+tbody tr:hover td{background:#f7f9ff}
 .mono{font-family:ui-monospace,monospace;font-size:12px}
-.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;margin-right:5px;white-space:nowrap}
-.tag.t-episodic{background:#e8f0ff;color:var(--blue)}
-.tag.t-knowledge{background:#efe9ff;color:var(--violet)}
-.tag.t-preference{background:#e6f7f0;color:var(--green)}
-.tag.s-sensitive{background:#fdecec;color:var(--red)}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;margin-right:5px;white-space:nowrap;font-weight:500}
+.tag.t-episodic{background:var(--blue-weak);color:var(--blue)}
+.tag.t-knowledge{background:var(--violet-weak);color:var(--violet)}
+.tag.t-preference{background:var(--green-weak);color:var(--green)}
+.tag.s-sensitive{background:var(--red-weak);color:var(--red)}
 .tag.dead{background:#f1f2f6;color:#9aa1b0;text-decoration:line-through}
 .hit{border-left:3px solid var(--blue);background:#fafbff}
-.hit .snippet{color:var(--sub);font-size:12px;margin-top:6px;line-height:1.6}
-.score{font-family:ui-monospace,monospace;color:var(--blue)}
-.chan{display:inline-block;min-width:34px;text-align:center;font-size:10px;padding:2px 4px;border-radius:5px;margin-right:3px}
-.chan.on{background:#e6f7f0;color:var(--green)}
-.chan.off{background:#f1f2f6;color:#b6bcc9}
+.hit .snippet{color:var(--sub);font-size:12px;margin-top:6px;line-height:1.65}
+.score{font-family:ui-monospace,monospace;color:var(--blue);font-weight:600}
+.chan{display:inline-block;min-width:36px;text-align:center;font-size:10.5px;padding:3px 5px;border-radius:6px;margin-right:3px;cursor:pointer;font-weight:600}
+.chan.on{background:var(--green-weak);color:var(--green)}
+.chan.off{background:#eef0f6;color:#b0b8c8}
 .timeline{position:relative;margin:10px 0 0;padding-left:22px}
 .timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
 .tl-item{position:relative;padding:0 0 16px 10px}
@@ -71,7 +82,7 @@ tbody tr:hover td{background:#fafbfe}
 .tl-item .meta{color:var(--sub);font-size:11px;margin-top:3px}
 .tl-item .val{background:var(--blue-weak);border-radius:8px;padding:6px 10px;margin-top:5px;font-size:12.5px}
 .tl-item.old .val{background:#f4f5f9;color:var(--sub);text-decoration:line-through}
-.tl-item.cur .val{background:#e6f7f0;color:#0c7a55;font-weight:600}
+.tl-item.cur .val{background:var(--green-weak);color:#0c7a55;font-weight:600}
 .conf{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .conf .res-supersede{color:var(--red)}.conf .res-merge{color:var(--violet)}.conf .res-coexist{color:var(--green)}
 .feed{max-height:340px;overflow:auto}
@@ -83,67 +94,68 @@ tbody tr:hover td{background:#fafbfe}
 section[data-page]{display:none}
 section[data-page].on{display:block}
 .muted{color:var(--sub);font-size:12px}
-/* 演示场景 */
-.scene-card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:linear-gradient(180deg,#fff,#fbfcff)}
-.scene-card .icon{font-size:22px}
-.scene-card h4{margin:6px 0 4px;font-size:14px}
-.demo-log{background:#0e1526;color:#c9e3ff;border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.75;max-height:420px;overflow:auto;margin-top:12px;white-space:pre-wrap}
-.demo-log .ok{color:#5ee6a8}.demo-log .warn{color:#ffd479}.demo-log .err{color:#ff8f93}.demo-log .dim{color:#7d8db0}
-/* 详情抽屉 */
-#drawer{position:fixed;top:0;right:-460px;width:440px;height:100%;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(16,24,40,.12);transition:right .28s;z-index:50;display:flex;flex-direction:column}
+.demo-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.demo-strip button{border:1px dashed var(--blue);background:#fff;color:var(--blue);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.ingest-log{background:#101a30;color:#c9e3ff;border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.8;max-height:380px;overflow:auto;margin-top:12px;white-space:pre-wrap}
+.ingest-log .ok{color:#5ee6a8}.ingest-log .warn{color:#ffd479}.ingest-log .err{color:#ff8f93}.ingest-log .dim{color:#7d8db0}.ingest-log b{color:#fff}
+.prog{height:8px;background:#eef1f8;border-radius:99px;overflow:hidden;margin:10px 0}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:99px;transition:width .4s}
+.qa-card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;background:#fbfcff}
+.qa-card .ans{line-height:1.8;margin:6px 0}
+.qa-card .src{color:var(--sub);font-size:12px;border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+#drawer{position:fixed;top:0;right:-470px;width:450px;height:100%;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(16,24,40,.14);transition:right .28s;z-index:50;display:flex;flex-direction:column}
 #drawer.open{right:0}
 #drawer .dh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
 #drawer .db{padding:16px 20px;overflow:auto;flex:1}
-/* 环形图 */
-.donut-legend{display:flex;flex-direction:column;gap:6px;font-size:12px}
-.donut-legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">麟</div>
-  <div>
-    <h1>麟忆尽智 · 记忆总管 <span class="sub">lymem viewer</span></h1>
-    <div class="sub">OS Agent 多源融合偏好与知识记忆 · 麒麟 V11 端侧</div>
+<aside>
+  <div class="brand"><div class="logo">麟</div><div><b>麟忆尽智</b><small>lymem · OS Agent 记忆模块</small></div></div>
+  <nav id="nav">
+    <div class="sec">总控</div>
+    <button data-page="dash" class="on"><span class="ic">◉</span>总览</button>
+    <button data-page="demo"><span class="ic">▶</span>场景演示</button>
+    <button data-page="book"><span class="ic">📖</span>书山灌入</button>
+    <div class="sec">记忆管理</div>
+    <button data-page="memories"><span class="ic">☰</span>记忆流</button>
+    <button data-page="search"><span class="ic">⌕</span>检索实验场</button>
+    <button data-page="prefs"><span class="ic">◈</span>偏好时间线</button>
+    <button data-page="conflicts"><span class="ic">⚔</span>冲突仲裁</button>
+    <button data-page="forget"><span class="ic">⌫</span>遗忘工坊</button>
+    <div class="sec">集成</div>
+    <button data-page="agents"><span class="ic">⇄</span>Agent 总管</button>
+  </nav>
+  <div class="foot">
+    <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
+    <div class="st"><span>LLM</span><b id="foot-llm">-</b></div>
+    <div class="st"><span>向量维度</span><b id="foot-dim">-</b></div>
   </div>
-  <div class="spacer"></div>
-  <span class="pill" id="pill-embed">嵌入：检测中</span>
-  <span class="pill" id="pill-llm">LLM：检测中</span>
-</header>
-
-<nav id="nav">
-  <button data-page="dash" class="on">总览</button>
-  <button data-page="demo">演示场景</button>
-  <button data-page="memories">记忆流</button>
-  <button data-page="search">检索实验场</button>
-  <button data-page="prefs">偏好时间线</button>
-  <button data-page="conflicts">冲突仲裁</button>
-  <button data-page="forget">遗忘工坊</button>
-  <button data-page="agents">Agent 总管</button>
-</nav>
+</aside>
 
 <main>
 <!-- ============ 总览 ============ -->
 <section data-page="dash" class="on">
+  <div class="topbar"><h2>总览</h2><span class="desc">四层记忆体系 · 数据流转 · 全操作审计</span></div>
   <div class="grid g4" style="margin-bottom:16px">
-    <div class="card"><div class="tier-chip" style="background:#fdf3e3;color:var(--amber)">工作·短期</div><div class="kpi"><span class="num">∞</span><span class="lab">内存态</span></div><div class="muted">会话上下文</div></div>
+    <div class="card"><div class="tier-chip" style="background:var(--amber-weak);color:var(--amber)">工作·短期</div><div class="kpi"><span class="num">∞</span><span class="lab">内存态</span></div><div class="muted">会话上下文</div></div>
     <div class="card"><div class="tier-chip">情景·中期</div><div class="kpi"><span class="num" id="k-epi">-</span><span class="lab">条</span></div><div class="muted">会话/工具轨迹</div></div>
-    <div class="card"><div class="tier-chip" style="background:#efe9ff;color:var(--violet)">知识·长期</div><div class="kpi"><span class="num" id="k-know">-</span><span class="lab">条</span></div><div class="muted">流程/案例/模板</div></div>
-    <div class="card"><div class="tier-chip" style="background:#e6f7f0;color:var(--green)">偏好·长期</div><div class="kpi"><span class="num" id="k-pref">-</span><span class="lab">项</span></div><div class="muted">习惯/风格/策略</div></div>
+    <div class="card"><div class="tier-chip" style="background:var(--violet-weak);color:var(--violet)">知识·长期</div><div class="kpi"><span class="num" id="k-know">-</span><span class="lab">条</span></div><div class="muted">流程/案例/模板</div></div>
+    <div class="card"><div class="tier-chip" style="background:var(--green-weak);color:var(--green)">偏好·长期</div><div class="kpi"><span class="num" id="k-pref">-</span><span class="lab">项</span></div><div class="muted">习惯/风格/策略</div></div>
   </div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>数据流转 <span class="hint">工作 → 情景 → 知识 晋升管道（赛题条款 6）</span></h3>
+      <h3>数据流转 <span class="hint">工作 → 情景 → 知识 晋升管道（条款 6）</span></h3>
       <div style="display:flex;gap:0;align-items:stretch;margin:6px 0 14px">
-        <div style="flex:1;padding:14px;border:1.5px solid #fdf3e3;background:#fffdf7;border-radius:10px 0 0 10px"><b>工作记忆</b><div class="muted">当前会话</div></div>
+        <div style="flex:1;padding:14px;border:1.5px solid var(--amber-weak);background:#fffdf7;border-radius:10px 0 0 10px"><b>工作记忆</b><div class="muted">当前会话</div></div>
         <div style="display:flex;align-items:center;padding:0 8px;color:var(--amber)">→<div class="muted">flush</div></div>
         <div style="flex:1;padding:14px;border:1.5px solid var(--line);background:#fff"><b>情景记忆</b><div class="muted">中期轨迹</div></div>
         <div style="display:flex;align-items:center;padding:0 8px;color:var(--blue)">→<div class="muted">蒸馏</div></div>
-        <div style="flex:1;padding:14px;border:1.5px solid #efe9ff;background:#fbfaff;border-radius:0 10px 10px 0"><b>知识记忆</b><div class="muted">版本链+冲突仲裁</div></div>
+        <div style="flex:1;padding:14px;border:1.5px solid var(--violet-weak);background:#fbfaff;border-radius:0 10px 10px 0"><b>知识记忆</b><div class="muted">版本链+仲裁</div></div>
       </div>
       <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
-        <svg id="donut" width="120" height="120" viewBox="0 0 120 120"></svg>
-        <div class="donut-legend" id="donut-legend"></div>
+        <svg id="donut" width="110" height="110" viewBox="0 0 120 120"></svg>
+        <div id="donut-legend" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
         <div class="row" style="margin-left:auto">
           <button class="act ghost" onclick="consolidate()">执行一轮蒸馏</button>
           <button class="act ghost" onclick="minePrefs()">偏好规则挖掘</button>
@@ -151,73 +163,93 @@ section[data-page].on{display:block}
       </div>
       <div class="muted" id="pipe-msg"></div>
     </div>
-    <div class="card">
-      <h3>最近审计 <span class="hint">全操作留痕</span></h3>
-      <div class="feed" id="dash-audit"><div class="empty">加载中…</div></div>
-    </div>
+    <div class="card"><h3>最近审计 <span class="hint">全操作留痕</span></h3><div class="feed" id="dash-audit"><div class="empty">加载中…</div></div></div>
   </div>
 </section>
 
-<!-- ============ 演示场景 ============ -->
+<!-- ============ 场景演示 ============ -->
 <section data-page="demo">
-  <div class="card" style="margin-bottom:14px">
-    <h3>赛题真实场景演示 <span class="hint">三个一键运行的端到端案例：多源接入 → 偏好捕捉/知识沉淀 → 检索复用</span></h3>
-    <div class="muted">每个场景运行后，可在左侧日志看到完整流水；产生的记忆/偏好/冲突可在其余页签查看。建议运行顺序：① → ② → ③。</div>
-  </div>
+  <div class="topbar"><h2>场景演示</h2><span class="desc">赛题真实场景 · 一键端到端运行</span></div>
   <div class="grid g3">
-    <div class="scene-card">
-      <span class="icon">📄</span>
-      <h4>① 办公自动化 · 偏好捕捉</h4>
-      <div class="muted" style="min-height:64px">模拟用户连续 4 次用 libreoffice 导出文档 + 手动设置输出语言 → <b>规则通道</b>自动沉淀工具偏好，检索时个性化生效。</div>
-      <button class="act" onclick="runScene('office')" id="sc-office">▶ 一键运行</button>
+    <div class="card"><h4 style="margin:0 0 6px">① 办公自动化 · 偏好捕捉</h4><div class="muted" style="min-height:64px">手动配置 + 连续工具调用 → 规则通道沉淀工具偏好 → 检索个性化生效（条款 1/2）</div><button class="act" onclick="runScene('office')" id="sc-office">▶ 一键运行</button></div>
+    <div class="card"><h4 style="margin:0 0 6px">② 编码协作 · 知识冲突</h4><div class="muted" style="min-height:64px">旧知识 → 新版本知识 → 冲突检测/分类/仲裁/版本化（条款 3）</div><button class="act" onclick="runScene('coding')" id="sc-coding">▶ 一键运行</button></div>
+    <div class="card"><h4 style="margin:0 0 6px">③ 系统管理 · 安全遗忘</h4><div class="muted" style="min-height:64px">安全策略偏好 → 密钥写入阻断 → 自然语言遗忘（条款 5）</div><button class="act" onclick="runScene('system')" id="sc-system">▶ 一键运行</button></div>
+  </div>
+  <div class="ingest-log" id="demo-log"><span class="dim">[等待运行] 点击任一场景开始演示。</span></div>
+</section>
+
+<!-- ============ 书山灌入 ============ -->
+<section data-page="book">
+  <div class="topbar"><h2>书山灌入</h2><span class="desc">整本长文本 → 分章知识入库 → 智能问答（大规模记忆沉淀演示）</span></div>
+  <div class="grid g2-1">
+    <div class="card">
+      <h3>灌入控制台 <span class="hint">《三国演义》全本已内置；也可粘贴任意长文本</span></h3>
+      <div class="row" style="margin-bottom:10px">
+        <button class="act" onclick="bookIngest()" id="b-go">📖 灌入《三国演义》全本（108 回）</button>
+        <span class="muted">或</span>
+        <label class="act ghost" style="display:inline-block"><input type="file" id="b-file" accept=".txt" style="display:none" onchange="loadFile(this)">选择本地 txt</label>
+      </div>
+      <textarea id="b-custom" rows="5" placeholder="（可选）粘贴任意长文本，将按行首「第X回／第一章」等标题自动分章"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="act ghost" onclick="ingestCustom()">灌入上方文本</button>
+        <span class="muted" id="b-msg"></span>
+      </div>
+      <div class="prog" id="b-prog-wrap" style="display:none"><i id="b-prog" style="width:0%"></i></div>
+      <div class="ingest-log" id="b-log"><span class="dim">[状态] 库内已有全书记忆，可直接在右侧提问验证。</span></div>
     </div>
-    <div class="scene-card">
-      <span class="icon">⌨️</span>
-      <h4>② 编码协作 · 知识冲突</h4>
-      <div class="muted" style="min-height:64px">先写入旧部署知识，再写入 2026 新版本知识 → <b>冲突管道</b>检测→分类→仲裁→旧版自动降级为历史版本。</div>
-      <button class="act" onclick="runScene('coding')" id="sc-coding">▶ 一键运行</button>
-    </div>
-    <div class="scene-card">
-      <span class="icon">🛡️</span>
-      <h4>③ 系统管理 · 安全与遗忘</h4>
-      <div class="muted" style="min-height:64px">设置安全策略偏好；尝试写入<b>含密钥的配置</b>被阻断脱敏；最后自然语言<b>遗忘</b>敏感话题。</div>
-      <button class="act" onclick="runScene('system')" id="sc-system">▶ 一键运行</button>
+    <div class="card">
+      <h3>记忆检索问答 <span class="hint">检索 → MiniMax 生成 → 引用溯源</span></h3>
+      <div class="demo-strip">
+        <button onclick="askBook('桃园结义的是哪三位英雄？')">桃园结义</button>
+        <button onclick="askBook('赤壁之战中是谁借了东风？')">借东风</button>
+        <button onclick="askBook('空城计是诸葛亮对谁使用的？')">空城计</button>
+        <button onclick="askBook('关羽过五关斩六将是为了寻找谁？')">过五关斩六将</button>
+      </div>
+      <input type="text" id="bk-q" placeholder="输入关于书中情节的问题…" onkeydown="if(event.key==='Enter')askBook()">
+      <button class="act" style="margin-top:8px;width:100%" onclick="askBook()">提问</button>
+      <div id="bk-out" style="margin-top:12px"><div class="empty">提问后在此显示答案与引用来源</div></div>
     </div>
   </div>
-  <div class="demo-log" id="demo-log"><span class="dim">[等待运行] 点击上方任一场景开始演示。每一步对应的 REST 调用与系统行为将实时显示在此。</span></div>
+  <div class="ingest-log" id="book-audit" style="max-height:180px;margin-top:14px"><span class="dim">[审计] 书本问答的检索与生成调用记录。</span></div>
 </section>
 
 <!-- ============ 记忆流 ============ -->
 <section data-page="memories">
+  <div class="topbar"><h2>记忆流</h2><span class="desc">全部记忆条目 · 点击行查看详情</span></div>
   <div class="card">
     <div class="row" style="margin-bottom:12px">
-      <select id="m-tier" style="width:140px" onchange="loadMemories()">
+      <select id="m-tier" style="width:150px" onchange="loadMemories()">
         <option value="">全部层级</option><option value="episodic">情景（中期）</option>
         <option value="knowledge">知识（长期）</option><option value="preference">偏好观察</option>
       </select>
-      <select id="m-scene" style="width:140px" onchange="loadMemories()">
-        <option value="">全部场景</option><option>office</option><option>coding</option><option>system</option><option>general</option>
+      <select id="m-scene" style="width:150px" onchange="loadMemories()">
+        <option value="">全部场景</option><option>office</option><option>coding</option><option>system</option><option>book</option><option>general</option>
       </select>
       <label class="muted"><input type="checkbox" id="m-dead" onchange="loadMemories()"> 含已遗忘/历史版本</label>
-      <span style="flex:1"></span>
-      <span class="muted" id="m-count"></span>
+      <span style="flex:1"></span><span class="muted" id="m-count"></span>
     </div>
     <div style="overflow:auto"><table id="m-table"><thead><tr>
-      <th style="width:60px">ID</th><th>内容</th><th style="width:120px">层级/场景</th><th style="width:90px">敏感</th><th style="width:70px">访问</th>
+      <th style="width:60px">ID</th><th>内容</th><th style="width:130px">层级/场景</th><th style="width:90px">敏感</th><th style="width:70px">访问</th>
     </tr></thead><tbody></tbody></table></div>
   </div>
 </section>
 
 <!-- ============ 检索实验场 ============ -->
 <section data-page="search">
-  <div class="card" style="margin-bottom:16px">
-    <h3>三路混合检索 <span class="hint">向量（麒麟 gte）× BM25（词干+停用词）× 实体图 —— RRF 融合（条款 3）</span></h3>
+  <div class="topbar"><h2>检索实验场</h2><span class="desc">三路混合检索 · 通道开关即消融演示（条款 3）</span></div>
+  <div class="card">
     <div class="row" style="margin-bottom:10px">
       <input type="text" id="s-q" placeholder="输入查询…" style="flex:1;min-width:240px" onkeydown="if(event.key==='Enter')doSearch()">
-      <span class="chan on" id="ch-vec" onclick="tog('vec')" title="点击开关向量通道">向量</span>
-      <span class="chan on" id="ch-bm25" onclick="tog('bm25')" title="点击开关BM25通道">BM25</span>
-      <span class="chan off" id="ch-graph" onclick="tog('graph')" title="点击开关图通道">图</span>
+      <span class="chan on" id="ch-vec" onclick="tog('vec')">向量</span>
+      <span class="chan on" id="ch-bm25" onclick="tog('bm25')">BM25</span>
+      <span class="chan off" id="ch-graph" onclick="tog('graph')">图</span>
       <button class="act" onclick="doSearch()">检索</button>
+    </div>
+    <div class="demo-strip">
+      <span class="muted" style="align-self:center">示例：</span>
+      <button onclick="qs('借东风的是谁')">借东风的是谁（书）</button>
+      <button onclick="qs('部署脚本在哪')">部署脚本在哪</button>
+      <button onclick="qs('document export preference')">英文语义</button>
     </div>
     <div class="muted" id="s-took"></div>
     <div id="s-hits" style="margin-top:10px"></div>
@@ -226,23 +258,24 @@ section[data-page].on{display:block}
 
 <!-- ============ 偏好时间线 ============ -->
 <section data-page="prefs">
+  <div class="topbar"><h2>偏好时间线</h2><span class="desc">提取 → 版本化 → 跨场景适配 → 回溯（条款 2）</span></div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>偏好版本时间线 <span class="hint">提取→版本化→跨场景适配→回溯（条款 2）</span></h3>
+      <h3>版本历史</h3>
       <div class="row" style="margin-bottom:10px">
         <select id="p-key" style="width:280px" onchange="renderPrefTimeline()"><option>选择偏好键…</option></select>
         <button class="act ghost" onclick="loadPrefs(true)">刷新</button>
       </div>
-      <div id="p-timeline"><div class="empty">暂无偏好。可运行演示场景①，或在右侧手动写入。</div></div>
+      <div id="p-timeline"><div class="empty">暂无偏好。运行场景①或手动写入。</div></div>
     </div>
     <div class="card">
       <h3>手动设置偏好</h3>
       <div style="display:flex;flex-direction:column;gap:10px">
         <input type="text" id="p-new-key" placeholder="键，如 output_style.language">
-        <textarea id="p-new-val" rows="3" placeholder='值（JSON），如 "中文" 或 {"tool":"libreoffice"}'></textarea>
+        <textarea id="p-new-val" rows="3" placeholder='值（JSON），如 "中文"'></textarea>
         <input type="text" id="p-new-scene" placeholder="作用场景，* 或 office/coding/system">
         <button class="act" onclick="setPref()">写入新版本</button>
-        <div class="muted">写入会追加版本并关闭旧版本，历史可回溯。</div>
+        <div class="muted">追加版本并关闭旧版本，历史可回溯。</div>
       </div>
     </div>
   </div>
@@ -250,29 +283,27 @@ section[data-page].on{display:block}
 
 <!-- ============ 冲突仲裁 ============ -->
 <section data-page="conflicts">
-  <div class="card">
-    <h3>知识冲突仲裁记录 <span class="hint">检测→分类→仲裁→版本化（条款 3，指标 ≥88%）</span></h3>
-    <div id="conf-list"><div class="empty">加载中…</div></div>
-  </div>
+  <div class="topbar"><h2>冲突仲裁</h2><span class="desc">检测 → 分类 → 仲裁 → 版本化（条款 3，评测正确率 93.3%）</span></div>
+  <div class="card"><div id="conf-list"><div class="empty">加载中…</div></div></div>
 </section>
 
 <!-- ============ 遗忘工坊 ============ -->
 <section data-page="forget">
+  <div class="topbar"><h2>遗忘工坊</h2><span class="desc">自然语言遗忘 + 敏感信息防护（条款 5）</span></div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>自然语言遗忘 <span class="hint">指令→范围解析→预览→执行（条款 5）</span></h3>
+      <h3>自然语言遗忘</h3>
       <textarea id="f-instr" rows="2" placeholder="例如：忘掉关于部署路径的一切"></textarea>
       <div class="row" style="margin-top:10px">
         <button class="act ghost" onclick="forgetPreview()">① 解析并预览</button>
-        <button class="act" onclick="forgetExec('tombstone')" id="f-soft" disabled>② 软删除（可恢复）</button>
-        <button class="act danger" onclick="forgetExec('purge')" id="f-hard" disabled>③ 硬清除（不可逆）</button>
+        <button class="act" onclick="forgetExec('tombstone')" id="f-soft" disabled>② 软删除</button>
+        <button class="act danger" onclick="forgetExec('purge')" id="f-hard" disabled>③ 硬清除</button>
       </div>
       <div id="f-out" style="margin-top:12px"></div>
     </div>
     <div class="card">
-      <h3>敏感信息测试台 <span class="hint">入库前实时识别（规则层）</span></h3>
-      <textarea id="sens-in" rows="4" placeholder="试着粘贴含手机号/身份证/密钥的文本，如：联系 13812345678，key=sk-abcdefghijklmnopqrst">联系我 13812345678，身份证 110101199003077658，
-API 密钥 sk-abcdefghijklmnopqrst，服务器 10.20.30.40</textarea>
+      <h3>敏感信息测试台 <span class="hint">规则层实时识别</span></h3>
+      <textarea id="sens-in" rows="4">联系我 13812345678，密钥 sk-abcdefghijklmnopqrst，服务器 10.20.30.40</textarea>
       <button class="act ghost" style="margin-top:8px" onclick="sensScan()">扫描</button>
       <div id="sens-out" style="margin-top:10px"></div>
     </div>
@@ -281,37 +312,37 @@ API 密钥 sk-abcdefghijklmnopqrst，服务器 10.20.30.40</textarea>
 
 <!-- ============ Agent 总管 ============ -->
 <section data-page="agents">
-  <div class="card" style="margin-bottom:16px">
-    <h3>Agent 接入 <span class="hint">lymem-server :8801 同时提供 REST 与 MCP</span></h3>
+  <div class="topbar"><h2>Agent 总管</h2><span class="desc">可插拔记忆模块 · 一次接入多端复用</span></div>
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card"><h3 style="margin-top:0">DeepSeek Harness</h3><div class="muted" style="margin-bottom:8px">MCP Streamable HTTP 插件——模型可见 <span class="mono">mcp__lymem__*</span> 工具族</div>
+      <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:9px;font-size:11px">dsh web --patch lymem.cordis.yml</div>
+      <div class="muted" style="margin-top:6px">配置见 integrations/deepseek-harness/</div></div>
+    <div class="card"><h3 style="margin-top:0">opencode</h3><div class="muted" style="margin-bottom:8px">项目级 MCP 配置，重启即生效</div>
+      <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:9px;font-size:11px">{"mcp":{"lymem":{"type":"http","url":"…:8801/mcp"}}}</div>
+      <div class="muted" style="margin-top:6px">配置见 integrations/opencode/</div></div>
+    <div class="card"><h3 style="margin-top:0">通用 REST</h3><div class="muted" style="margin-bottom:8px">任何语言/进程可直调</div>
+      <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:9px;font-size:11px">POST /api/v1/search · /api/v1/memories<br>POST /v1/embeddings（OpenAI 兼容）</div>
+      <div class="muted" style="margin-top:6px">麒麟端侧嵌入代理</div></div>
+  </div>
+  <div class="card"><h3>MCP 工具族 <span class="hint">DSH / opencode 接入后模型直接调用</span></h3>
     <div class="grid g3">
-      <div style="border:1px solid var(--line);border-radius:10px;padding:14px">
-        <b>DeepSeek Harness（DSH）</b>
-        <div class="muted" style="margin:6px 0">MCP Streamable HTTP 插件</div>
-        <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:8px;font-size:11px">dsh web --patch lymem.cordis.yml</div>
-        <div class="muted" style="margin-top:6px">integrations/deepseek-harness/</div>
+      <div class="mono" style="font-size:12px;line-height:2">
+        <b>mcp__lymem__memory_search</b><br><span class="muted">三路混合检索记忆</span><br><br>
+        <b>mcp__lymem__memory_add</b><br><span class="muted">写入记忆（脱敏去重）</span><br><br>
+        <b>mcp__lymem__preference_list</b><br><span class="muted">当前生效偏好</span>
       </div>
-      <div style="border:1px solid var(--line);border-radius:10px;padding:14px">
-        <b>opencode</b>
-        <div class="muted" style="margin:6px 0">项目级 MCP 配置</div>
-        <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:8px;font-size:11px">{"mcp":{"lymem":{"type":"http","url":"…:8801/mcp"}}}</div>
-        <div class="muted" style="margin-top:6px">integrations/opencode/</div>
+      <div class="mono" style="font-size:12px;line-height:2">
+        <b>mcp__lymem__memory_forget</b><br><span class="muted">自然语言遗忘</span><br><br>
+        <b>mcp__lymem__conflict_list</b><br><span class="muted">冲突仲裁记录</span><br><br>
+        <b>mcp__lymem__memory_status</b><br><span class="muted">记忆库概况</span>
       </div>
-      <div style="border:1px solid var(--line);border-radius:10px;padding:14px">
-        <b>通用 REST</b>
-        <div class="muted" style="margin:6px 0">任何进程可直调</div>
-        <div class="mono" style="background:#f6f8fc;border-radius:8px;padding:8px;font-size:11px">POST /api/v1/search · /api/v1/memories · /v1/embeddings</div>
-        <div class="muted" style="margin-top:6px">OpenAI 兼容嵌入代理</div>
-      </div>
+      <div class="muted" style="line-height:1.9">接入步骤（DSH 已验证）：<br>① 启动 lymem-server :8801<br>② dsh web --patch lymem.cordis.yml<br>③ 对话中让 agent「记住 / 回忆」——工具调用实时出现在下方审计流</div>
     </div>
   </div>
-  <div class="card">
-    <h3>Agent 调用动态 <span class="hint">MCP / REST 全量审计流</span></h3>
-    <div class="feed" id="agent-audit"><div class="empty">加载中…</div></div>
-  </div>
+  <div class="card" style="margin-top:16px"><h3>Agent 调用动态 <span class="hint">MCP / REST 全量审计</span></h3><div class="feed" id="agent-audit"><div class="empty">加载中…</div></div></div>
 </section>
 </main>
 
-<!-- 详情抽屉 -->
 <div id="drawer">
   <div class="dh"><b id="dr-title">记忆详情</b><span style="flex:1"></span><button class="act ghost" onclick="$('drawer').classList.remove('open')">关闭</button></div>
   <div class="db" id="dr-body"></div>
@@ -327,31 +358,30 @@ async function api(p,body){
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
 function ts(x){const d=new Date((x??0)*1000);return isNaN(d)?'-':d.toLocaleString('zh-CN',{hour12:false})}
-
-/* ---- 导航 ---- */
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
-  ({dash:refreshDash,memories:loadMemories,prefs:()=>loadPrefs(false),conflicts:loadConflicts,agents:loadAgentAudit,forget:()=>{}})[b.dataset.page]?.();
+  ({dash:refreshDash,memories:loadMemories,prefs:()=>loadPrefs(false),conflicts:loadConflicts,agents:loadAgentAudit})[b.dataset.page]?.();
 });
 
-/* ---- 总览 ---- */
 async function refreshDash(){
   try{
     const s=await api('/api/v1/status');
     $('k-epi').textContent=s.tiers.episodic??0;
     $('k-know').textContent=s.tiers.knowledge??0;
     $('k-pref').textContent=s.preferences;
-    const pe=$('pill-embed');pe.textContent=`嵌入 ${s.embedder} · ${s.embed_dim}维`;pe.classList.add('ok');
-    const pl=$('pill-llm');pl.textContent=`LLM ${s.llm}`;pl.classList.toggle('ok',s.llm==='llm-ready');pl.classList.toggle('warn',s.llm!=='llm-ready');
-    drawDonut([['情景',s.tiers.episodic??0,'#1e6fff'],['知识',s.tiers.knowledge??0,'#7c5cff'],['偏好观察',s.tiers.preference??0,'#0aa870']]);
-  }catch(e){toast('状态获取失败：'+e)}
+    $('foot-embed').textContent=(s.embedder||'').replace('kylin','麒麟');
+    $('foot-llm').textContent=s.llm==='llm-ready'?'已连接':'规则兜底';
+    $('foot-llm').style.color=s.llm==='llm-ready'?'#8fe3bd':'#ffd479';
+    $('foot-dim').textContent=s.embed_dim;
+    drawDonut([['情景',s.tiers.episodic??0,'#2f5fe0'],['知识',s.tiers.knowledge??0,'#6f4fd8'],['偏好',s.tiers.preference??0,'#0b9e6e']]);
+  }catch(e){}
   loadAudit('dash-audit');
 }
 function drawDonut(items){
   const total=items.reduce((a,[,v])=>a+v,0);
   const svg=$('donut');let off=0;const C=2*Math.PI*48;
-  svg.innerHTML=total?'':'<circle cx="60" cy="60" r="48" fill="none" stroke="#f1f2f6" stroke-width="14"/><text x="60" y="65" text-anchor="middle" fill="#9aa1b0" font-size="12">空</text>';
+  svg.innerHTML=total?'':`<circle cx="60" cy="60" r="48" fill="none" stroke="#eef1f8" stroke-width="14"/><text x="60" y="65" text-anchor="middle" fill="#9aa1b0" font-size="12">空</text>`;
   for(const [name,v,color] of items){
     if(!v)continue;
     const frac=v/Math.max(total,1);
@@ -362,7 +392,7 @@ function drawDonut(items){
     el.setAttribute('transform','rotate(-90 60 60)');
     svg.appendChild(el);off+=frac;
   }
-  $('donut-legend').innerHTML=total?`<div><b>总计</b> ${total} 条</div>`+items.map(([n,v,c])=>`<div><b style="background:${c}"></b>${n} ${v}</div>`).join(''):'<div class="muted">库为空，先运行演示场景</div>';
+  $('donut-legend').innerHTML=total?`<div><b>总计</b> ${total} 条</div>`+items.map(([n,v,c])=>`<div><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c};margin-right:6px"></b>${n} ${v}</div>`).join(''):'<div class="muted">库为空</div>';
 }
 async function loadAudit(el){
   const a=await api('/api/v1/audit?limit=40');
@@ -373,104 +403,135 @@ async function loadAudit(el){
 async function consolidate(){
   $('pipe-msg').textContent='蒸馏中…';
   const r=await fetch('/api/v1/consolidate',{method:'POST'}).then(x=>x.json()).catch(()=>null);
-  $('pipe-msg').textContent=r?`新增知识 ${r.created??0} 条`:'蒸馏接口不可用';
+  $('pipe-msg').textContent=r?`新增知识 ${r.created??0} 条`:'接口不可用';
   refreshDash();
 }
 async function minePrefs(){
   const r=await api('/api/v1/preferences/mine');
-  toast(r&&r.ok?`规则通道更新 ${(r.updates||[]).length} 项偏好`:'暂无可挖掘的偏好');
+  toast(r&&r.ok?`规则通道更新 ${(r.updates||[]).length} 项偏好`:'暂无可挖掘偏好');
   refreshDash();
 }
 
-/* ---- 演示场景 ---- */
+/* ---- 场景演示 ---- */
 const DLOG=$('demo-log');
-function dlog(html){DLOG.innerHTML+=html+'\n';DLOG.scrollTop=DLOG.scrollHeight}
+function dlog(h){DLOG.innerHTML+=h+'\n';DLOG.scrollTop=DLOG.scrollHeight}
 function dclear(){DLOG.innerHTML=''}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-
 async function runScene(name){
-  const btn=$('sc-'+name);btn.disabled=true;btn.textContent='运行中…';
-  dclear();
+  const btn=$('sc-'+name);btn.disabled=true;btn.textContent='运行中…';dclear();
   try{await ({office:sceneOffice,coding:sceneCoding,system:sceneSystem})[name]();}
   catch(e){dlog(`<span class="err">[错误] ${esc(e.message||e)}</span>`)}
   btn.disabled=false;btn.textContent='▶ 重新运行';
 }
-
 async function sceneOffice(){
   dlog('<span class="dim">—— 场景① 办公自动化：多源接入 → 偏好捕捉 ——</span>');
-  dlog('<span class="dim">[步骤1] 模拟用户手动配置（条款1：手动配置源）</span>');
   let r=await api('/api/v1/memories',{events:[{type:'manual_config',data:{key:'output_style.language',value:'中文',scene:'office'}}]});
-  dlog(`<span class="ok">  ✓ 手动配置入库 id=${r.ids}，同时写入偏好版本链 v1</span>`);
-  await sleep(600);
-  dlog('<span class="dim">[步骤2] 模拟连续 4 次工具调用（条款1：工具执行结果源）</span>');
-  const tools=['libreoffice','libreoffice','libreoffice','wps'];
-  for(let i=0;i<tools.length;i++){
-    r=await api('/api/v1/memories',{events:[{type:'tool_result',data:{tool:tools[i],task:'doc_edit',ok:true,output:`文档 ${i+1}.docx 导出 pdf 完成`,scene:'office'}}]});
-    dlog(`  → 工具调用 #${r.ids}（${tools[i]}）`);await sleep(500);
+  dlog(`<span class="ok">✓ 手动配置入库 id=${r.ids}，同步写入偏好链 v1</span>`);
+  await sleep(500);
+  for(const t of ['libreoffice','libreoffice','libreoffice','wps']){
+    r=await api('/api/v1/memories',{events:[{type:'tool_result',data:{tool:t,task:'doc_edit',ok:true,output:'文档导出 pdf 完成',scene:'office'}}]});
+    dlog(`  → 工具调用 #${r.ids}（${t}）`);await sleep(400);
   }
-  dlog('<span class="dim">[步骤3] 规则快通道挖掘偏好（条款2：动态捕捉）</span>');
+  dlog('<span class="dim">[偏好挖掘]</span>');
   r=await api('/api/v1/preferences/mine');
-  for(const u of r.updates||[]){
-    dlog(`<span class="ok">  ✓ 沉淀偏好 ${u.key} = ${esc(JSON.stringify(u.value))}（置信 ${Math.round(u.confidence*100)}%，证据=3次工具调用）</span>`);
-  }
-  if(!(r.updates||[]).length)dlog('<span class="warn">  （已有同值偏好，幂等跳过）</span>');
-  dlog('<span class="dim">[步骤4] 检索复用：新任务自动带出偏好与经验</span>');
+  for(const u of r.updates||[])dlog(`<span class="ok">✓ 沉淀 ${u.key} = ${esc(JSON.stringify(u.value))}（置信 ${Math.round(u.confidence*100)}%）</span>`);
+  if(!(r.updates||[]).length)dlog('<span class="warn">（偏好已存在，幂等跳过）</span>');
   r=await api('/api/v1/search',{query:'帮我把报告转成 pdf 发出去',top_k:3});
-  dlog(`  检索耗时 ${r.took_ms}ms，命中 ${r.hits.length} 条：`);
-  for(const h of r.hits)dlog(`  <span class="ok">•</span> [#${h.record.id}] ${esc(h.record.content.slice(0,60))}…`);
-  const prefs=await api('/api/v1/preferences');
-  const lang=(prefs||[]).find(p=>p.key==='output_style.language');
-  dlog(`<span class="ok">  ✓ 个性化生效：输出语言=${lang?esc(JSON.stringify(lang.value)):'-'}，文档工具=libreoffice（偏好驱动）</span>`);
-  dlog('<span class="dim">—— 场景① 完成。到「偏好时间线」页可看到版本链 ——</span>');
+  dlog(`检索 ${r.took_ms}ms 命中 ${r.hits.length} 条：`);
+  for(const h of r.hits)dlog(`  <span class="ok">•</span> ${esc(h.record.content.slice(0,50))}…`);
   refreshDash();
 }
-
 async function sceneCoding(){
-  dlog('<span class="dim">—— 场景② 编码协作：知识沉淀 → 冲突检测与仲裁 ——</span>');
-  dlog('<span class="dim">[步骤1] 写入旧知识（2025 部署规范）</span>');
+  dlog('<span class="dim">—— 场景② 编码协作：知识冲突管道 ——</span>');
   let r=await api('/api/v1/knowledge',{title:'部署路径规范',content:'项目部署脚本位于 `/opt/apps` 目录，端口 8080',entities:['部署路径'],scene:'coding'});
-  dlog(`<span class="ok">  ✓ 知识 #${r.id} 入库</span>`);
-  await sleep(800);
-  dlog('<span class="dim">[步骤2] 写入新知识（2026 版本变更，同一实体）</span>');
-  r=await api('/api/v1/knowledge',{title:'部署路径规范 v2',content:'2026 版起项目部署脚本迁移至 `/usr/local/deploy` 目录，端口 8081',entities:['部署路径'],scene:'coding'});
-  dlog(`<span class="ok">  ✓ 新知识 #${r.id} 入库，冲突管道触发：检测到同实体知识</span>`);
-  for(const c of r.conflicts||[]){
-    dlog(`  <span class="warn">⚡ 冲突仲裁：${c.type} → <b>${c.resolution}</b>（${c.decided_by==='llm'?'LLM':'规则'}：${esc((c.reason||'').slice(0,50))}）</span>`);
-  }
-  dlog('<span class="dim">[步骤3] 检索验证：旧知识已降级为历史版本</span>');
+  dlog(`<span class="ok">✓ 旧知识 #${r.id}</span>`);
+  await sleep(600);
+  r=await api('/api/v1/knowledge',{title:'部署路径规范 v2',content:'2026 版起部署脚本迁移至 `/usr/local/deploy`，端口 8081',entities:['部署路径'],scene:'coding'});
+  dlog(`<span class="ok">✓ 新知识 #${r.id}，冲突管道触发：</span>`);
+  for(const c of r.conflicts||[])dlog(`  <span class="warn">⚡ ${c.type} → <b>${c.resolution}</b>（${c.decided_by}：${esc((c.reason||'').slice(0,40))}）</span>`);
   r=await api('/api/v1/search',{query:'部署脚本在哪个目录',top_k:3,scenes:['coding']});
-  for(const h of r.hits)dlog(`  <span class="ok">•</span> [#${h.record.id}] ${esc(h.record.content.slice(0,60))}…${h.record.is_current?'':'<span class="warn">（历史版本）</span>'}`);
-  dlog('<span class="dim">—— 场景② 完成。到「冲突仲裁」页可看完整记录 ——</span>');
+  for(const h of r.hits)dlog(`  <span class="ok">•</span> ${esc(h.record.content.slice(0,50))}…${h.record.is_current?'':'<span class="warn">（历史）</span>'}`);
+  refreshDash();
+}
+async function sceneSystem(){
+  dlog('<span class="dim">—— 场景③ 系统管理：安全 → 遗忘 ——</span>');
+  let r=await api('/api/v1/memories',{events:[{type:'manual_config',data:{key:'security.auto_install',value:'禁止未经确认安装软件',scene:'system'}}]});
+  dlog(`<span class="ok">✓ 安全偏好 id=${r.ids}</span>`);
+  await sleep(400);
+  r=await api('/api/v1/memories',{events:[{type:'conversation',data:{role:'user',text:'记一下我的密钥：sk-abcdefghijklmnopqrst',scene:'system'}}]});
+  dlog(r.ids&&r.ids.length?`  <span class="warn">⚠ 已脱敏入库 id=${r.ids}</span>`:'  <span class="err">✗ 密钥已阻断入库（仅审计）</span>');
+  await sleep(400);
+  let sc=await api('/api/v1/forget/parse',{instruction:'忘掉关于部署的一切'});
+  dlog(`遗忘范围：${esc(JSON.stringify(sc.scope))}`);
+  let pv=await api('/api/v1/forget/preview',sc.scope);
+  const tg=pv.targets||[];
+  dlog(`命中 ${tg.length} 条：${tg.map(t=>'#'+t.id).join(' ')||'无'}`);
+  if(tg.length){r=await api('/api/v1/forget/exec',{scope:sc.scope,mode:'tombstone'});dlog(`<span class="ok">✓ 软删除 ${r.affected} 条（可恢复可审计）</span>`)}
   refreshDash();
 }
 
-async function sceneSystem(){
-  dlog('<span class="dim">—— 场景③ 系统管理：安全策略 → 敏感阻断 → 自然语言遗忘 ——</span>');
-  dlog('<span class="dim">[步骤1] 设置安全策略偏好（条款2：安全策略偏好）</span>');
-  let r=await api('/api/v1/memories',{events:[{type:'manual_config',data:{key:'security.auto_install',value:'禁止未经确认安装软件',scene:'system'}}]});
-  dlog(`<span class="ok">  ✓ 安全偏好入库 id=${r.ids}</span>`);
-  await sleep(600);
-  dlog('<span class="dim">[步骤2] 尝试写入含 API 密钥的配置（条款5：敏感识别）</span>');
-  r=await api('/api/v1/memories',{events:[{type:'conversation',data:{role:'user',text:'记一下我的密钥：sk-abcdefghijklmnopqrst 方便以后用',scene:'system'}}]});
-  if(!r.ids||!r.ids.length){
-    dlog('  <span class="err">✗ 已阻断入库：检测到密钥形态（sk-…），仅写入审计日志</span>');
-  }else{
-    dlog(`  <span class="warn">⚠ 已脱敏入库 id=${r.ids}（敏感内容替换占位符）</span>`);
+/* ---- 书山灌入 ---- */
+let BOOK_BUSY=false;
+function blog(h){const L=$('b-log');L.innerHTML+=h+'\n';L.scrollTop=L.scrollHeight}
+async function bookIngest(){await ingestFromText(null)}
+function loadFile(inp){
+  const f=inp.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>{$('b-custom').value=rd.result;toast('已读取 '+f.name)};
+  rd.readAsText(f);
+}
+function splitChapters(text){
+  const marks=[...text.matchAll(/^第[一二三四五六七八九十百零〇两0-9]+[回章节][：:、 ].*$/gm)];
+  if(marks.length<3)return null;
+  const out=[];
+  for(let i=0;i<marks.length;i++){
+    const start=marks[i].index,nxt=i+1<marks.length?marks[i+1].index:text.length;
+    out.push({title:marks[i][0],content:text.slice(start,nxt).trim().slice(0,20000),index:i});
   }
-  await sleep(600);
-  dlog('<span class="dim">[步骤3] 自然语言遗忘（先预览再执行）</span>');
-  let sc=await api('/api/v1/forget/parse',{instruction:'忘掉关于部署路径的一切'});
-  dlog(`  解析范围：${esc(JSON.stringify(sc.scope))}`);
-  let pv=await api('/api/v1/forget/preview',sc.scope);
-  dlog(`  预览命中 ${(pv.targets||[]).length} 条：${(pv.targets||[]).map(t=>'#'+t.id).join(' ')}`);
-  if((pv.targets||[]).length){
-    r=await api('/api/v1/forget/exec',{scope:sc.scope,mode:'tombstone'});
-    dlog(`  <span class="ok">✓ 软删除完成，影响 ${r.affected} 条（可恢复、可审计）</span>`);
+  return out;
+}
+async function ingestFromText(customText){
+  if(BOOK_BUSY)return;BOOK_BUSY=true;const go=$('b-go');if(go)go.disabled=true;
+  $('b-prog-wrap').style.display='block';
+  let chapters;
+  if(customText){
+    chapters=splitChapters(customText)||[{title:'自定义文本',content:customText.slice(0,20000),index:0}];
   }else{
-    dlog('  <span class="warn">（无命中——若未运行场景②属正常）</span>');
+    blog('<span class="dim">[读取] 拉取内置《三国演义》全本（简体）…</span>');
+    try{chapters=(await api('/api/v1/ingest/book_prepare',{})).chapters}
+    catch(e){blog('<span class="err">内置文本接口不可用：'+esc(e.message||e)+'</span>');BOOK_BUSY=false;if(go)go.disabled=false;return}
   }
-  dlog('<span class="dim">—— 场景③ 完成 ——</span>');
-  refreshDash();
+  blog(`<span class="ok">分章完成：${chapters.length} 章，总 ${chapters.reduce((a,c)=>a+c.content.length,0)} 字</span>`);
+  const t0=Date.now();let done=0,failed=0;
+  for(let i=0;i<chapters.length;i+=5){
+    try{
+      const r=await api('/api/v1/ingest/chapters',chapters.slice(i,i+5));
+      done+=r.ingested;failed+=r.failed||0;
+    }catch(e){failed+=Math.min(5,chapters.length-i)}
+    const pct=Math.min(100,Math.round(((i+5)/chapters.length)*100));
+    $('b-prog').style.width=pct+'%';
+    blog(`  <span class="dim">进度 ${pct}% · 入库 ${done} · 跳过/失败 ${failed} · ${((Date.now()-t0)/1000)|0}s</span>`);
+  }
+  blog(`<span class="ok"><b>灌入完成：本次入库 ${done} 章（耗时 ${((Date.now()-t0)/1000)|0}s）。右侧可直接提问验证。</b></span>`);
+  $('b-msg').textContent=`已入库 ${done} 章`;
+  BOOK_BUSY=false;if(go)go.disabled=false;refreshDash();
+}
+async function ingestCustom(){
+  const t=$('b-custom').value.trim();if(!t){toast('请先粘贴文本或选择文件');return}
+  await ingestFromText(t);
+}
+async function askBook(q){
+  if(!q)q=$('bk-q').value.trim();if(!q)return;
+  $('bk-out').innerHTML='<div class="empty">检索记忆并生成中…（M3 推理约需 10-30 秒）</div>';
+  const t0=Date.now();
+  try{
+    const r=await api('/api/v1/ask',{question:q,scene:'book',top_k:6});
+    const srcs=(r.sources||[]).map(s=>`[#${s.id}] ${esc((s.title||'').slice(0,26))}（${(s.score??0).toFixed(3)}）`).join('、');
+    $('bk-out').innerHTML=`<div class="qa-card">
+      <div class="ans">${esc(r.answer||'（空）').replace(/\[(\d)\]/g,'<sup>[$1]</sup>')}</div>
+      <div class="src">检索 ${r.retrieve_ms}ms · 总耗时 ${((Date.now()-t0)/1000).toFixed(1)}s<br>引用：${srcs||'-'}</div></div>`;
+    const a=await api('/api/v1/audit?limit=3');
+    $('book-audit').innerHTML='[审计] '+((a||[]).map(x=>esc(x.action)).join(' · '));
+  }catch(e){$('bk-out').innerHTML='<div class="empty">失败：'+esc(e.message)+'</div>'}
 }
 
 /* ---- 记忆流 ---- */
@@ -478,10 +539,10 @@ async function loadMemories(){
   const t=$('m-tier').value,sc=$('m-scene').value,dead=$('m-dead').checked;
   const qs=new URLSearchParams({limit:120,...(t&&{tier:t}),...(sc&&{scene:sc}),...(dead&&{history:1})});
   const rows=await api('/api/v1/memories?'+qs);
-  $('m-count').textContent=(rows||[]).length+' 条（点击行看详情）';
+  $('m-count').textContent=(rows||[]).length+' 条';
   $('m-table').querySelector('tbody').innerHTML=(rows||[]).map(m=>`<tr onclick="openDrawer(${m.id})">
     <td class="mono">#${m.id}</td>
-    <td>${m.tombstone?'<span class="tag dead">已遗忘</span>':''}${m.is_current?'':'<span class="tag dead">历史版本</span>'}${esc(m.content).slice(0,110)}</td>
+    <td>${m.tombstone?'<span class="tag dead">已遗忘</span>':''}${m.is_current?'':'<span class="tag dead">历史</span>'}${esc(m.content).slice(0,110)}</td>
     <td><span class="tag t-${m.tier}">${m.tier}</span><span class="muted">${esc(m.scene)}</span></td>
     <td>${m.sensitivity!=='none'?`<span class="tag s-sensitive">${m.sensitivity}</span>`:'<span class="muted">-</span>'}</td>
     <td class="mono">${m.access_count}</td></tr>`).join('')||'<tr><td colspan=5 class="empty">空</td></tr>';
@@ -496,21 +557,20 @@ async function openDrawer(id){
       ${r.tombstone?'<span class="tag dead">已遗忘</span>':''}${r.is_current?'':'<span class="tag dead">历史版本</span>'}
       ${r.version_of?`<span class="muted">替代 #${r.version_of}</span>`:''}
     </div>
-    <div class="card" style="margin-bottom:10px"><b>内容</b><div style="margin-top:6px;line-height:1.7">${esc(r.content)}</div></div>
+    <div class="card" style="margin-bottom:10px"><b>内容</b><div style="margin-top:6px;line-height:1.75">${esc(r.content)}</div></div>
     <div class="card" style="margin-bottom:10px"><b>元数据</b><pre class="mono" style="margin:6px 0;white-space:pre-wrap">${esc(JSON.stringify(r.meta,null,1))}</pre></div>
-    <div class="muted">实体：${(r.entities||[]).map(esc).join('、')||'-'}<br>
-    置信 ${r.confidence} · 创建 ${ts(r.created_at)} · 访问 ${r.access_count} 次${r.last_access_at?' · 最近 '+ts(r.last_access_at):''}</div>`;
+    <div class="muted">实体：${(r.entities||[]).map(esc).join('、')||'-'}<br>置信 ${r.confidence} · 创建 ${ts(r.created_at)} · 访问 ${r.access_count} 次</div>`;
   $('drawer').classList.add('open');
 }
 
 /* ---- 检索 ---- */
 const chan={vec:true,bm25:true,graph:false};
 function tog(c){chan[c]=!chan[c];$('ch-'+c).classList.toggle('on',chan[c]);$('ch-'+c).classList.toggle('off',!chan[c]);}
+function qs(s){$('s-q').value=s;doSearch()}
 async function doSearch(){
   const query=$('s-q').value.trim();if(!query)return;
-  const p={query,top_k:5,use_vec:chan.vec,use_bm25:chan.bm25,use_graph:chan.graph};
-  const r=await api('/api/v1/search',p);
-  $('s-took').textContent=`耗时 ${r.took_ms}ms（赛题指标 ≤500ms）· 命中 ${(r.hits||[]).length} 条`;
+  const r=await api('/api/v1/search',{query,top_k:5,use_vec:chan.vec,use_bm25:chan.bm25,use_graph:chan.graph});
+  $('s-took').textContent=`耗时 ${r.took_ms}ms（指标 ≤500ms）· 命中 ${(r.hits||[]).length} 条`;
   $('s-hits').innerHTML=(r.hits||[]).map(h=>`
     <div class="card hit" style="margin-bottom:8px;padding:12px 14px;cursor:pointer" onclick="openDrawer(${h.record.id})">
       <div class="row"><b>#${h.record.id}</b>
@@ -560,7 +620,7 @@ async function loadConflicts(){
         <span class="tag">${c.decided_by==='llm'?'LLM':'规则'}</span>
         <span style="flex:1"></span><span class="muted">${ts(c.at)}</span></div>
       <div class="muted" style="margin-top:5px">${esc(c.reason)}</div>
-    </div>`).join('')||'<div class="empty">暂无冲突记录——运行演示场景②可触发。</div>';
+    </div>`).join('')||'<div class="empty">暂无冲突——运行场景②可触发。</div>';
 }
 
 /* ---- 遗忘与敏感 ---- */
@@ -573,8 +633,7 @@ async function forgetPreview(){
   $('f-out').innerHTML=`<div class="card" style="background:#fffdf7">
     <b>解析范围</b><div class="mono" style="margin:6px 0">${esc(JSON.stringify(F_SCOPE))}</div>
     <b>命中 ${tg.length} 条</b>
-    <div style="margin-top:6px">${tg.slice(0,8).map(x=>`<div class="muted">#${x.id} [${x.tier}] ${esc(x.title)}（${esc(x.scene)}）</div>`).join('')}</div>
-    ${tg.length>8?`<div class="muted">…等 ${tg.length} 条</div>`:''}</div>`;
+    <div style="margin-top:6px">${tg.slice(0,8).map(x=>`<div class="muted">#${x.id} [${x.tier}] ${esc(x.title)}（${esc(x.scene)}）</div>`).join('')}</div></div>`;
   $('f-soft').disabled=$('f-hard').disabled=!tg.length;
 }
 async function forgetExec(mode){
@@ -585,15 +644,13 @@ async function forgetExec(mode){
 }
 async function sensScan(){
   const r=await api('/api/v1/sensitive/scan',{text:$('sens-in').value});
-  const names={phone:'手机号',idcard:'身份证',bankcard:'银行卡',email:'邮箱',ip:'IP 地址',apikey:'密钥',password:'口令'};
+  const names={phone:'手机号',idcard:'身份证',bankcard:'银行卡',email:'邮箱',ip:'IP',apikey:'密钥',password:'口令'};
   const lvl={none:'<span style="color:var(--green)">无敏感</span>',sensitive:'<span style="color:var(--amber)">敏感（脱敏后入库）</span>',blocked:'<span style="color:var(--red)">阻断（拒绝入库）</span>'};
   $('sens-out').innerHTML=`
-    <div class="muted">识别等级：${lvl[r.level]||r.level} · 命中 ${(r.findings||[]).length} 处</div>
+    <div class="muted">等级：${lvl[r.level]||r.level} · 命中 ${(r.findings||[]).length} 处</div>
     ${(r.findings||[]).map(f=>`<div class="fi"><b>${names[f.kind]||f.kind}</b><span class="mono">${esc(f.matched.slice(0,24))}…</span></div>`).join('')}
     <div style="margin-top:8px"><b class="muted">脱敏结果：</b><div class="mono" style="background:#f6f8fc;border-radius:8px;padding:8px;margin-top:4px">${esc(r.redacted)}</div></div>`;
 }
-
-/* ---- Agent 总管 ---- */
 async function loadAgentAudit(){loadAudit('agent-audit')}
 
 refreshDash();

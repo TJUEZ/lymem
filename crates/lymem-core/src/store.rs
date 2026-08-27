@@ -332,7 +332,14 @@ impl MemoryStore {
         let rows = stmt.query_map(params![blob, k as i64], |row| {
             Ok((row.get::<_, i64>(0)?, row.get::<_, f64>(1)?, row.get::<_, i64>(2)?))
         })?;
-        Ok(rows.filter_map(|r| r.ok()).collect())
+        let mut out = Vec::new();
+        for r in rows {
+            match r {
+                Ok(v) => out.push(v),
+                Err(e) => tracing::warn!("knn 行解析失败: {e}"),
+            }
+        }
+        Ok(out)
     }
 
     /// 取某记忆全部 chunk 的向量（冲突检测用：chunk 级最大余弦）

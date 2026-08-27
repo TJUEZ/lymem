@@ -256,11 +256,24 @@ pub struct KylinEmbedder {
 
 impl KylinEmbedder {
     /// 探测并连接可用通道。
+    /// 环境变量 LYMEM_KYLIN_CHANNEL 可强制指定：triton / dbus（缺省 auto）。
     /// DBus 探测在独立线程中执行并施加硬超时：部分机型的 runtime 引擎
     /// 自启动起即卡死（调用无响应），zbus 对 p2p 连接无默认超时，
     /// 必须靠外部看门狗避免启动挂起。
     pub fn connect_auto() -> Result<Self, String> {
         let cfg = KylinConfig::default();
+        match std::env::var("LYMEM_KYLIN_CHANNEL").ok().as_deref() {
+            Some("triton") => {
+                tracing::info!("麒麟嵌入：按环境变量强制 kytensor 直连通道");
+                return KylinTritonEmbedder::connect(&cfg).map(|t| KylinEmbedder::from_channel(KylinChannel::Triton(t)));
+            }
+            Some("dbus") => {
+                let d = KylinDbusEmbedder::connect(&cfg)?;
+                tracing::info!("麒麟嵌入：按环境变量强制 DBus SDK 通道");
+                return Ok(KylinEmbedder::from_channel(KylinChannel::Dbus(d, None)));
+            }
+            _ => {}
+        }
         let probe_cfg = cfg.clone();
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || {

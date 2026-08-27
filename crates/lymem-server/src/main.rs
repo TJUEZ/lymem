@@ -92,6 +92,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/memories/{id}", get(get_memory))
         .route("/api/v1/knowledge", post(add_knowledge))
         .route("/api/v1/sensitive/scan", post(sensitive_scan))
+        .route("/api/v1/ingest/chapters", post(ingest_chapters))
+        .route("/api/v1/ask", post(ask_memory))
+        .route("/api/v1/ingest/book_prepare", get(book_prepare))
         .route("/api/v1/consolidate", post(consolidate_now))
         .route("/api/v1/preferences/mine", post(mine_preferences))
         .route("/api/v1/forget/parse", post(forget_parse))
@@ -350,6 +353,136 @@ async fn sensitive_scan(Json(req): Json<ScanReq>) -> impl IntoResponse {
         "findings": findings,
         "redacted": redacted,
     }))
+}
+
+/// 内置《三国演义》简体全文分章（供前端书山灌入一键拉取）。
+/// 文件路径：LYMEM_BOOK_PATH 或 data/sanguo_simplified.txt
+async fn book_prepare() -> impl IntoResponse {
+    let path = std::env::var("LYMEM_BOOK_PATH").unwrap_or_else(|_| "data/sanguo_simplified.txt".into());
+    let body = match std::fs::read_to_string(&path) {
+        Ok(b) => b,
+        Err(e) => return (StatusCode::NOT_FOUND, Json(json!({"error": format!("书文本不存在（{}）：{}。可改用粘贴文本方式。", path, e)}))),
+    };
+    let mut marks: Vec<(usize, String)> = body
+        .lines()
+        .enumerate()
+        .filter_map(|(li, l)| {
+            let t = l.trim();
+            (t.starts_with("第") && t.contains("回：") && t.chars().count() < 60).then(|| (li, t.to_string()))
+        })
+        .collect();
+    if marks.len() < 50 {
+        return (StatusCode::NOT_FOUND, Json(json!({"error": format!("章节解析异常：仅 {} 个回目", marks.len())})));
+    }
+    let lines: Vec<&str> = body.lines().collect();
+    let mut chapters = Vec::new();
+    for (i, (li, title)) in marks.iter().enumerate() {
+        let nxt = marks.get(i + 1).map(|(l, _)| *l).unwrap_or(lines.len());
+        let content = lines[*li..nxt].join("\n");
+        chapters.push(json!({
+            "title": title, "index": i,
+            "content": content.chars().take(20000).collect::<String>(),
+        }));
+    }
+    let _ = &mut marks;
+    (StatusCode::OK, Json(json!({ "title": "三国演义", "chapters": chapters })))
+}
+
+#[derive(Deserialize)]
+struct Chapter {
+    title: String,
+    content: String,
+    #[serde(default)]
+    index: i64,
+}
+
+/// 书山灌入：整本长文本按章批量入库（知识层，规则管道）
+async fn ingest_chapters(State(st): State<Arc<AppState>>, Json(chapters): Json<Vec<Chapter>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || {
+        let mut ids = Vec::new();
+        let mut errs = 0;
+        for ch in chapters.iter() {
+            let mut rec = lymem_core::model::MemoryRecord::new(
+                lymem_core::model::Tier::Knowledge,
+                lymem_core::model::MemoryKind::Case,
+                ch.title.clone(),
+                ch.content.clone(),
+            );
+            rec.scene = "book".into();
+            rec.source = "book-ingest".into();
+            rec.confidence = 0.9;
+            rec.entities = vec![ch.title.clone()];
+            match st2.store.put(rec) {
+                Ok(id) => ids.push(id),
+                Err(_) => errs += 1,
+            }
+        }
+        (ids, errs)
+    })
+    .await;
+    match res {
+        Ok((ids, errs)) => (StatusCode::OK, Json(json!({"ok": true, "ingested": ids.len(), "failed": errs, "ids": ids}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct AskReq {
+    question: String,
+    #[serde(default = "default_ask_k")]
+    top_k: usize,
+    #[serde(default)]
+    scene: Option<String>,
+}
+
+fn default_ask_k() -> usize {
+    6
+}
+
+/// 智能问答：混合检索 → LLM 生成（带引用标注）。LLM 不可用时返回纯检索结果。
+async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) -> impl IntoResponse {
+    let t0 = std::time::Instant::now();
+    let mut p = lymem_core::retrieval::SearchParams::new(req.question.clone());
+    p.top_k = req.top_k.clamp(1, 10);
+    if let Some(sc) = &req.scene {
+        p.scenes = Some(vec![sc.clone()]);
+    }
+    let hits = match st.store.search(&p) {
+        Ok(h) => h,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    };
+    let retrieve_ms = t0.elapsed().as_millis();
+    let contexts: Vec<String> = hits.iter().map(|h| h.record.content.clone()).collect();
+    let judge = st.judge.clone();
+    let question = req.question.clone();
+    let gen = tokio::task::spawn_blocking(move || {
+        judge.complete(
+            "你是历史知识问答助手。仅依据提供的记忆片段回答问题；片段不足以确定答案时回答：根据现有记忆无法确定。回答末尾用 [n] 标注引用的记忆编号。",
+            &format!(
+                "记忆片段：\n{}\n\n问题：{}",
+                contexts.iter().enumerate().map(|(i, c)| format!("[{}] {}", i + 1, c)).collect::<Vec<_>>().join("\n\n"),
+                question
+            ),
+        )
+    })
+    .await;
+    let answer = match gen {
+        Ok(Some(a)) => a,
+        _ => String::new(),
+    };
+    (
+        StatusCode::OK,
+        Json(json!({
+            "question": req.question,
+            "retrieve_ms": retrieve_ms,
+            "answer": answer,
+            "sources": hits.iter().map(|h| json!({
+                "id": h.record.id, "title": h.record.title, "score": h.final_score,
+                "snippet": h.snippet.chars().take(120).collect::<String>(),
+            })).collect::<Vec<_>>(),
+        })),
+    )
 }
 
 async fn list_conflicts(State(st): State<Arc<AppState>>) -> impl IntoResponse {
