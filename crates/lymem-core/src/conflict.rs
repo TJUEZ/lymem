@@ -170,7 +170,22 @@ impl MemoryStore {
         let old_nums = numbers_in(&ctx.old_record.content);
         let new_nums = numbers_in(&ctx.new_record.content);
         let same_count = old_nums.len() == new_nums.len() && !old_nums.is_empty();
-        let numeric_changed = same_count && old_nums != new_nums;
+        // 数值更新需同时满足：数字个数相同且值不同 + 去数字后文本高度相似
+        // （否则"开发端口8080/生产端口443"这类不同属性的数字会被误判为更新）
+        let bigrams = |t: &str| -> std::collections::HashSet<String> {
+            let cleaned: String = t.chars().filter(|c| !c.is_ascii_digit() && *c != '.').collect();
+            let ch: Vec<char> = cleaned.chars().filter(|c| !c.is_whitespace()).collect();
+            if ch.len() < 2 {
+                return std::collections::HashSet::new();
+            }
+            ch.windows(2).map(|w| w.iter().collect()).collect()
+        };
+        let ob = bigrams(&ctx.old_record.content);
+        let nb = bigrams(&ctx.new_record.content);
+        let inter = ob.intersection(&nb).count();
+        let union = ob.len().max(nb.len()).max(1);
+        let word_overlap = inter as f64 / union as f64;
+        let numeric_changed = same_count && old_nums != new_nums && word_overlap >= 0.4;
         let newer = ctx.new_record.created_at > ctx.old_record.created_at;
 
         let mut ctype = if numeric_changed {
