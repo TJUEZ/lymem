@@ -165,6 +165,19 @@ impl KylinTritonEmbedder {
     }
 
     fn infer_raw(&self, text: &str) -> Result<(Vec<f32>, usize), String> {
+        match self.infer_once(text) {
+            Ok(v) => Ok(v),
+            // 模型被 kytensor 驱逐（404/断连）时重载一次再试
+            Err(e) if e.contains("404") || e.contains("status code") => {
+                tracing::warn!("kytensor 模型疑似被驱逐（{e}），重载后重试");
+                self.ensure_models()?;
+                self.infer_once(text)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    fn infer_once(&self, text: &str) -> Result<(Vec<f32>, usize), String> {
         let url = format!("{}/v2/models/{}/infer", self.cfg.kytensor_url, self.cfg.model);
         let body = json!({
             "inputs": [{"name": "product_reviews", "shape": [1], "datatype": "BYTES", "data": [text]}],
