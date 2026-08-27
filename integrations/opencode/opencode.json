@@ -1,0 +1,10 @@
+{
+  "$comment": "opencode 接入 lymem：项目级配置。放到项目根目录 opencode.json 后重启 opencode 即可。",
+  "mcp": {
+    "lymem": {
+      "type": "http",
+      "url": "http://127.0.0.1:8801/mcp",
+      "enabled": true
+    }
+  }
+}

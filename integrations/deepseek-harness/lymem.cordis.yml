@@ -1,0 +1,20 @@
+# 麟忆尽智 lymem × DeepSeek Harness（DSH）记忆插件
+#
+# 用法（DSH 需已安装，lymem-server 已在本机运行于 8801 端口）：
+#   dsh web --patch /path/to/lymem.cordis.yml
+#
+# 接入后模型可见工具（serverName=lymem 命名空间）：
+#   mcp__lymem__memory_search      混合检索长期记忆（每轮先查，注入上下文）
+#   mcp__lymem__memory_add         写入记忆（会话/工具结果/行为/配置，自动脱敏去重）
+#   mcp__lymem__preference_list    当前生效的用户偏好（个性化一致性）
+#   mcp__lymem__memory_forget      自然语言遗忘（预览/软删/硬清除）
+#   mcp__lymem__conflict_list      知识冲突与仲裁记录
+#   mcp__lymem__memory_status      记忆库概况
+- insert:
+    - id: memory-lymem
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: lymem
+        transport: streamable-http
+        url: http://127.0.0.1:8801/mcp
+        toolCallTimeoutMs: 120000

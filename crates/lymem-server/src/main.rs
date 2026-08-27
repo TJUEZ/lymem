@@ -5,6 +5,8 @@
 //!   供 mem0 / Letta / memmy 等 Python 基线复用同一嵌入模型，保证横向对比公平；
 //! - `/viewer`：中文管理界面（记忆总管）占位页，正式前端后续迭代。
 
+mod mcp;
+
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -87,12 +89,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/preferences/{key}", get(get_preference))
         .route("/api/v1/preferences/{key}/history", get(preference_history))
         .route("/api/v1/conflicts", get(list_conflicts))
+        .route("/api/v1/consolidate", post(consolidate_now))
+        .route("/api/v1/preferences/mine", post(mine_preferences))
         .route("/api/v1/forget/parse", post(forget_parse))
         .route("/api/v1/forget/preview", post(forget_preview))
         .route("/api/v1/forget/exec", post(forget_exec))
         .route("/api/v1/audit", get(list_audit))
         .route("/v1/embeddings", post(openai_embeddings))
         .route("/v1/chat/completions", post(chat_completions_gateway))
+        .route("/mcp", post(crate::mcp::mcp_post))
         .route("/viewer", get(viewer))
         .with_state(state);
 
@@ -155,7 +160,8 @@ async fn list_memories(
     let tier = q.get("tier").and_then(|v| v.as_str()).and_then(Tier::parse);
     let scene = q.get("scene").and_then(|v| v.as_str());
     let limit = q.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
-    match st.store.list(tier, scene, false, limit) {
+    let history = q.get("history").and_then(|v| v.as_str()) == Some("1");
+    match st.store.list(tier, scene, history, limit) {
         Ok(recs) => (StatusCode::OK, Json(json!(recs))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
@@ -216,6 +222,66 @@ async fn preference_history(State(st): State<Arc<AppState>>, Path(key): Path<Str
 }
 
 // ---------------- 冲突 / 遗忘 / 审计 ----------------
+
+#[derive(Deserialize)]
+struct MineResp {
+    #[serde(default)]
+    updates: Vec<serde_json::Value>,
+}
+
+#[derive(serde::Serialize)]
+struct MinedPref {
+    key: String,
+    value: serde_json::Value,
+    version: i64,
+    confidence: f64,
+}
+
+/// 偏好规则快通道挖掘：从近期工具调用统计偏好（纯 Rust 统计，无 LLM）
+async fn mine_preferences(State(st): State<Arc<AppState>>) -> axum::response::Response {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || st2.store.preference_rules_from_tools(200, 3, 0.6))
+        .await;
+    match res {
+        Ok(Ok(updates)) => {
+            let mined: Vec<MinedPref> = updates
+                .iter()
+                .map(|u| MinedPref {
+                    key: u.key.clone(),
+                    value: u.value.clone(),
+                    version: u.version,
+                    confidence: u.confidence,
+                })
+                .collect();
+            (StatusCode::OK, Json(json!({"ok": true, "updates": mined}))).into_response()
+        }
+        Ok(Err(e)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"ok": false, "error": e.to_string()})),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"ok": false, "error": format!("任务失败: {e}")})),
+        )
+            .into_response(),
+    }
+}
+
+/// 一轮情景→知识蒸馏（LLM 可用时摘要蒸馏）
+async fn consolidate_now(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let judge = st.judge.clone();
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || {
+        st2.store.consolidate_episodic(Some(judge.as_ref()), 3, 4)
+    })
+    .await;
+    match res {
+        Ok(Ok(created)) => (StatusCode::OK, Json(json!({"ok": true, "created": created.len(), "ids": created}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
 
 async fn list_conflicts(State(st): State<Arc<AppState>>) -> impl IntoResponse {
     match st.store.conflicts_all() {
@@ -423,57 +489,4 @@ async fn viewer() -> impl IntoResponse {
     )
 }
 
-const VIEWER_HTML: &str = r#"<!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="utf-8"><title>麟忆尽智 · 记忆总管</title>
-<style>
-body{font-family:"Noto Sans CJK SC",sans-serif;margin:0;background:#f5f6fa;color:#2f3542}
-header{background:#1e90ff;color:#fff;padding:18px 28px}header h1{margin:0;font-size:22px}
-main{padding:20px 28px;max-width:1100px;margin:0 auto}
-.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:16px 20px;margin-bottom:16px}
-button{background:#1e90ff;color:#fff;border:none;border-radius:6px;padding:6px 16px;cursor:pointer}
-input,select{padding:6px 10px;border:1px solid #dcdde1;border-radius:6px;margin-right:8px}
-table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 10px;border-bottom:1px solid #f1f2f6;text-align:left}
-.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:#e8f3ff;color:#1e90ff;margin-right:4px}
-#log{white-space:pre-wrap;font-family:monospace;background:#f8f9fa;padding:12px;border-radius:8px;font-size:13px}
-</style></head>
-<body>
-<header><h1>麟忆尽智 · 记忆总管 <span style="font-size:13px;opacity:.8">lymem viewer（占位版，正式前端迭代中）</span></h1></header>
-<main>
-<div class="card"><b>系统状态</b><div id="status" style="margin-top:8px">加载中…</div></div>
-<div class="card"><b>检索</b><div style="margin-top:8px">
-<input id="q" placeholder="输入查询，如：部署路径" style="width:360px">
-<select id="ablation"><option value="">全通道</option><option value="nov">仅 BM25+图</option><option value="nob">仅向量+图</option><option value="nog">仅向量+BM25</option><option value="nop">关偏好重排</option></select>
-<button onclick="doSearch()">检索</button></div>
-<div id="hits" style="margin-top:10px"></div></div>
-<div class="card"><b>最近记忆</b><div style="margin-top:8px"><select id="tier"><option value="">全部层级</option><option value="episodic">情景（中期）</option><option value="knowledge">知识（长期）</option><option value="preference">偏好观察</option></select><button onclick="loadMemories()">刷新</button></div>
-<div style="margin-top:10px;overflow:auto"><table id="mem"><thead><tr><th>ID</th><th>标题</th><th>层级</th><th>场景</th><th>敏感</th></tr></thead><tbody></tbody></table></div></div>
-<div class="card"><b>当前偏好</b><div style="margin-top:8px"><button onclick="loadPrefs()">刷新</button></div>
-<div style="margin-top:10px;overflow:auto"><table id="prefs"><thead><tr><th>键</th><th>值</th><th>版本</th><th>来源</th><th>场景</th></tr></thead><tbody></tbody></table></div></div>
-<div class="card"><b>遗忘指令</b><div style="margin-top:8px">
-<input id="fi" placeholder="如：忘掉关于项目部署路径的一切" style="width:360px">
-<button onclick="previewForget()">解析并预览</button><button onclick="execForget()">执行（软删）</button></div>
-<div id="ft" style="margin-top:10px"></div></div>
-</main>
-<script>
-const $=id=>document.getElementById(id);
-async function api(p,o){const r=await fetch(p,o?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}:undefined);return r.json()}
-(async()=>{const s=await api('/api/v1/status');$('status').textContent=JSON.stringify(s,null,2)})();
-async function doSearch(){const b={query:$('q').value,top_k:8};const a=$('ablation').value;
-if(a==='nov')b.use_vec=false;if(a==='nob')b.use_bm25=false;if(a==='nog')b.use_graph=false;if(a==='nop')b.preference_rerank=false;
-const r=await api('/api/v1/search',b);const h=(r.hits||[]).map(x=>`<tr><td>${x.record.id}</td><td>${x.record.title}</td><td>${x.final_score.toFixed(4)}</td><td>${x.snippet.slice(0,80)}</td></tr>`).join('');
-$('hits').innerHTML=`<div>耗时 ${r.took_ms}ms，命中 ${(r.hits||[]).length} 条</div><table><thead><tr><th>ID</th><th>标题</th><th>得分</th><th>片段</th></tr></thead><tbody>${h}</tbody></table>`}
-async function loadMemories(){const t=$('tier').value;const r=await api('/api/v1/memories'+(t?'?tier='+t:''));
-$('mem').querySelector('tbody').innerHTML=(r||[]).map(m=>`<tr><td>${m.id}</td><td>${m.title}</td><td><span class="tag">${m.tier}</span></td><td>${m.scene}</td><td>${m.sensitivity}</td></tr>`).join('')}
-loadMemories();
-async function loadPrefs(){const r=await api('/api/v1/preferences');
-$('prefs').querySelector('tbody').innerHTML=(r||[]).map(p=>`<tr><td>${p.key}</td><td>${JSON.stringify(p.value)}</td><td>v${p.version}</td><td>${p.source}</td><td>${p.scenes.join(',')}</td></tr>`).join('')}
-loadPrefs();
-async function previewForget(){const r=await api('/api/v1/forget/parse',{instruction:$('fi').value});
-const t=await api('/api/v1/forget/preview',r.scope);
-$('ft').innerHTML=`<div>解析范围：${JSON.stringify(r.scope)}</div><div>命中 ${（t.targets||[]).length} 条</div>`}
-async function execForget(){const r=await api('/api/v1/forget/parse',{instruction:$('fi').value});
-const t=await api('/api/v1/forget/exec',{scope:r.scope,mode:'tombstone'});
-$('ft').innerHTML+=`<div>执行结果：${JSON.stringify(t)}</div>`;loadMemories()}
-</script>
-</body></html>"#;
+const VIEWER_HTML: &str = include_str!("viewer.html");
