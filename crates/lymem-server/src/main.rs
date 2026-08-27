@@ -89,6 +89,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/preferences/{key}", get(get_preference))
         .route("/api/v1/preferences/{key}/history", get(preference_history))
         .route("/api/v1/conflicts", get(list_conflicts))
+        .route("/api/v1/memories/{id}", get(get_memory))
+        .route("/api/v1/knowledge", post(add_knowledge))
+        .route("/api/v1/sensitive/scan", post(sensitive_scan))
         .route("/api/v1/consolidate", post(consolidate_now))
         .route("/api/v1/preferences/mine", post(mine_preferences))
         .route("/api/v1/forget/parse", post(forget_parse))
@@ -281,6 +284,72 @@ async fn consolidate_now(State(st): State<Arc<AppState>>) -> impl IntoResponse {
         Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
     }
+}
+
+async fn get_memory(State(st): State<Arc<AppState>>, Path(id): Path<i64>) -> impl IntoResponse {
+    match st.store.get(id) {
+        Ok(Some(r)) => (StatusCode::OK, Json(serde_json::to_value(r).unwrap_or_default())),
+        _ => (StatusCode::NOT_FOUND, Json(json!({"error": "不存在"}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct KnowledgeReq {
+    title: String,
+    content: String,
+    #[serde(default)]
+    scene: String,
+    #[serde(default)]
+    entities: Vec<String>,
+}
+
+/// 知识层写入（走冲突四步管道：检测→分类→仲裁→版本化）
+async fn add_knowledge(State(st): State<Arc<AppState>>, Json(req): Json<KnowledgeReq>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        let mut rec = lymem_core::model::MemoryRecord::new(
+            lymem_core::model::Tier::Knowledge,
+            lymem_core::model::MemoryKind::Fact,
+            req.title,
+            req.content,
+        );
+        rec.scene = if req.scene.is_empty() { "general".into() } else { req.scene };
+        rec.entities = req.entities;
+        st2.store.put_knowledge_with_conflicts(rec, Some(judge.as_ref()), 0.8)
+    })
+    .await;
+    match res {
+        Ok(Ok((id, outcomes))) => (
+            StatusCode::OK,
+            Json(json!({
+                "ok": true, "id": id,
+                "conflicts": outcomes.iter().map(|o| json!({
+                    "type": o.ctype.as_str(), "resolution": o.resolution.as_str(),
+                    "decided_by": o.decided_by, "reason": o.reason,
+                })).collect::<Vec<_>>(),
+            })),
+        ),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct ScanReq {
+    text: String,
+}
+
+/// 敏感信息识别测试台：返回命中与脱敏结果（不写库）
+async fn sensitive_scan(Json(req): Json<ScanReq>) -> impl IntoResponse {
+    let findings = lymem_core::sensitive::scan(&req.text);
+    let level = lymem_core::sensitive::level_of(&findings);
+    let redacted = lymem_core::sensitive::redact(&req.text);
+    Json(json!({
+        "level": level.as_str(),
+        "findings": findings,
+        "redacted": redacted,
+    }))
 }
 
 async fn list_conflicts(State(st): State<Arc<AppState>>) -> impl IntoResponse {
