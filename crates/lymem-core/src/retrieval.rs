@@ -75,18 +75,22 @@ impl MemoryStore {
         let k = p.top_k.max(1);
         let cand = k * p.candidate_multiplier.max(1);
 
-        // 通道 1：向量
+        // 通道 1：向量（场景过滤时超采样，避免候选被其它场景占满）
         let mut vec_rank: Vec<(i64, f64, i64)> = Vec::new(); // (memory_id, distance, chunk_id)
         if p.use_vec {
             let qv = self.embedder.embed_one(&p.query)?;
-            vec_rank = self.knn(&qv, cand)?;
+            let knn_k = if p.scenes.is_some() { cand.max(256) } else { cand };
+            vec_rank = self.knn(&qv, knn_k)?;
         }
 
         // 通道 2：BM25（对查询做同样的 CJK bigram 处理由分析器完成）
         let mut bm25_rank: Vec<(i64, i64, f32, String)> = Vec::new();
         if p.use_bm25 {
+            let scene = p.scenes.as_ref().and_then(|v| {
+                v.iter().find(|s| *s != "*").map(|s| s.as_str())
+            });
             let fts = self.fts.lock().unwrap();
-            if let Ok(hits) = fts.search(&p.query, None, cand) {
+            if let Ok(hits) = fts.search(&p.query, None, scene, cand) {
                 bm25_rank = hits;
             }
         }

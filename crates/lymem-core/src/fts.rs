@@ -212,12 +212,19 @@ impl FtsIndex {
         Ok(())
     }
 
-    /// BM25 检索：返回 (memory_id, chunk_id, 片段)，按得分降序
-    pub fn search(&self, query: &str, tier: Option<&str>, limit: usize) -> tantivy::Result<Vec<(i64, i64, f32, String)>> {
+    /// BM25 检索：返回 (memory_id, chunk_id, 片段)，按得分降序。
+    /// scene 过滤下推到查询层：候选池被其它场景占满时仍能命中目标场景。
+    pub fn search(&self, query: &str, tier: Option<&str>, scene: Option<&str>, limit: usize) -> tantivy::Result<Vec<(i64, i64, f32, String)>> {
         let searcher = self.reader.searcher();
-        let mut parser = QueryParser::for_index(&self.index, vec![self.f_content]);
+        let mut parser = QueryParser::for_index(&self.index, vec![self.f_content, self.f_scene]);
         // 默认析取（OR）召回优先：此前误设合取导致 BM25 通道在长查询下几乎无命中
-        let q = parser.parse_query(query)?;
+        let q = if let Some(sc) = scene {
+            // scene 是 STRING 字段：短语引号精确匹配；内容查询转义引号防注入
+            let safe = query.replace('"', " ");
+            parser.parse_query(&format!("+scene:\"{}\" AND ({})", sc, safe))?
+        } else {
+            parser.parse_query(query)?
+        };
         let top = searcher.search(&q, &TopDocs::with_limit(limit))?;
         let mut out = Vec::with_capacity(top.len());
         for (score, addr) in top {
@@ -271,13 +278,13 @@ mod tests {
         fts.add_chunk(1, 10, "knowledge", "coding", "银河麒麟操作系统的记忆模块采用 Rust 开发").unwrap();
         fts.add_chunk(2, 20, "knowledge", "office", "办公场景偏好使用 WPS 文档格式").unwrap();
         fts.commit().unwrap();
-        let hits = fts.search("记忆 模块", None, 5).unwrap();
+        let hits = fts.search("记忆 模块", None, None, 5).unwrap();
         assert!(!hits.is_empty());
         assert_eq!(hits[0].0, 1);
-        let hits2 = fts.search("WPS 办公", None, 5).unwrap();
+        let hits2 = fts.search("WPS 办公", None, None, 5).unwrap();
         assert_eq!(hits2[0].0, 2);
         fts.delete_memory(1).unwrap();
         fts.commit().unwrap();
-        assert!(fts.search("记忆 模块", None, 5).unwrap().is_empty());
+        assert!(fts.search("记忆 模块", None, None, 5).unwrap().is_empty());
     }
 }
