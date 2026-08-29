@@ -97,6 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/ingest/book_prepare", get(book_prepare))
         .route("/api/v1/consolidate", post(consolidate_now))
         .route("/api/v1/preferences/mine", post(mine_preferences))
+        .route("/api/v1/preferences/extract", post(extract_preferences_from_sessions))
         .route("/api/v1/forget/parse", post(forget_parse))
         .route("/api/v1/forget/preview", post(forget_preview))
         .route("/api/v1/forget/exec", post(forget_exec))
@@ -233,6 +234,46 @@ async fn preference_history(State(st): State<Arc<AppState>>, Path(key): Path<Str
 struct MineResp {
     #[serde(default)]
     updates: Vec<serde_json::Value>,
+}
+
+/// 会话陈述偏好捕捉（赛题条款 2：从会话数据源动态提取偏好，LLM 通道）
+async fn extract_preferences_from_sessions(State(st): State<Arc<AppState>>) -> axum::response::Response {
+    // 各分支 into_response()
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        // 取近期未处理的会话记录
+        let records = st2.store.list(Some(lymem_core::model::Tier::Episodic), None, false, 60)?;
+        let mut extracted = Vec::new();
+        for rec in records.iter().filter(|r| r.kind == lymem_core::model::MemoryKind::Conversation) {
+            let Some(analysis) = judge.complete(
+                "你是 OS Agent 的偏好提取器。判断用户消息是否表达了可持续生效的偏好（工具选择/输出风格/安全策略/工作习惯）。\
+                 只输出 JSON：{\"is_preference\": bool, \"key\": \"类别.名称\"（类别限 tool_choice/output_style/security/habit）, \"
+                 + \"value\": \"偏好内容简述\"}。非偏好输出 {\"is_preference\": false}。",
+                &rec.content,
+            ) else { continue };
+            let Ok(v) = serde_json::from_str::<Value>(analysis.trim_start_matches("```json").trim_end_matches("```").trim()) else { continue };
+            if v.get("is_preference").and_then(|x| x.as_bool()) != Some(true) { continue; }
+            let (Some(key), Some(val)) = (v.get("key").and_then(|x| x.as_str()), v.get("value")) else { continue };
+            st2.store.set_preference(&lymem_core::preference::PreferenceSet {
+                key: format!("session.{key}"),
+                value: val.clone(),
+                evidence: vec![json!({"memory_id": rec.id, "text": rec.content.chars().take(200).collect::<String>()})],
+                source: "llm".into(),
+                confidence: 0.75,
+                scenes: vec![rec.scene.clone()],
+                force: false,
+            })?;
+            extracted.push(json!({"key": format!("session.{key}"), "value": val, "memory_id": rec.id}));
+        }
+        Ok::<Vec<Value>, lymem_core::CoreError>(extracted)
+    })
+    .await;
+    match res {
+        Ok(Ok(items)) => (StatusCode::OK, Json(json!({"ok": true, "extracted": items, "count": items.len()}))).into_response(),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))).into_response(),
+    }
 }
 
 #[derive(serde::Serialize)]
