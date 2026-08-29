@@ -217,13 +217,19 @@ impl FtsIndex {
     pub fn search(&self, query: &str, tier: Option<&str>, scene: Option<&str>, limit: usize) -> tantivy::Result<Vec<(i64, i64, f32, String)>> {
         let searcher = self.reader.searcher();
         let mut parser = QueryParser::for_index(&self.index, vec![self.f_content, self.f_scene]);
-        // 默认析取（OR）召回优先：此前误设合取导致 BM25 通道在长查询下几乎无命中
+        // 关键修复：QueryParser 会把连写中文串解析为整句短语查询（要求全部
+        // bigram 在文档中连续出现），自然语言问句几乎不可能满足——长查询
+        // 0 命中的根源。先用与索引一致的分词器切词，再以空格拼接为独立 OR 词。
+        let query_prepared: String = {
+            let toks: Vec<String> = pre_tokenize(query).into_iter().map(|(t, _, _)| t).collect();
+            if toks.is_empty() { query.to_string() } else { toks.join(" ") }
+        };
         let q = if let Some(sc) = scene {
             // scene 是 STRING 字段：短语引号精确匹配；内容查询转义引号防注入
-            let safe = query.replace('"', " ");
+            let safe = query_prepared.replace('"', " ");
             parser.parse_query(&format!("+scene:\"{}\" AND ({})", sc, safe))?
         } else {
-            parser.parse_query(query)?
+            parser.parse_query(&query_prepared)?
         };
         let top = searcher.search(&q, &TopDocs::with_limit(limit))?;
         let mut out = Vec::with_capacity(top.len());

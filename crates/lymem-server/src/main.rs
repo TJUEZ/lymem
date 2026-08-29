@@ -437,14 +437,29 @@ struct AskReq {
 }
 
 fn default_ask_k() -> usize {
-    6
+    10
 }
 
-/// 智能问答：混合检索 → LLM 生成（带引用标注）。LLM 不可用时返回纯检索结果。
+/// 智能问答：混合检索 → LLM 蒸馏推理（retrieve_and_reason）→ 生成。
+/// 两段式对标 PlugMem：先让 LLM 把检索片段蒸馏为紧凑证据（降 token、提准确），
+/// 再基于蒸馏证据作答。LLM 不可用时返回纯检索结果。
 async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) -> impl IntoResponse {
     let t0 = std::time::Instant::now();
-    let mut p = lymem_core::retrieval::SearchParams::new(req.question.clone());
-    p.top_k = req.top_k.clamp(1, 10);
+    // 查询扩展：LLM 生成同义/相关检索词（弥补词汇鸿沟，如"借东风"↔"祭风"）
+    let judge0 = st.judge.clone();
+    let q0 = req.question.clone();
+    let expanded = tokio::task::spawn_blocking(move || {
+        judge0.complete(
+            "为检索系统扩展这个问题：输出与问题语义相关的关键词（同义词、别称、相关事件名），空格分隔，不要解释。",
+            &q0,
+        )
+        .map(|r| format!("{} {}", q0, r))
+        .unwrap_or_else(|| q0.clone())
+    })
+    .await
+    .unwrap_or_else(|_| req.question.clone());
+    let mut p = lymem_core::retrieval::SearchParams::new(expanded);
+    p.top_k = req.top_k.clamp(10, 20); // RRF 融合下小 top_k 会挤掉单通道命中（如借东风段落仅向量通道召回）
     if let Some(sc) = &req.scene {
         p.scenes = Some(vec![sc.clone()]);
     }
@@ -453,17 +468,55 @@ async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) ->
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     };
     let retrieve_ms = t0.elapsed().as_millis();
-    let contexts: Vec<String> = hits.iter().map(|h| h.record.content.clone()).collect();
+    let mut contexts: Vec<String> = hits
+        .iter()
+        .enumerate()
+        .map(|(hi, h)| {
+            // 前 3 条命中记录带全文（跨块答案需要完整章节）；其余用命中片段
+            // 命中块级 snippet（chunk 文本，约 480 字）：紧凑且直指相关段落
+            let body = if h.snippet.is_empty() {
+                h.record.content.chars().take(800).collect::<String>()
+            } else {
+                h.snippet.clone()
+            };
+            if h.record.title.is_empty() {
+                body
+            } else {
+                format!("（出处：{}）\n{}", h.record.title, body)
+            }
+        })
+        .collect();
+    // 块级向量补充：RRF 记录聚合会丢失"仅单通道强命中"的块（如文学作品中
+    // 与问句无词面交集的情节段），此处把向量 KNN 的 top 块直接并入上下文
+    if p.use_vec {
+        let st2 = Arc::clone(&st);
+        let qvec = p.query.clone();
+        let knn_res = tokio::task::spawn_blocking(move || {
+            let qv = st2.store.embedder.embed_one(&qvec)?;
+            let mut ctx = Vec::new();
+            for (chunk_id, dist, _mid) in st2.store.knn(&qv, 8)? {
+                if dist > 1.2 {
+                    continue; // 过滤完全不相关块
+                }
+                if let Some(Some(content)) = Some(st2.store.chunk_content(chunk_id)?) {
+                    ctx.push(format!("（向量命中）\n{}", content));
+                }
+            }
+            Ok::<Vec<String>, lymem_core::CoreError>(ctx)
+        })
+        .await;
+        if let Ok(Ok(extra)) = knn_res {
+            contexts.extend(extra);
+        }
+    }
     let judge = st.judge.clone();
     let question = req.question.clone();
+    let ctx_join = contexts.iter().enumerate().map(|(i, c)| format!("[{}] {}", i + 1, c)).collect::<Vec<_>>().join("\n\n");
     let gen = tokio::task::spawn_blocking(move || {
+        // 一段式直答：上下文为片段级（已紧凑），蒸馏预过滤反而会丢关键证据
         judge.complete(
-            "你是历史知识问答助手。仅依据提供的记忆片段回答问题；片段不足以确定答案时回答：根据现有记忆无法确定。回答末尾用 [n] 标注引用的记忆编号。",
-            &format!(
-                "记忆片段：\n{}\n\n问题：{}",
-                contexts.iter().enumerate().map(|(i, c)| format!("[{}] {}", i + 1, c)).collect::<Vec<_>>().join("\n\n"),
-                question
-            ),
+            "你是知识问答助手。仅依据提供的记忆片段回答问题；片段不足以确定答案时回答：根据现有记忆无法确定。回答末尾用 [n] 标注引用的记忆编号。",
+            &format!("记忆片段：\n{}\n\n问题：{}", ctx_join, question),
         )
     })
     .await;
