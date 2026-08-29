@@ -181,6 +181,7 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
                     scene,
                     source: "mcp".into(),
                     meta: None,
+                    window_context: None,
                 },
             };
             lymem_core::ingest::ingest_events(&st.store, &[event])

@@ -181,6 +181,7 @@ fn run_eval(
                     scene: "locomo".into(),
                     source: format!("locomo/{}", conv.id),
                     meta: Some(serde_json::json!({"dia_id": t.dia_id, "view": "window"})),
+                    window_context: None,
                 },
                 lymem_core::ingest::IngestEvent::Conversation {
                     role: t.speaker.clone(),
@@ -188,6 +189,7 @@ fn run_eval(
                     scene: "locomo".into(),
                     source: format!("locomo/{}", conv.id),
                     meta: Some(serde_json::json!({"dia_id": t.dia_id, "view": "raw"})),
+                    window_context: None,
                 },
             ];
             let ids = lymem_core::ingest::ingest_events(&store, &events)?;

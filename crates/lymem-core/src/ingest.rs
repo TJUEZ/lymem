@@ -58,6 +58,9 @@ pub enum IngestEvent {
         /// 附加元数据（评测用：dia_id 等）
         #[serde(default)]
         meta: Option<serde_json::Value>,
+        /// 窗口上下文（邻近轮次+会话日期，检索召回增强；正式检索路径）
+        #[serde(default)]
+        window_context: Option<String>,
     },
 }
 
@@ -235,7 +238,12 @@ impl IngestEvent {
                     fingerprint: fp,
                 }
             }
-            IngestEvent::Conversation { role, text, scene, source, meta } => {
+            IngestEvent::Conversation { role, text, scene, source, meta, window_context } => {
+                // 窗口上下文：邻近轮次+会话日期作内容前缀（检索召回增强）
+                let text = match &window_context {
+                    Some(wc) if !wc.is_empty() => format!("{wc}\n{text}"),
+                    _ => text.clone(),
+                };
                 let content = clean_text(&format!("[{role}] {text}"));
                 let findings = sensitive::scan(&content);
                 let level = sensitive::level_of(&findings);
