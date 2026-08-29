@@ -275,6 +275,8 @@ impl LlmJudge for OpenAiCompat {
 }
 
 /// 按环境构造 LLM 判定器：未配置 key 时返回不可用的空实现。
+/// 注意：不做连通性探测（探测含阻塞调用，禁止在 tokio 运行时内执行）；
+/// 存活状态由调用方（如 lymem-server 的 spawn_blocking 探测）按需确认。
 pub fn judge_from_env() -> Box<dyn LlmJudge> {
     let cfg = LlmConfig::default();
     if !cfg.available() {
@@ -284,7 +286,7 @@ pub fn judge_from_env() -> Box<dyn LlmJudge> {
     match OpenAiCompat::new(cfg) {
         Ok(c) => {
             tracing::info!(
-                "LLM 就绪: {} @ {}（{:?} 协议）",
+                "LLM 客户端就绪: {} @ {}（{:?} 协议）",
                 c.config().model,
                 c.config().base_url,
                 c.config().protocol
