@@ -1060,12 +1060,44 @@ async fn openai_embeddings(State(st): State<Arc<AppState>>, Json(req): Json<Embe
         );
     }
     // 嵌入为同步阻塞调用（麒麟端侧 ~30ms/条），放到阻塞线程池
-    let refs: Vec<String> = inputs.clone();
-    let dim0 = st.store.vec_dim;
+    // 长输入分块：gte/kytensor 窗口约 512 token，超长文本（外部系统直传整段对话）
+    // 切块后逐块嵌入再平均池化，避免 infer 直接失败
+    let refs: Vec<String> = inputs
+        .iter()
+        .map(|s| {
+            if s.chars().count() > 900 {
+                s.chars().take(24000).collect()
+            } else {
+                s.clone()
+            }
+        })
+        .collect();
     let state = st.clone();
     let res = tokio::task::spawn_blocking(move || {
-        let rs: Vec<&str> = refs.iter().map(|s| s.as_str()).collect();
-        state.store.embedder.embed(&rs)
+        let mut out: Vec<Vec<f32>> = Vec::with_capacity(refs.len());
+        for s in &refs {
+            if s.chars().count() > 900 {
+                let segs = lymem_core::store::chunk_text(s, 780);
+                let seg_refs: Vec<&str> = segs.iter().map(|x| x.as_str()).collect();
+                let vecs = state.store.embedder.embed(&seg_refs)?;
+                let dim = state.store.vec_dim;
+                let mut mean = vec![0f32; dim];
+                for v in &vecs {
+                    for (i, x) in v.iter().enumerate().take(dim) {
+                        mean[i] += x;
+                    }
+                }
+                let n = vecs.len().max(1) as f32;
+                for x in &mut mean {
+                    *x /= n;
+                }
+                out.push(mean);
+            } else {
+                let mut vs = state.store.embedder.embed(&[s.as_str()])?;
+                out.push(vs.swap_remove(0));
+            }
+        }
+        Ok::<Vec<Vec<f32>>, lymem_core::CoreError>(out)
     })
     .await;
     match res {
@@ -1085,7 +1117,6 @@ async fn openai_embeddings(State(st): State<Arc<AppState>>, Json(req): Json<Embe
                 model: req.model,
                 usage: json!({"prompt_tokens": est_tokens, "total_tokens": est_tokens}),
             };
-            let _ = dim0;
             (StatusCode::OK, Json(serde_json::to_value(resp).unwrap()))
         }
         Ok(Err(e)) => (
