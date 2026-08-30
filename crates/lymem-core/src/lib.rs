@@ -24,6 +24,7 @@ pub mod embedding;
 pub mod error;
 pub mod forget;
 pub mod fts;
+pub mod hub;
 pub mod ingest;
 pub mod llm_hook;
 pub mod model;

@@ -8,6 +8,19 @@
 
 对标 memmy-agent 的**记忆管理模块**，以纯 Rust 实现端侧轻量化部署，深度适配银河麒麟 AI 端侧能力（文本嵌入 SDK / kytensor 推理后端 / 向量引擎）。
 
+## 记忆中枢（多 Agent 记忆汇聚 · 调度 · 总管）
+
+借鉴 Wake 的「终端多 agent 记忆汇聚」与 Semantica 的「离线索引图规则」，`lymem-core/src/hub.rs` 提供：
+
+- **源发现**：零配置扫描本机终端 agent 记忆载体（zcode / claude-code / codex（含记忆 SQLite）/ gemini / opencode / dsh / 通用 AGENTS.md·CLAUDE.md，`LYMEM_HUB_EXTRA` 可注册自定义源）；
+- **汇聚导入**：解析为离散条目 → 清洗/敏感分级/实体抽取 → 入库，`hub_imports` 映射表支持增量重导（幂等）；
+- **记忆调度**：把 lymem 记忆/偏好/实体摘要分发到任意 agent 的记忆/规则文件——只写入 `<!-- lymem:begin/end -->` 受管标记块，不触碰用户手写内容，敏感自动脱敏，全程审计；
+- **全局总索引**：全库纯规则离线构建（实体抽取 → 共现建边权重累计 → 标签传播社区检测 → 跨源实体统计），数千条记忆毫秒级；
+- **跨源矛盾**：按实体聚合跨 agent 记忆，数值矛盾成对检测 + LLM 复核，仲裁（保留新/保留旧/共存）落版本链与冲突台账；
+- **总管巡检**：重复指纹 / 失活记忆 / 墓碑积压 / 来源体量，一键执行维护计划。
+
+前端 `/viewer` →「多 Agent 中枢」页；REST：`/api/v1/hub/sources|import|dispatch|index|index/build|index/graph|conflicts/scan|conflicts/resolve|maintenance`。场景演示页第 ④ 场景一键串演全链路。
+
 ## 架构
 
 ```

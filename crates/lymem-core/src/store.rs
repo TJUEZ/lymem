@@ -107,6 +107,28 @@ CREATE TABLE IF NOT EXISTS audit_log(
   action TEXT NOT NULL,
   detail TEXT NOT NULL DEFAULT '{}'
 );
+
+-- 记忆中枢（hub）：导入映射 / 分发日志 / 图元数据
+CREATE TABLE IF NOT EXISTS hub_imports(
+  source TEXT NOT NULL,
+  item_hash TEXT NOT NULL,
+  memory_id INTEGER NOT NULL,
+  at INTEGER NOT NULL,
+  PRIMARY KEY(source, item_hash)
+);
+CREATE TABLE IF NOT EXISTS hub_dispatch_log(
+  id INTEGER PRIMARY KEY,
+  at INTEGER NOT NULL,
+  target TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '',
+  mode TEXT NOT NULL,
+  items INTEGER NOT NULL DEFAULT 0,
+  detail TEXT NOT NULL DEFAULT '{}'
+);
+CREATE TABLE IF NOT EXISTS graph_meta(
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 "#;
 
 /// 记忆库：组合 SQLite 连接、全文索引与嵌入器。
@@ -573,6 +595,128 @@ impl MemoryStore {
         )?;
         let rows = stmt.query_map(params![format!("%\"{}\"%", name), tier.as_str()], |r| r.get::<_, i64>(0))?;
         Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    // ---------- 记忆中枢（hub）辅助 ----------
+
+    /// 写图元数据（总索引报告等）
+    pub fn graph_meta_set(&self, key: &str, value: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO graph_meta(key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    /// 读图元数据
+    pub fn graph_meta_get(&self, key: &str) -> Result<Option<String>> {
+        let conn = self.conn.lock().unwrap();
+        Ok(conn.query_row("SELECT value FROM graph_meta WHERE key = ?1", params![key], |r| r.get(0)).optional()?)
+    }
+
+    /// 各来源（agent）记忆计数（hub 源卡展示用）
+    pub fn source_stats(&self, limit: usize) -> Result<Vec<(String, i64)>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT COALESCE(NULLIF(source,''),'(未知)') AS src, COUNT(*) FROM memories
+             WHERE tombstone = 0 AND is_current = 1 GROUP BY 1 ORDER BY 2 DESC LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    /// 记录一次分发
+    pub fn hub_dispatch_log(&self, target: &str, path: &str, mode: String, items: i64, detail: &serde_json::Value) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO hub_dispatch_log(at, target, path, mode, items, detail) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![Self::now(), target, path, mode, items, detail.to_string()],
+        )?;
+        Ok(())
+    }
+
+    /// hub 分发日志（最近在前）
+    pub fn hub_dispatch_recent(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT at, target, path, mode, items, detail FROM hub_dispatch_log ORDER BY id DESC LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |r| {
+            Ok(serde_json::json!({
+                "at": r.get::<_, i64>(0)?, "target": r.get::<_, String>(1)?, "path": r.get::<_, String>(2)?,
+                "mode": r.get::<_, String>(3)?, "items": r.get::<_, i64>(4)?,
+                "detail": serde_json::from_str::<serde_json::Value>(&r.get::<_, String>(5)?).unwrap_or_default(),
+            }))
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    /// 共现图 top 子图（前端力导向图用）：按度数取前 N 实体 + 其间共现边
+    pub fn co_graph(&self, top_n: usize) -> Result<(Vec<serde_json::Value>, Vec<serde_json::Value>)> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT e.id, e.name, d.deg FROM entities e JOIN (
+               SELECT entity_id, SUM(w) AS deg FROM (
+                 SELECT src AS entity_id, SUM(weight) AS w FROM edges WHERE relation = 'co' GROUP BY src
+                 UNION ALL
+                 SELECT dst AS entity_id, SUM(weight) AS w FROM edges WHERE relation = 'co' GROUP BY dst
+               ) GROUP BY entity_id ORDER BY deg DESC LIMIT ?1
+             ) d ON d.entity_id = e.id",
+        )?;
+        let rows = stmt.query_map(params![top_n as i64], |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, f64>(2)?))
+        })?;
+        let nodes: Vec<(i64, String, f64)> = rows.filter_map(|r| r.ok()).collect();
+        let ids: Vec<String> = nodes.iter().map(|(id, _, _)| id.to_string()).collect();
+        let mut out_nodes: Vec<serde_json::Value> = Vec::new();
+        for (id, name, deg) in &nodes {
+            let mems: i64 = conn.query_row(
+                "SELECT COUNT(DISTINCT memory_id) FROM edges WHERE (src = ?1 OR dst = ?1) AND memory_id IS NOT NULL",
+                params![id],
+                |r| r.get(0),
+            )?;
+            out_nodes.push(serde_json::json!({"name": name, "degree": deg, "memories": mems}));
+        }
+        let mut out_edges: Vec<serde_json::Value> = Vec::new();
+        if !ids.is_empty() {
+            let list = ids.join(",");
+            let mut stmt = conn.prepare(&format!(
+                "SELECT e1.name, e2.name, SUM(ed.weight) FROM edges ed
+                 JOIN entities e1 ON e1.id = ed.src JOIN entities e2 ON e2.id = ed.dst
+                 WHERE ed.relation = 'co' AND ed.src IN ({list}) AND ed.dst IN ({list})
+                 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 400"
+            ))?;
+            let rows = stmt.query_map([], |r| {
+                Ok(serde_json::json!({"a": r.get::<_, String>(0)?, "b": r.get::<_, String>(1)?, "w": r.get::<_, f64>(2)?}))
+            })?;
+            out_edges = rows.filter_map(|r| r.ok()).collect();
+        }
+        Ok((out_nodes, out_edges))
+    }
+
+    /// 实体邻域（总索引可视化用）：实体 + 共现邻居 + 关联记忆
+    pub fn entity_neighborhood(&self, name: &str) -> Result<Option<serde_json::Value>> {        let conn = self.conn.lock().unwrap();
+        let eid: Option<i64> = conn
+            .query_row("SELECT id FROM entities WHERE name = ?1", params![name], |r| r.get(0))
+            .optional()?;
+        let Some(eid) = eid else { return Ok(None) };
+        let mut stmt = conn.prepare(
+            "SELECT e2.name, SUM(ed.weight) AS w FROM edges ed JOIN entities e2 ON e2.id = CASE WHEN ed.src = ?1 THEN ed.dst ELSE ed.src END
+             WHERE (ed.src = ?1 OR ed.dst = ?1) AND ed.relation = 'co' GROUP BY e2.name ORDER BY w DESC LIMIT 12",
+        )?;
+        let rows = stmt.query_map(params![eid], |r| {
+            Ok(serde_json::json!({"name": r.get::<_, String>(0)?, "weight": r.get::<_, f64>(1)?}))
+        })?;
+        let neighbors: Vec<serde_json::Value> = rows.filter_map(|r| r.ok()).collect();
+        let memories: Vec<i64> = {
+            let mut stmt = conn.prepare(
+                "SELECT DISTINCT memory_id FROM edges WHERE (src = ?1 OR dst = ?1) AND memory_id IS NOT NULL LIMIT 30",
+            )?;
+            let rows = stmt.query_map(params![eid], |r| r.get::<_, i64>(0))?;
+            rows.filter_map(|r| r.ok()).collect()
+        };
+        Ok(Some(serde_json::json!({"entity": name, "neighbors": neighbors, "memory_ids": memories})))
     }
 }
 

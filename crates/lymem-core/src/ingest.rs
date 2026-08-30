@@ -392,6 +392,7 @@ mod tests {
             scene: String::new(),
             source: String::new(),
             meta: None,
+            window_context: None,
         };
         let ids = ingest_events(&s, &[ev.clone()]).unwrap();
         assert!(ids.is_empty(), "密钥应被阻断");
@@ -401,12 +402,21 @@ mod tests {
             scene: String::new(),
             source: String::new(),
             meta: None,
+            window_context: None,
         };
         let ids2 = ingest_events(&s, &[ev2.clone(), ev2]).unwrap();
         assert_eq!(ids2.len(), 1, "重复应去重");
         // 实体抽取
         let rec = s.get(ids2[0]).unwrap().unwrap();
         assert!(rec.entities.contains(&"银河麒麟".to_string()));
+    }
+
+    #[test]
+    fn test_extract_config_key() {
+        let e = extract_entities("配置 deploy.path 指向 `/opt/apps`，端口 8080");
+        eprintln!("extract={e:?}");
+        assert!(e.contains(&"deploy.path".to_string()), "配置键: {e:?}");
+        assert!(e.contains(&"/opt/apps".to_string()), "反引号路径: {e:?}");
     }
 
     #[test]

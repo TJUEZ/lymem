@@ -102,6 +102,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/forget/preview", post(forget_preview))
         .route("/api/v1/forget/exec", post(forget_exec))
         .route("/api/v1/audit", get(list_audit))
+        .route("/api/v1/hub/sources", get(hub_sources))
+        .route("/api/v1/hub/source/items", get(hub_source_items))
+        .route("/api/v1/hub/import", post(hub_import))
+        .route("/api/v1/hub/targets", get(hub_targets))
+        .route("/api/v1/hub/dispatch", post(hub_dispatch))
+        .route("/api/v1/hub/dispatches", get(hub_dispatches))
+        .route("/api/v1/hub/index", get(hub_index))
+        .route("/api/v1/hub/index/build", post(hub_index_build))
+        .route("/api/v1/hub/index/entity", get(hub_index_entity))
+        .route("/api/v1/hub/index/graph", get(hub_index_graph))
+        .route("/api/v1/hub/conflicts/scan", post(hub_conflict_scan))
+        .route("/api/v1/hub/conflicts/resolve", post(hub_conflict_resolve))
+        .route("/api/v1/hub/maintenance", get(hub_maintenance))
+        .route("/api/v1/hub/maintenance/exec", post(hub_maintenance_exec))
         .route("/v1/embeddings", post(openai_embeddings))
         .route("/v1/chat/completions", post(chat_completions_gateway))
         .route("/mcp", post(crate::mcp::mcp_post))
@@ -631,6 +645,378 @@ async fn list_audit(State(st): State<Arc<AppState>>, axum::extract::Query(q): ax
     }
 }
 
+// ---------------- 记忆中枢（hub）：多 agent 源发现 / 导入 / 分发 / 总索引 / 矛盾 / 巡检 ----------------
+
+/// 源发现：本机终端 agent 记忆载体 + 各 agent 已入库计数 + 导入映射计数
+async fn hub_sources(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let sources = lymem_core::hub::discover_sources();
+    let mem_counts: BTreeMap<String, i64> = st
+        .store
+        .source_stats(50)
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    let imported: BTreeMap<String, i64> = {
+        let conn = st.store.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT source, COUNT(*) FROM hub_imports GROUP BY 1")
+            .unwrap();
+        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))).unwrap();
+        rows.filter_map(|r| r.ok()).collect()
+    };
+    let agent_list: Vec<serde_json::Value> = sources
+        .iter()
+        .map(|s| {
+            json!({
+                "id": s.id, "agent": s.agent, "kind": s.kind.as_str(), "path": s.path,
+                "exists": s.exists, "writable": s.writable, "items": s.items,
+                "bytes": s.bytes, "mtime": s.mtime, "note": s.note,
+                "imported": imported.get(&s.id).copied().unwrap_or(0),
+                "memories": mem_counts.get(&s.agent).copied().unwrap_or(0),
+            })
+        })
+        .collect();
+    Json(json!({"sources": agent_list}))
+}
+
+/// 源条目预览（不入库）
+async fn hub_source_items(
+    State(_st): State<Arc<AppState>>,
+    axum::extract::Query(q): axum::extract::Query<BTreeMap<String, String>>,
+) -> impl IntoResponse {
+    let Some(id) = q.get("source") else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "缺少 source 参数"}))).into_response();
+    };
+    let Some(src) = lymem_core::hub::discover_sources().into_iter().find(|s| &s.id == id) else {
+        return (StatusCode::NOT_FOUND, Json(json!({"error": "源不存在"}))).into_response();
+    };
+    let res = tokio::task::spawn_blocking(move || lymem_core::hub::parse_source(src.kind, std::path::Path::new(&src.path))).await;
+    match res {
+        Ok(Ok(items)) => (
+            StatusCode::OK,
+            Json(json!({"source": id, "items": items.iter().take(50).collect::<Vec<_>>(), "total": items.len()})),
+        )
+            .into_response(),
+        Ok(Err(e)) => (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"error": e}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+struct HubImportReq {
+    source: String,
+}
+
+/// 导入一个源的全部条目（增量幂等）
+async fn hub_import(State(st): State<Arc<AppState>>, Json(req): Json<HubImportReq>) -> impl IntoResponse {
+    let Some(src) = lymem_core::hub::discover_sources().into_iter().find(|s| s.id == req.source) else {
+        return (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "源不存在"})));
+    };
+    if !src.exists {
+        return (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"ok": false, "error": format!("源不存在或未生成：{}", src.path)})));
+    }
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || lymem_core::hub::import_source(&st2.store, &src)).await;
+    match res {
+        Ok(Ok(rep)) => (StatusCode::OK, Json(json!({"ok": true, "report": rep}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+/// 分发目标列表（可写 markdown 源 + 虚拟目标）
+async fn hub_targets(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let targets: Vec<serde_json::Value> = lymem_core::hub::dispatch_targets()
+        .into_iter()
+        .map(|t| {
+            json!({
+                "id": t.id, "agent": t.agent, "path": t.path, "exists": t.exists,
+                "dispatched": st.store.hub_dispatch_recent(200).unwrap_or_default().iter()
+                    .filter(|d| d["path"] == json!(t.path)).map(|d| d["items"].as_i64().unwrap_or(0)).sum::<i64>(),
+            })
+        })
+        .collect();
+    Json(json!({"targets": targets}))
+}
+
+#[derive(Deserialize)]
+struct HubDispatchReq {
+    target: String,
+    #[serde(default)]
+    memory_ids: Vec<i64>,
+    #[serde(default)]
+    pref_keys: Vec<String>,
+    #[serde(default)]
+    entities: Vec<String>,
+    #[serde(default)]
+    query: Option<String>,
+    #[serde(default = "default_dispatch_mode")]
+    mode: String,
+    #[serde(default)]
+    limit: usize,
+}
+
+fn default_dispatch_mode() -> String {
+    "replace".into()
+}
+
+/// 记忆调度：把 lymem 记忆/偏好/实体摘要分发到目标 agent 的记忆文件（受管标记块）
+async fn hub_dispatch(State(st): State<Arc<AppState>>, Json(req): Json<HubDispatchReq>) -> impl IntoResponse {
+    let mode = match req.mode.as_str() {
+        "append" => lymem_core::hub::DispatchMode::Append,
+        "remove" => lymem_core::hub::DispatchMode::Remove,
+        _ => lymem_core::hub::DispatchMode::Replace,
+    };
+    // remove 模式只需目标路径
+    let target = if mode == lymem_core::hub::DispatchMode::Remove {
+        lymem_core::hub::dispatch_targets().into_iter().find(|t| t.id == req.target)
+    } else {
+        lymem_core::hub::dispatch_targets().into_iter().find(|t| t.id == req.target && t.exists || t.id == req.target)
+    };
+    let Some(target) = target else {
+        return (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "分发目标不存在"})));
+    };
+    let target_path = std::path::PathBuf::from(&target.path);
+
+    // 组装分发行（remove 模式跳过）
+    let mut lines: Vec<String> = Vec::new();
+    let mut item_n = 0usize;
+    if mode != lymem_core::hub::DispatchMode::Remove {
+        // 1) 显式记忆 id
+        let mut ids = req.memory_ids.clone();
+        // 2) 查询补充：检索 top-N 记忆
+        if let Some(q) = req.query.as_deref().filter(|s| !s.trim().is_empty()) {
+            let mut p = lymem_core::retrieval::SearchParams::new(q.to_string());
+            p.top_k = req.limit.clamp(1, 20).max(3);
+            if let Ok(hits) = st.store.search(&p) {
+                for h in hits {
+                    if !ids.contains(&h.record.id) {
+                        ids.push(h.record.id);
+                    }
+                }
+            }
+        }
+        let ids: Vec<i64> = ids.iter().take(req.limit.max(20).min(50)).copied().collect();
+        for id in &ids {
+            if let Ok(Some(rec)) = st.store.get(*id) {
+                let body = if rec.sensitivity == lymem_core::model::Sensitivity::Sensitive {
+                    lymem_core::sensitive::redact(&rec.content)
+                } else {
+                    rec.content.clone()
+                };
+                let body: String = body.chars().take(200).collect();
+                lines.push(format!("- **[{}·{}]** {}（lymem #{id}）", rec.tier.as_str(), rec.scene, body.replace('\n', " ")));
+                item_n += 1;
+            }
+        }
+        // 3) 偏好
+        let prefs = st.store.effective_preferences(None).unwrap_or_default();
+        let keys = if req.pref_keys.is_empty() {
+            prefs.iter().take(6).map(|p| p.key.clone()).collect()
+        } else {
+            req.pref_keys.clone()
+        };
+        for key in keys {
+            if let Some(p) = prefs.iter().find(|p| p.key == key) {
+                lines.push(format!("- **[偏好]** {} = {}（置信 {:.2}）", p.key, p.value, p.confidence));
+                item_n += 1;
+            }
+        }
+        // 4) 实体摘要：从总索引报告取
+        if !req.entities.is_empty() {
+            for name in req.entities.iter().take(6) {
+                if let Ok(Some(nb)) = st.store.entity_neighborhood(name) {
+                    let n = nb["memory_ids"].as_array().map(|a| a.len()).unwrap_or(0);
+                    let ns: Vec<String> = nb["neighbors"].as_array().map(|a| a.iter().filter_map(|x| x["name"].as_str().map(String::from)).take(5).collect()).unwrap_or_default();
+                    lines.push(format!("- **[实体]** {name}：关联记忆 {n} 条；邻居 {}", ns.join("、")));
+                    item_n += 1;
+                }
+            }
+        }
+        if lines.is_empty() && mode != lymem_core::hub::DispatchMode::Remove {
+            return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "没有可分发的记忆：请提供 memory_ids / query / pref_keys / entities"})));
+        }
+    }
+
+    let st2 = Arc::clone(&st);
+    let lines_for_block = lines.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        let block = if mode == lymem_core::hub::DispatchMode::Remove {
+            None
+        } else {
+            Some(lymem_core::hub::managed_block(
+                &format!("lymem 记忆分发（{} 条 · {}）", item_n, target.agent),
+                &lines_for_block,
+            ))
+        };
+        lymem_core::hub::write_dispatch(&target_path, block.as_deref(), mode).map(|mut rep| {
+            rep.target = target.id.clone();
+            rep.items = item_n;
+            (rep, target.id.clone(), target.agent.clone())
+        })
+    })
+    .await;
+    match res {
+        Ok(Ok((rep, tid, agent))) => {
+            let _ = st.store.hub_dispatch_log(&tid, &rep.path, rep.mode.clone(), rep.items as i64, &json!({"agent": agent}));
+            let _ = st.store.audit("hub_dispatch", &json!({"target": tid, "items": rep.items, "mode": rep.mode}));
+            (StatusCode::OK, Json(json!({"ok": true, "report": rep, "block": lines.iter().take(8).collect::<Vec<_>>()})))
+        }
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+/// 分发历史
+async fn hub_dispatches(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    match st.store.hub_dispatch_recent(30) {
+        Ok(d) => Json(json!({"dispatches": d})),
+        Err(e) => Json(json!({"error": e.to_string()})),
+    }
+}
+
+/// 总索引报告（缓存）
+async fn hub_index(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let cached = st.store.graph_meta_get("index_report").ok().flatten().and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
+    let built_at = st.store.graph_meta_get("index_built_at").ok().flatten().and_then(|s| s.parse::<i64>().ok());
+    // 附带实时实体/边计数（未建索引时也可看规模）
+    let (entities, edges) = {
+        let conn = st.store.conn.lock().unwrap();
+        let e: i64 = conn.query_row("SELECT COUNT(*) FROM entities", [], |r| r.get(0)).unwrap_or(0);
+        let g: i64 = conn.query_row("SELECT COUNT(*) FROM edges", [], |r| r.get(0)).unwrap_or(0);
+        (e, g)
+    };
+    Json(json!({"built_at": built_at, "report": cached, "live": {"entities": entities, "edges": edges}}))
+}
+
+/// 重建总索引（纯规则离线）
+async fn hub_index_build(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || lymem_core::hub::build_index(&st2.store, 5000)).await;
+    match res {
+        Ok(Ok(rep)) => (StatusCode::OK, Json(json!({"ok": true, "report": rep}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+async fn hub_index_entity(
+    State(st): State<Arc<AppState>>,
+    axum::extract::Query(q): axum::extract::Query<BTreeMap<String, String>>,
+) -> impl IntoResponse {
+    let Some(name) = q.get("name") else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "缺少 name"}))).into_response();
+    };
+    match st.store.entity_neighborhood(name) {
+        Ok(Some(v)) => (StatusCode::OK, Json(v)).into_response(),
+        Ok(None) => (StatusCode::NOT_FOUND, Json(json!({"error": "实体不存在"}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    }
+}
+
+/// 共现图 top 子图（前端力导向可视化）
+async fn hub_index_graph(
+    State(st): State<Arc<AppState>>,
+    axum::extract::Query(q): axum::extract::Query<BTreeMap<String, String>>,
+) -> impl IntoResponse {
+    let top: usize = q.get("top").and_then(|v| v.parse().ok()).unwrap_or(30).clamp(6, 80);
+    match st.store.co_graph(top) {
+        Ok((nodes, edges)) => Json(json!({"nodes": nodes, "edges": edges})),
+        Err(e) => Json(json!({"error": e.to_string()})),
+    }
+}
+
+#[derive(Deserialize)]
+struct ConflictResolveReq {
+    a_id: i64,
+    b_id: i64,
+    /// a | b | coexist
+    winner: String,
+}
+
+/// 矛盾人工仲裁：取代（落版本链）或共存，写入冲突台账
+async fn hub_conflict_resolve(State(st): State<Arc<AppState>>, Json(req): Json<ConflictResolveReq>) -> impl IntoResponse {
+    let (loser, winner) = match req.winner.as_str() {
+        "a" => (req.b_id, req.a_id),
+        "b" => (req.a_id, req.b_id),
+        "coexist" => (0, 0),
+        _ => return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "winner 须为 a/b/coexist"}))),
+    };
+    let res = if req.winner == "coexist" {
+        st.store.record_conflict(req.a_id, req.b_id, "spurious", "coexist", "hub 总管人工仲裁：判定为共存", "manual").map(|_| 0)
+    } else {
+        st.store
+            .mark_superseded(loser, winner)
+            .and_then(|_| st.store.record_conflict(loser, winner, "numeric_update", "supersede", "hub 总管人工仲裁：保留较新陈述", "manual"))
+            .map(|_| 1)
+    };
+    match res {
+        Ok(_) => {
+            let _ = st.store.audit("hub_conflict_resolve", &json!({"a": req.a_id, "b": req.b_id, "winner": req.winner}));
+            (StatusCode::OK, Json(json!({"ok": true})))
+        }
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+    }
+}
+
+/// 跨源矛盾扫描
+async fn hub_conflict_scan(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let judge = st.judge.clone();
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || lymem_core::hub::scan_contradictions(&st2.store, Some(judge.as_ref()), 30)).await;
+    match res {
+        Ok(Ok(cs)) => {
+            let _ = st.store.audit("hub_conflict_scan", &json!({"found": cs.len()}));
+            (StatusCode::OK, Json(json!({"ok": true, "contradictions": cs})))
+        }
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+/// 总管巡检
+async fn hub_maintenance(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || lymem_core::hub::maintenance_scan(&st2.store)).await;
+    match res {
+        Ok(Ok(rep)) => (StatusCode::OK, Json(json!({"ok": true, "report": rep}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct MaintExecReq {
+    ids: Vec<i64>,
+    /// tombstone | purge | restore | purge_tombstones
+    action: String,
+}
+
+/// 执行巡检计划项（重复清理/失活遗忘/恢复/墓碑积压清理）
+async fn hub_maintenance_exec(State(st): State<Arc<AppState>>, Json(req): Json<MaintExecReq>) -> impl IntoResponse {
+    let r = match req.action.as_str() {
+        "purge" => st.store.purge(&req.ids),
+        "restore" => st.store.restore(&req.ids),
+        "purge_tombstones" => {
+            let ids: Vec<i64> = {
+                let conn = st.store.conn.lock().unwrap();
+                let mut stmt = conn.prepare("SELECT id FROM memories WHERE tombstone = 1").unwrap();
+                let rows = stmt.query_map([], |r| r.get::<_, i64>(0)).unwrap();
+                rows.filter_map(|x| x.ok()).collect()
+            };
+            st.store.purge(&ids)
+        }
+        _ => st.store.tombstone(&req.ids),
+    };
+    match r {
+        Ok(n) => {
+            let _ = st.store.audit("hub_maint_exec", &json!({"action": req.action, "affected": n}));
+            (StatusCode::OK, Json(json!({"ok": true, "affected": n})))
+        }
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+    }
+}
+
 // ---------------- OpenAI 兼容嵌入代理 ----------------
 
 #[derive(Deserialize)]
@@ -732,14 +1118,9 @@ async fn chat_completions_gateway(
     if server_key.is_empty() {
         return (StatusCode::BAD_REQUEST, Json(json!({"error": {"message": "服务端未配置 LYMEM_LLM_API_KEY"}}))).into_response();
     }
-    // 允许调用方自带 Bearer key（脚本直连场景）
-    let api_key = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-        .filter(|s| !s.is_empty())
-        .unwrap_or(&server_key)
-        .to_string();
+    // 服务器 key 优先：调用方 key（如 DSH 保存的占位 key）未必被上游认可
+    let _ = &headers;
+    let api_key = server_key;
 
     // 参数清洗：response_format / strict 转 JSON 指令
     let mut json_required = false;
@@ -751,6 +1132,16 @@ async fn chat_completions_gateway(
         let model_empty = obj.get("model").and_then(|m| m.as_str()).map(|m| m.is_empty()).unwrap_or(true);
         if model_empty {
             obj.insert("model".into(), json!(std::env::var("LYMEM_LLM_MODEL").unwrap_or_else(|_| "MiniMax-Text-01".into())));
+        }
+        // 模型别名映射：DSH 等前端选择的模型名（如 DeepSeek-V4-Pro）映射到实际上游模型
+        if let Some(aliases_json) = std::env::var("LYMEM_MODEL_ALIASES").ok() {
+            if let Ok(aliases) = serde_json::from_str::<serde_json::Map<String, Value>>(&aliases_json) {
+                if let Some(cur) = obj.get("model").and_then(|m| m.as_str()).map(|s| s.to_string()) {
+                    if let Some(mapped) = aliases.get(&cur).and_then(|v| v.as_str()) {
+                        obj.insert("model".into(), json!(mapped));
+                    }
+                }
+            }
         }
         if json_required {
             if let Some(msgs) = obj.get_mut("messages").and_then(|m| m.as_array_mut()) {
