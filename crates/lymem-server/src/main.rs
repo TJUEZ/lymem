@@ -244,12 +244,6 @@ async fn preference_history(State(st): State<Arc<AppState>>, Path(key): Path<Str
 
 // ---------------- 冲突 / 遗忘 / 审计 ----------------
 
-#[derive(Deserialize)]
-struct MineResp {
-    #[serde(default)]
-    updates: Vec<serde_json::Value>,
-}
-
 /// 会话陈述偏好捕捉（赛题条款 2：从会话数据源动态提取偏好，LLM 通道）
 async fn extract_preferences_from_sessions(State(st): State<Arc<AppState>>) -> axum::response::Response {
     // 各分支 into_response()
@@ -366,6 +360,13 @@ async fn add_knowledge(State(st): State<Arc<AppState>>, Json(req): Json<Knowledg
     let st2 = Arc::clone(&st);
     let judge = st.judge.clone();
     let res = tokio::task::spawn_blocking(move || {
+        // 与 ingest 路径保持一致：客户端未显式给实体时走规则抽取，
+        // 否则冲突检测的实体门（实体交集）永远匹配不到候选。
+        let entities = if req.entities.is_empty() {
+            lymem_core::ingest::extract_entities(&format!("{}\n{}", req.title, req.content))
+        } else {
+            req.entities
+        };
         let mut rec = lymem_core::model::MemoryRecord::new(
             lymem_core::model::Tier::Knowledge,
             lymem_core::model::MemoryKind::Fact,
@@ -373,7 +374,7 @@ async fn add_knowledge(State(st): State<Arc<AppState>>, Json(req): Json<Knowledg
             req.content,
         );
         rec.scene = if req.scene.is_empty() { "general".into() } else { req.scene };
-        rec.entities = req.entities;
+        rec.entities = entities;
         st2.store.put_knowledge_with_conflicts(rec, Some(judge.as_ref()), 0.8)
     })
     .await;
@@ -447,8 +448,6 @@ async fn book_prepare() -> impl IntoResponse {
 struct Chapter {
     title: String,
     content: String,
-    #[serde(default)]
-    index: i64,
 }
 
 /// 书山灌入：整本长文本按章批量入库（知识层，规则管道）
@@ -526,7 +525,7 @@ async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) ->
     let mut contexts: Vec<String> = hits
         .iter()
         .enumerate()
-        .map(|(hi, h)| {
+        .map(|(_, h)| {
             // 前 3 条命中记录带全文（跨块答案需要完整章节）；其余用命中片段
             // 命中块级 snippet（chunk 文本，约 480 字）：紧凑且直指相关段落
             let body = if h.snippet.is_empty() {
@@ -838,7 +837,6 @@ async fn hub_dispatch(State(st): State<Arc<AppState>>, Json(req): Json<HubDispat
         }
     }
 
-    let st2 = Arc::clone(&st);
     let lines_for_block = lines.clone();
     let res = tokio::task::spawn_blocking(move || {
         let block = if mode == lymem_core::hub::DispatchMode::Remove {
