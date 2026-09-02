@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "麟忆尽智 lymem 系统架构",
+    "quality_profile": "showcase",
+    "locale": "zh-CN",
+    "viewBox": [
+      1100,
+      570
+    ],
+    "views": [
+      {
+        "id": "retrieval-path",
+        "label": "检索主路径",
+        "focus": [
+          "agent",
+          "server",
+          "core",
+          "kylin",
+          "runtime",
+          "store"
+        ],
+        "note": "从 OS Agent 请求经服务接入、三路混合检索到端侧嵌入与单机存储。"
+      },
+      {
+        "id": "llm-path",
+        "label": "LLM 增强路径",
+        "focus": [
+          "core",
+          "llm",
+          "minimax"
+        ],
+        "note": "蒸馏、偏好抽取与冲突仲裁的 LLM 增强通道。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "agent",
+      "type": "external",
+      "label": "OS Agent / 终端 Agent",
+      "sublabel": "DeepSeek Harness · opencode",
+      "pos": [
+        30,
+        270
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "server",
+      "type": "frontend",
+      "label": "lymem-server",
+      "sublabel": "REST · MCP · Viewer",
+      "pos": [
+        240,
+        270
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "tag": "嵌入代理"
+    },
+    {
+      "id": "cli",
+      "type": "frontend",
+      "label": "lymem-cli",
+      "sublabel": "命令行 · 批量接入",
+      "pos": [
+        240,
+        430
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "lymem-core 记忆核心",
+      "sublabel": "四层记忆 · 混合检索 · 管道",
+      "pos": [
+        466,
+        270
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "SQLite (WAL)",
+      "sublabel": "sqlite-vec 向量 · tantivy 全文",
+      "pos": [
+        466,
+        430
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "kylin",
+      "type": "backend",
+      "label": "lymem-kylin",
+      "sublabel": "DBus · kytensor 双通道",
+      "tag": "麒麟端侧适配",
+      "pos": [
+        704,
+        270
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "runtime",
+      "type": "external",
+      "label": "kylin-ai-runtime",
+      "sublabel": "麒麟 gte-768 端侧嵌入",
+      "pos": [
+        942,
+        270
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "backend",
+      "label": "lymem-llm",
+      "sublabel": "OpenAI 兼容 · Anthropic 双协议",
+      "pos": [
+        466,
+        110
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "minimax",
+      "type": "external",
+      "label": "MiniMax-M3",
+      "sublabel": "云端 LLM（可选，规则兜底）",
+      "pos": [
+        704,
+        110
+      ],
+      "size": [
+        138,
+        68
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "agent-to-server",
+      "from": "agent",
+      "to": "server",
+      "label": "MCP · REST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "server-to-core",
+      "from": "server",
+      "to": "core",
+      "label": "检索 / 写入"
+    },
+    {
+      "id": "cli-to-core",
+      "from": "cli",
+      "to": "core",
+      "label": "进程内调用",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "core-to-kylin",
+      "from": "core",
+      "to": "kylin",
+      "label": "嵌入请求",
+      "variant": "emphasis"
+    },
+    {
+      "id": "kylin-to-runtime",
+      "from": "kylin",
+      "to": "runtime",
+      "label": "DBus · Triton"
+    },
+    {
+      "id": "core-to-store",
+      "from": "core",
+      "to": "store",
+      "label": "SQLite · 向量 · 全文",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        535,
+        384
+      ]
+    },
+    {
+      "id": "core-to-llm",
+      "from": "core",
+      "to": "llm",
+      "label": "蒸馏 · 抽取 · 仲裁",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "variant": "dashed"
+    },
+    {
+      "id": "llm-to-minimax",
+      "from": "llm",
+      "to": "minimax",
+      "label": "Anthropic 协议",
+      "variant": "dashed"
+    }
+  ]
+}
