@@ -257,6 +257,11 @@ impl MemoryStore {
             self.audit("ingest_blocked", &serde_json::json!({"title": rec.title, "kind": rec.kind.as_str()}))?;
             return Err(CoreError::InvalidInput("内容包含阻断级敏感信息，已拒绝入库".into()));
         }
+        // 入库侧繁→简归一化：全部写入统一到简体规范形，与查询侧
+        // （retrieval.search）配套；纯简体/英文输入零成本跳过。
+        rec.title = crate::t2s::to_simplified(&rec.title);
+        rec.content = crate::t2s::to_simplified(&rec.content);
+        rec.entities = rec.entities.iter().map(|e| crate::t2s::to_simplified(e)).collect();
         let chunks = chunk_text(&rec.content, 480);
         let chunk_refs: Vec<&str> = chunks.iter().map(|s| s.as_str()).collect();
         let vectors = self.embedder.embed(&chunk_refs)?;

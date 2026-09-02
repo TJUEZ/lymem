@@ -33,6 +33,7 @@ pub mod promotion;
 pub mod retrieval;
 pub mod sensitive;
 pub mod store;
+pub mod t2s;
 
 pub use error::{CoreError, Result};
 pub use model::{MemoryKind, MemoryRecord, ScoredMemory, Sensitivity, Tier};

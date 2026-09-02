@@ -75,10 +75,14 @@ impl MemoryStore {
         let k = p.top_k.max(1);
         let cand = k * p.candidate_multiplier.max(1);
 
+        // 查询侧繁→简归一化：与入库侧（store.put）保持同一规范形，
+        // 否则简体查询对繁体语料的 BM25/向量双通道全部失配。
+        let query = crate::t2s::to_simplified(&p.query);
+
         // 通道 1：向量（场景过滤时超采样，避免候选被其它场景占满）
         let mut vec_rank: Vec<(i64, f64, i64)> = Vec::new(); // (memory_id, distance, chunk_id)
         if p.use_vec {
-            let qv = self.embedder.embed_one(&p.query)?;
+            let qv = self.embedder.embed_one(&query)?;
             let knn_k = if p.scenes.is_some() { cand.max(256) } else { cand };
             vec_rank = self.knn(&qv, knn_k)?;
         }
@@ -90,7 +94,7 @@ impl MemoryStore {
                 v.iter().find(|s| *s != "*").map(|s| s.as_str())
             });
             let fts = self.fts.lock().unwrap();
-            if let Ok(hits) = fts.search(&p.query, None, scene, cand) {
+            if let Ok(hits) = fts.search(&query, None, scene, cand) {
                 bm25_rank = hits;
             }
         }
@@ -99,7 +103,7 @@ impl MemoryStore {
         let mut graph_rank: Vec<(i64, usize)> = Vec::new();
         if p.use_graph {
             // 取查询中的关键词（简单策略：整体 + 空格分词）
-            let terms: Vec<String> = p.query.split_whitespace().map(|s| s.to_string()).chain(std::iter::once(p.query.clone())).collect();
+            let terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).chain(std::iter::once(query.clone())).collect();
             let mut ent_ids = Vec::new();
             for t in &terms {
                 if t.chars().count() < 2 {
