@@ -28,14 +28,6 @@ struct RawQa {
     category: serde_json::Value,
 }
 
-#[derive(Deserialize)]
-struct RawTurn {
-    speaker: String,
-    #[serde(rename = "dia_id")]
-    dia_id: String,
-    text: String,
-}
-
 pub struct LoCoMo;
 
 impl crate::dataset::Dataset for LoCoMo {

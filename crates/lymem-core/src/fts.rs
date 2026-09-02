@@ -216,7 +216,7 @@ impl FtsIndex {
     /// scene 过滤下推到查询层：候选池被其它场景占满时仍能命中目标场景。
     pub fn search(&self, query: &str, tier: Option<&str>, scene: Option<&str>, limit: usize) -> tantivy::Result<Vec<(i64, i64, f32, String)>> {
         let searcher = self.reader.searcher();
-        let mut parser = QueryParser::for_index(&self.index, vec![self.f_content, self.f_scene]);
+        let parser = QueryParser::for_index(&self.index, vec![self.f_content, self.f_scene]);
         // 关键修复：QueryParser 会把连写中文串解析为整句短语查询（要求全部
         // bigram 在文档中连续出现），自然语言问句几乎不可能满足——长查询
         // 0 命中的根源。先用与索引一致的分词器切词，再以空格拼接为独立 OR 词。

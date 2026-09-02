@@ -316,14 +316,6 @@ impl KylinEmbedder {
         }
     }
 
-    fn refresh_dim(&self, v: &[Vec<f32>]) {
-        if let Some(first) = v.first() {
-            if !first.is_empty() {
-                self.dim_cache.store(first.len(), Ordering::Relaxed);
-            }
-        }
-    }
-
     /// DBus 通道运行期连续出错时降级到 kytensor 直连（运行时引擎偶发崩溃/
     /// 后端拒连的自愈能力），降级动作只做一次。
     fn embed_with_failover(
