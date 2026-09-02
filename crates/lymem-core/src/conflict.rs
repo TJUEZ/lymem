@@ -289,6 +289,9 @@ impl MemoryStore {
     pub fn put_knowledge_with_conflicts(&self, mut rec: MemoryRecord, judge: Option<&dyn LlmJudge>, threshold: f32) -> Result<(i64, Vec<ConflictOutcome>)> {
         rec.tier = Tier::Knowledge;
         let new_id = self.put(rec.clone())?;
+        // put 克隆写入，这里必须回填 id，否则 detect_conflicts 的自匹配护栏
+        // （old_id == new_record.id）失效，新记录会与自身产生相似度 1.0 的假冲突。
+        rec.id = new_id;
         let candidates = self.detect_conflicts(&rec, threshold)?;
         let mut outcomes = Vec::new();
         for c in candidates {
