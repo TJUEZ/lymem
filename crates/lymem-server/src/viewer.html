@@ -154,6 +154,7 @@ section[data-page].on{display:block}
     <div class="sec">总控</div>
     <button data-page="dash" class="on"><span class="ic">◉</span>总览</button>
     <button data-page="demo"><span class="ic">▶</span>场景演示</button>
+    <button data-page="sq"><span class="ic">✦</span>赛题演示</button>
     <button data-page="book"><span class="ic">📖</span>书山灌入</button>
     <div class="sec">记忆中枢</div>
     <button data-page="hub"><span class="ic">◍</span>多 Agent 中枢</button>
@@ -215,6 +216,88 @@ section[data-page].on{display:block}
     <div class="card"><h4 style="margin:0 0 6px">④ 多 Agent 中枢 · 汇聚-冲突-分发</h4><div class="muted" style="min-height:64px">两个 agent 汇报冲突事实 → 导入本机真实记忆源 → 重建总索引 → 跨源矛盾仲裁 → 分发到共享记忆文件</div><button class="act" onclick="runScene('hub')" id="sc-hub">▶ 一键运行</button></div>
   </div>
   <div class="ingest-log" id="demo-log"><span class="dim">[等待运行] 点击任一场景开始演示。</span></div>
+</section>
+
+<!-- ============ 赛题演示 ============ -->
+<section data-page="sq">
+  <div class="topbar"><h2>赛题演示</h2><span class="desc">五项功能要求 × 五个模块（条款 1/2/3/6/7） · 建议配合 DeepSeek Harness 插件运行</span></div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3>① 多源数据接入与整合 <span class="hint">工具结果 · 用户行为 · 手动配置 · 会话 —— 清洗 / 格式标准化 / 质量校验（条款 1）</span></h3>
+    <div class="grid g2-1">
+      <div>
+        <textarea id="q-in" rows="8" style="width:100%">[
+ {"type":"tool_result","data":{"tool":"libreoffice","task":"doc_edit","ok":true,"output":"导出 pdf 成功","scene":"office"}},
+ {"type":"user_behavior","data":{"event":"打开文件管理器","detail":"浏览下载目录","scene":"files"}},
+ {"type":"manual_config","data":{"key":"editor.font","value":"Noto Sans CJK 12","scene":"system"}},
+ {"type":"conversation","data":{"role":"user","text":"我喜欢用浅色主题，导出文件一律用 PDF 格式","scene":"office"}},
+ {"type":"tool_result","data":{"tool":"libreoffice","task":"doc_edit","ok":true,"output":"导出 pdf 成功","scene":"office"}}
+]</textarea>
+        <div class="row" style="margin-top:8px;align-items:center">
+          <button class="act ghost" onclick="qReport()">质量报告（不入库）</button>
+          <button class="act" onclick="qCommit()">正式入库</button>
+          <label class="act ghost" style="cursor:pointer">导入文档<input type="file" id="q-file" accept=".txt,.md,.json" style="display:none" onchange="qDocImport(this)"></label>
+          <span class="muted">文档将按 800 字标准化切块为会话事件</span>
+        </div>
+      </div>
+      <div id="q-report" class="muted" style="font-size:12px">点击「质量报告」查看逐条：清洗前后 / 归类 / 敏感分级 / 实体 / 去重指纹。</div>
+    </div>
+  </div>
+
+  <div class="grid g2-1" style="margin-bottom:16px">
+    <div class="card">
+      <h3>② 偏好记忆动态捕捉 <span class="hint">自动提取 · 版本化 · 跨场景适配 · 回溯（条款 2）</span></h3>
+      <div id="q-prefs" class="feed" style="max-height:240px"><div class="empty">加载中…</div></div>
+      <div class="row" style="margin-top:8px">
+        <button class="act ghost" onclick="qLoadPrefs()">刷新偏好库</button>
+        <button class="act ghost" onclick="minePrefs()">规则通道挖掘</button>
+        <span class="muted">LLM 会话抽取可用「场景演示①」或 POST /api/v1/preferences/extract</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>版本回溯</h3>
+      <div class="row" style="margin-bottom:8px"><input type="text" id="q-pk" placeholder="偏好键，如 editor.font" style="flex:1"><button class="act ghost" onclick="qHistory()">查历史</button></div>
+      <div id="q-hist" class="feed" style="max-height:200px"><div class="empty">输入键名查看任意时点版本。</div></div>
+    </div>
+  </div>
+
+  <div class="grid g2-1" style="margin-bottom:16px">
+    <div class="card">
+      <h3>③ 知识记忆提取与整合 <span class="hint">工作流 / 案例 / 模板 → 结构化存储 · 冲突检测与融合（条款 3）</span></h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="text" id="q-k-title" placeholder="知识标题，如：周报工作流">
+        <textarea id="q-k-body" rows="4" placeholder="粘贴工作流 / 历史案例 / 可复用模板描述…&#10;例如：每周五 16:00 前把周报发给直属领导，抄送部门秘书">每周五 16:00 前把周报发给直属领导，抄送部门秘书</textarea>
+        <button class="act" onclick="qKnowledge()">提取入库（自动冲突检测与仲裁）</button>
+      </div>
+      <div id="q-k-conf" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>知识库 / 冲突台账</h3>
+      <div id="q-know" class="feed" style="max-height:150px"><div class="empty">加载中…</div></div>
+      <div class="muted" style="margin:6px 0">最近冲突仲裁：</div>
+      <div id="q-conf" class="feed" style="max-height:130px"><div class="empty">暂无冲突。</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3>④ 记忆流转 <span class="hint">工作 → 情景 → 知识 晋升管道，兼容短中期记忆（条款 6）</span></h3>
+    <div id="q-pipe" style="display:flex;gap:0;align-items:stretch;margin:6px 0 12px"></div>
+    <div class="row"><button class="act" onclick="qConsolidate()">执行一轮蒸馏（情景 → 知识）</button><span class="muted" id="q-pipe-msg"></span></div>
+  </div>
+
+  <div class="card">
+    <h3>⑤ 记忆竞技场 <span class="hint">自建/开源数据集在线评测 · 与其他记忆项目对比（条款 7）</span></h3>
+    <div class="row" style="margin-bottom:10px;flex-wrap:wrap">
+      <button class="act ghost" onclick="qArena('multiwoz')">评测：多域预订对话（5 题）</button>
+      <button class="act ghost" onclick="qArena('bpmn')">评测：BPMN 流程知识（3 题）</button>
+      <button class="act ghost" onclick="qCustomToggle()">用我的数据…</button>
+    </div>
+    <textarea id="q-custom" rows="4" style="display:none;width:100%" placeholder='粘贴 JSONL：{"query":"…","evidence":["标准答案关键句"]}，对当前库在线评测'></textarea>
+    <div class="row" style="display:none;margin-top:8px" id="q-custom-row"><button class="act" onclick="qArenaCustom()">评测我的数据</button><span class="muted">需先将你的文档从模块①入库（或书山灌入）</span></div>
+    <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始。</div>
+    <div class="muted" style="margin-top:10px">五站公开基准 × 四系统定稿矩阵（详见评测总报告 v3）：</div>
+    <table style="border-collapse:collapse;font-size:12px;margin-top:6px" id="q-matrix"></table>
+  </div>
 </section>
 
 <!-- ============ 书山灌入 ============ -->
@@ -478,7 +561,7 @@ function ts(x){const d=new Date((x??0)*1000);return isNaN(d)?'-':d.toLocaleStrin
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
-  ({dash:refreshDash,memories:loadMemories,prefs:()=>loadPrefs(false),conflicts:loadConflicts,hub:loadHub})[b.dataset.page]?.();
+  ({dash:refreshDash,memories:loadMemories,prefs:()=>loadPrefs(false),conflicts:loadConflicts,hub:loadHub,sq:loadSq})[b.dataset.page]?.();
 });
 
 async function refreshDash(){
@@ -1129,6 +1212,124 @@ async function execMaint(kind){
 }
 
 refreshDash();
+
+
+/* ---- 赛题演示（五模块） ---- */
+async function loadSq(){qPipe();qLoadPrefs();qLoadKnow();qMatrix();}
+async function qReport(){
+  let events;
+  try{events=JSON.parse($('q-in').value)}catch(e){toast('事件 JSON 解析失败');return}
+  const r=await api('/api/v1/ingest/report',{events});
+  if(!r.ok){toast(r.error||'失败');return}
+  $('q-report').innerHTML=`<table style="border-collapse:collapse;font-size:12px;width:100%">
+   <tr style="color:#889"><th>标题</th><th>归类</th><th>场景</th><th>清洗</th><th>敏感</th><th>实体</th><th>质量校验</th></tr>`+
+   r.rows.map(x=>`<tr><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</td><td>${esc(x.kind)}</td><td>${esc(x.scene)}</td><td>${x.raw_len}→${x.clean_len} 字</td><td>${esc(x.sensitivity)}</td><td>${x.entities.length?esc(x.entities.join('、')):'-'}</td><td>${x.duplicate?'<b style="color:#c33">重复跳过</b>':'<b style="color:#2a7">通过</b>'}</td></tr>`).join('')+'</table>';
+}
+async function qCommit(){
+  let events;
+  try{events=JSON.parse($('q-in').value)}catch(e){toast('事件 JSON 解析失败');return}
+  const r=await api('/api/v1/memories',{events});
+  toast(r.ok?`入库成功 ${r.ids.length} 条`:'入库失败：'+(r.error||''));
+  qReport();qPipe();
+}
+function qDocImport(input){
+  const f=input.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const txt=(rd.result||'').toString();
+    const chunks=[];for(let i=0;i<txt.length;i+=800)chunks.push(txt.slice(i,i+800));
+    const events=chunks.map((c,i)=>({type:'conversation',data:{role:'assistant',text:c,scene:'import',source:f.name+'#'+(i+1)}}));
+    $('q-in').value=JSON.stringify(events,null,1);
+    toast(`已标准化为 ${chunks.length} 个文本块，可先质量报告再入库`);
+  };
+  rd.readAsText(f);
+}
+async function qLoadPrefs(){
+  const r=await api('/api/v1/preferences');
+  const list=(r||[]).filter(x=>x.valid_to===null||x.valid_to===undefined);
+  $('q-prefs').innerHTML=list.length?list.map(x=>
+    `<div class="fi"><b>${esc(x.key)}</b> = ${esc(JSON.stringify(x.value))}<span class="muted"> · v${x.version} · 置信 ${x.confidence??1} · 场景 ${esc((x.scenes||[]).join(',')||'*')} · 证据 ${((x.evidence)||[]).length} 条 · 自 ${ts(x.valid_from)}</span></div>`).join(''):'<div class="empty">暂无偏好。入库手动配置会直接成为偏好；会话陈述用「场景演示①」的 LLM 通道。</div>';
+}
+async function qHistory(){
+  const key=$('q-pk').value.trim();if(!key){toast('输入偏好键');return}
+  const h=await api('/api/v1/preferences/'+encodeURIComponent(key)+'/history');
+  const rows=(h||[]).slice().reverse();
+  $('q-hist').innerHTML=rows.length?rows.map((x,i)=>
+    `<div class="fi"><time>${ts(x.valid_from)}</time><b>v${x.version||rows.length-i}</b> = ${esc(JSON.stringify(x.value))}<span class="muted"> ${x.valid_to?'· 已关闭（回溯查看）':'· 当前生效'}</span></div>`).join(''):'<div class="empty">该键无历史。</div>';
+}
+async function qKnowledge(){
+  const title=$('q-k-title').value.trim(),content=$('q-k-body').value.trim();
+  if(!title||!content){toast('标题与内容都要填');return}
+  const r=await api('/api/v1/knowledge',{title,content,scene:'office'});
+  if(!r.ok){toast(r.error||'失败');return}
+  $('q-k-conf').innerHTML=r.conflicts&&r.conflicts.length
+    ?`<b style="color:#b8860b">检测到 ${r.conflicts.length} 个冲突，已完成仲裁：</b>`+r.conflicts.map(c=>`<div class="fi"><b>${esc(c.type)}</b> → ${esc(c.resolution)} <span class="muted">${esc(c.reason)}</span></div>`).join('')
+    :'<span class="muted">无冲突，作为新知识入库。</span>';
+  qLoadKnow();qConf();qPipe();
+}
+async function qLoadKnow(){
+  const r=await api('/api/v1/memories?tier=knowledge&limit=8');
+  $('q-know').innerHTML=(r||[]).length?(r||[]).map(x=>
+    `<div class="fi"><b>${esc(x.title)}</b><span class="muted"> · ${esc(x.scene)} · ${esc((x.updated_at?ts(x.updated_at):''))}</span><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((x.content||'').slice(0,90))}</div></div>`).join(''):'<div class="empty">知识库为空。粘贴工作流并提取入库。</div>';
+}
+async function qConf(){
+  const r=await api('/api/v1/conflicts');
+  $('q-conf').innerHTML=(r||[]).length?(r||[]).slice(-5).reverse().map(x=>
+    `<div class="fi"><b>${esc(x.type)}</b> → ${esc(x.resolution)}<span class="muted"> · ${esc((x.reason||'').slice(0,50))}</span></div>`).join(''):'<div class="empty">暂无冲突记录。</div>';
+}
+async function qPipe(){
+  const s=await api('/api/v1/status');
+  const e=s.tiers.episodic??0,k=s.tiers.knowledge??0,p=s.tiers.preference??0;
+  $('q-pipe').innerHTML=`
+   <div style="flex:1;padding:12px;border:1.5px solid var(--amber-weak);background:#fffdf7;border-radius:10px 0 0 10px"><b>工作·短期</b><div class="muted">会话内自动</div></div>
+   <div style="display:flex;align-items:center;padding:0 10px;color:var(--amber)">→ flush</div>
+   <div style="flex:1;padding:12px;border:1.5px solid var(--line)"><b>情景·中期</b><div class="kpi"><span class="num">${e}</span><span class="lab">条</span></div></div>
+   <div style="display:flex;align-items:center;padding:0 10px;color:var(--blue)">→ 蒸馏</div>
+   <div style="flex:1;padding:12px;border:1.5px solid var(--violet-weak);background:#fbfaff"><b>知识·长期</b><div class="kpi"><span class="num">${k}</span><span class="lab">条</span></div></div>
+   <div style="display:flex;align-items:center;padding:0 10px;color:var(--violet)">⇡ 偏好</div>
+   <div style="flex:1;padding:12px;border:1.5px solid var(--green-weak);background:#f6fffb;border-radius:0 10px 10px 0"><b>偏好·长期</b><div class="kpi"><span class="num">${p}</span><span class="lab">项</span></div></div>`;
+}
+async function qConsolidate(){
+  $('q-pipe-msg').textContent='蒸馏中…';
+  const r=await fetch('/api/v1/consolidate',{method:'POST'}).then(x=>x.json()).catch(()=>null);
+  $('q-pipe-msg').textContent=r?`新增知识 ${r.created??0} 条`:'接口不可用';
+  qPipe();qLoadKnow();
+}
+const ARENA={"multiwoz": {"docs": [{"id": "multiwoz-doc-0", "text": "I am looking for a place to stay in the north. Yes I have many options in the moderate price range. Do you need wifi or free parking? Yes, I need both wifi and free parking. How does the acorn guest house sound?  It is in the north part of town, in the moderate price range, and has both free wifi and parking. That sounds great. Can you book it for 6 people starting Tuesday for a total of 2 nights? The Acorn Guest House is unavailable at that time, but I booked you for the Arbury Lodge Guesthouse instead. It has all of the same features.  Okay. May I have the reference number? Reference number is : 3Y3AE0U7. Thank you for booking it.Goodbye. Is there anything else you need?"}, {"id": "multiwoz-doc-1", "text": "Hello, can you help me with my plans as far as finding a place to stay? Of course, do you need anything specific? Yes. The hotel should be 4 stars and located in the west with free parking please. We have three choices, any other preferences? As long as it is a hotel, I would like to book it. How many nights and for how many people? I would like it starting Thursday for 8 people for 5 nights.  I will need the day you want to arrive. I will need to be there on wednesday. There are 2 hotels available, The Huntingdon Marriott and the Cambridge Belfry. Do you want an expensive hotel or a cheap hotel? I'm sorry I actually need it for Thursday, sorry.  Any price range is fine. Okay. Your booking at the Cambridge Belfry was successful. The reference number is LJOEY6H2. Can I help you with anything else today? I am also looking for a train. The train should depart from bishops stortford and should go to cambridge. On what day will you be travelling? I will be traveling on Thursday.  What time would you like to arrive in Cambridge? Arrival time isn't the issue, but I have morning meeting so I can't leave bishops stortford until after 12:15 . There is a train leaving at 13:29 and arriving at 14:07. Would you like me to book that for you? What is the price and travel time? The price is 10.10 pounds, and the travel time is 38 minutes. Thank you so much. I think that's all I need now. Have a safe trip. Thank you for your help. Can I look up anything else for you? That was all I needed. Ok"}, {"id": "multiwoz-doc-2", "text": "I will need to take a train here from london kings cross, I will need ot get here by 19:45. And what day do you want to travel? I would like to leave Wednesday please. Train TR5725 would work for you, would you like me to book you passage? Please, I'll need 6 tickets. OK, you have 6 seats reserved on TR5725, ref# J7XP2Z15. Get to bed early - that's a 05:16 departure! Can I help with anything else today? Yes you can! I'm also looking for information about a place called Cineworld Cinema. Do you have any details about it?  It is a great cinema in the south part of town. They are located at Cambridge Leisure Park, Clifton Way. Their postcode is cb17dy. Their phone number is 00872208000.  Thank you that was all I needed.  Do you need me to book or look up info about anything else? That was all for today, thank you. Have a great day!"}, {"id": "multiwoz-doc-3", "text": "I am looking for a restaurant. What type of food are you looking for? I'm looking for unusual food. And I want a place in the centre of town. I don't have anything matching unusual but I do have an African restaurant in the center of town as well as some gastropubs. Would either interest you? I'll take something that is cheap. There are a total of 15 restaurants that are cheap in the centre. Is there another type you would like to try? Do you recommend a restaurant that is a little more different then the rest? I would recommend golden house Is that Italian? I would like an Italian restaurant, please. Okay, how about the pizza hut city centre? I heard it's pretty good. Okay, that sounds good. I need to make a reservation for 2 people on Tuesday. What time would you like to visit?  How about 13:15? I was able to book the table for you. It will be reserved for 15 minutes. The reference number is 97AAF776. That's great, thank you. Awesome. Have a good day!"}, {"id": "multiwoz-doc-4", "text": "I'd looking for a good restaurant on the east side.  I'd prefer the moderate price range, if possible. Would you prefer Indian or Italian food? I would like Indian please. There is curry prince, and rajmahal, would either of those work for you? I'd like to book curry prince for 6 people at 15:45 on saturday please. Alright, I have you reservation made. The reference number is SMAMRCQ9. Great, thanks for your help.  Is there anything else I can help you with? No, that will be everything today. Thank you. Thank you, goodbye."}], "queries": [{"query": "What is the reference number for the booking at Arbury Lodge Guesthouse in the north for 6 people starting Tuesday for 2 nights with free wifi and parking?", "evidence": ["3Y3AE0U7"]}, {"query": "What time does the train from Bishop's Stortford to Cambridge depart on Thursday after my morning meeting?", "evidence": ["13:29"]}, {"query": "What is the phone number for the Cineworld Cinema in the south part of town you mentioned?", "evidence": ["00872208000"]}, {"query": "What is the reference number for my Pizza Hut City Centre reservation for 2 people on Tuesday at 13:15?", "evidence": ["97AAF776"]}, {"query": "What is the reference number for the curry prince reservation for 6 people on Saturday at 15:45?", "evidence": ["SMAMRCQ9"]}]}, "bpmn": {"docs": [{"id": "bpmn-doc-0", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_05t7lhh\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <bpmn:collaboration id=\"Collaboration_1214ttx\">\n    <bpmn:participant id=\"Participant_0hhyxuq\" name=\"P.Amadeus Service\" processRef=\"Process_07l0ucu\" />\n  </bpmn:collaboration>\n  <bpmn:process id=\"Process_07l0ucu\" isExecutable=\"false\">\n    <bpmn:startEvent id=\"StartEvent_0artoew\" name=\"StartEvent 10\">\n      <bpmn:outgoing>Flow_0o27bwr</bpmn:outgoing>\n    </bpmn:startEvent>\n    <bpmn:task id=\"Activity_14yd03m\" name=\"Search less expensive flight\">\n      <bpmn:incoming>Flow_0o27bwr</bpmn:incoming>\n      <bpmn:outgoing>Flow_002zu91</bpmn:outgoing>\n      <bpmn:property id=\"Property_0mqagpw\" name=\"__targetRef_placeholder\" />\n      <bpmn:dataInputAssociation id=\"DataInputAssociation_0259uan\">\n        <bpmn:sourceRef>DataObjectReference_0329ma9</bpmn:sourceRef>\n        <bpmn:targetRef>Property_0mqagpw</bpmn:targetRef>\n      </bpmn:dataInputAssociation>\n      <bpmn:dataOutputAssociation id=\"DataOutputAssociation_0xugwz9\">\n        <bpmn:targetRef>DataObjectReference_1x0juwz</bpmn:targetRef>\n      </bpmn:dataOutputAssociation>\n    </bpmn:task>\n    <bpmn:endEvent id=\"Event_0xno17b\" name=\"EndEvent 10\">\n      <bpmn:incoming>Flow_002zu91</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:dataObjectReference id=\"DataObjectReference_1x0juwz\" name=\"Flight tickets\" dataObjectRef=\"DataObject_1ywle6h\" />\n    <bpmn:dataObject id=\"DataObject_1ywle6h\" />\n    <bpmn:dataObjectReference id=\"DataObjectReference_0329ma9\" name=\"Itinerary details\" dataObjectRef=\"DataObject_0txg7x5\" />\n    <bpmn:dataObject id=\"DataObject_0txg7x5\" />\n    <bpmn:sequenceFlow id=\"Flow_0o27bwr\" sourceRef=\"StartEvent_0artoew\" targetRef=\"Activity_14yd03m\" />\n    <bpmn:sequenceFlow id=\"Flow_002zu91\" sourceRef=\"Activity_14yd03m\" targetRef=\"Event_0xno17b\" />\n  </bpmn:process>\n  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Collaboration_1214ttx\">\n      <bpmndi:BPMNShape id=\"Participant_0hhyxuq_di\" bpmnElement=\"Participant_0hhyxuq\" isHorizontal=\"true\">\n        <dc:Bounds x=\"156\" y=\"80\" width=\"600\" height=\"335\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_0artoew\" bioc:stroke=\"#205022\" bioc:fill=\"#c8e6c9\" color:background-color=\"#c8e6c9\" color:border-color=\"#205022\">\n        <dc:Bounds x=\"206\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"191\" y=\"255\" width=\"67\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Activity_14yd03m_di\" bpmnElement=\"Activity_14yd03m\">\n        <dc:Bounds x=\"300\" y=\"190\" width=\"100\" height=\"80\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Event_0xno17b_di\" bpmnElement=\"Event_0xno17b\" bioc:stroke=\"#831311\" bioc:fill=\"#ffcdd2\" color:background-color=\"#ffcdd2\" color:border-color=\"#831311\">\n        <dc:Bounds x=\"642\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"629\" y=\"255\" width=\"63\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_1x0juwz_di\" bpmnElement=\"DataObjectReference_1x0juwz\">\n        <dc:Bounds x=\"412\" y=\"105\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"399\" y=\"162\" width=\"62\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_0329ma9_di\" bpmnElement=\"DataObjectReference_0329ma9\">\n        <dc:Bounds x=\"552\" y=\"115\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"602\" y=\"143\" width=\"75\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"Flow_0o27bwr_di\" bpmnElement=\"Flow_0o27bwr\">\n        <di:waypoint x=\"242\" y=\"230\" />\n        <di:waypoint x=\"300\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"Flow_002zu91_di\" bpmnElement=\"Flow_002zu91\">\n        <di:waypoint x=\"400\" y=\"230\" />\n        <di:waypoint x=\"642\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataInputAssociation_0259uan_di\" bpmnElement=\"DataInputAssociation_0259uan\">\n        <di:waypoint x=\"570\" y=\"165\" />\n        <di:waypoint x=\"570\" y=\"200\" />\n        <di:waypoint x=\"400\" y=\"200\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataOutputAssociation_0xugwz9_di\" bpmnElement=\"DataOutputAssociation_0xugwz9\">\n        <di:waypoint x=\"350\" y=\"190\" />\n        <di:waypoint x=\"350\" y=\"125\" />\n        <di:waypoint x=\"412\" y=\"125\" />\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n"}, {"id": "bpmn-doc-1", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn2:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn2=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"sample-diagram\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\" xsi:schemaLocation=\"http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd\">\n  <bpmn2:process id=\"Process_1\" isExecutable=\"false\" />\n  <bpmn2:collaboration id=\"Collab_Process_1\">\n    <bpmn2:participant id=\"Participant_auto_1755899398911\" processRef=\"Process_auto_1755899398911\" />\n    <bpmn2:participant id=\"Participant_1qny7ss\" name=\"P.Pedriatic Patient\" processRef=\"Process_19yic6m\" />\n    <bpmn2:participant id=\"Participant_10wyygy\" name=\"Medical Sttaff\" processRef=\"Process_0sqcvmd\" />\n    <bpmn2:participant id=\"Participant_0oefxxq\" name=\"Specialised group\" processRef=\"Process_06hv6zd\" />\n    <bpmn2:messageFlow id=\"Flow_0nn7zl5\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:messageFlow id=\"Flow_15hty6q\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:messageFlow id=\"Flow_0ri3iv0\" sourceRef=\"Activity_0ptuabh\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:messageFlow id=\"Flow_0ez29k5\" name=\"Proposal for telecommunication\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Activity_02rh9d7\" />\n    <bpmn2:messageFlow id=\"Flow_0dkjche\" sourceRef=\"Activity_0h91p56\" targetRef=\"Activity_1x5ihib\" />\n    <bpmn2:messageFlow id=\"Flow_0dzqgp0\" sourceRef=\"Activity_0wyll7y\" targetRef=\"Activity_0bwrtbd\" />\n    <bpmn2:messageFlow id=\"Flow_1ra884s\" sourceRef=\"Activity_0l0dwp2\" targetRef=\"Activity_0vcui6z\" />\n    <bpmn2:messageFlow id=\"Flow_0og7oyr\" sourceRef=\"Activity_0bwrtbd\" targetRef=\"Activity_0wyll7y\" />\n  </bpmn2:collaboration>\n  <bpmn2:process id=\"Process_auto_1755899398911\" />\n  <bpmn2:process id=\"Process_19yic6m\">\n    <bpmn2:startEvent id=\"Event_118d1ec\" name=\"StartEvent 7\">\n      <bpmn2:outgoing>Flow_08ytv9g</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:sequenceFlow id=\"Flow_08ytv9g\" sourceRef=\"Event_118d1ec\" targetRef=\"Activity_18966yx\" />\n    <bpmn2:subProcess id=\"Activity_18966yx\" name=\"Patient Hospitalized\">\n      <bpmn2:incoming>Flow_08ytv9g</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1fv0a86</bpmn2:outgoing>\n    </bpmn2:subProcess>\n    <bpmn2:task id=\"Activity_15cggj7\" name=\"Explain symptoms and answer the doctor questions\">\n      <bpmn2:incoming>Flow_1fv0a86</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0qalb0o</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1fv0a86\" sourceRef=\"Activity_18966yx\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:task id=\"Activity_0869egn\" name=\"Receive appropiated diagnosis\">\n      <bpmn2:incoming>Flow_0qalb0o</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_089tkiz</bpmn2:outgoing>\n      <bpmn2:dataOutputAssociation id=\"DataOutputAssociation_0xgv46j\">\n        <bpmn2:targetRef>DataObjectReference_0l7myph</bpmn2:targetRef>\n      </bpmn2:dataOutputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0qalb0o\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:endEvent id=\"Event_0gq6cfj\" name=\"EndEvent 4\">\n      <bpmn2:incoming>Flow_089tkiz</bpmn2:incoming>\n    </bpmn2:endEvent>\n    <bpmn2:sequenceFlow id=\"Flow_089tkiz\" sourceRef=\"Activity_0869egn\" targetRef=\"Event_0gq6cfj\" />\n    <bpmn2:dataObjectReference id=\"DataObjectReference_0l7myph\" name=\"Final diagnosis report\" dataObjectRef=\"DataObject_058p317\" />\n    <bpmn2:dataObject id=\"DataObject_058p317\" />\n  </bpmn2:process>\n  <bpmn2:process id=\"Process_0sqcvmd\">\n    <bpmn2:startEvent id=\"Event_0edzmr0\" name=\"StartEvent 3\">\n      <bpmn2:outgoing>Flow_06nltwo</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:task id=\"Activity_0jnvjmj\" name=\"Receive patient\">\n      <bpmn2:incoming>Flow_06nltwo</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_00uqkd4</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_06nltwo\" sourceRef=\"Event_0edzmr0\" targetRef=\"Activity_0jnvjmj\" />\n    <bpmn2:task id=\"Activity_090jlby\" name=\"Interview patient\">\n      <bpmn2:incoming>Flow_00uqkd4</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1a4b5dx</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_00uqkd4\" sourceRef=\"Activity_0jnvjmj\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:task id=\"Activity_1lfpz5c\" name=\"consult patient record\">\n      <bpmn2:incoming>Flow_1a4b5dx</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_19inwdj</bpmn2:outgoing>\n      <bpmn2:property id=\"Property_0rxcxkr\" name=\"__targetRef_placeholder\" />\n      <bpmn2:dataInputAssociation id=\"DataInputAssociation_03sv9az\">\n        <bpmn2:sourceRef>DataObjectReference_1aprr83</bpmn2:sourceRef>\n        <bpmn2:targetRef>Property_0rxcxkr</bpmn2:targetRef>\n      </bpmn2:dataInputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1a4b5dx\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_1lfpz5c\" />\n    <bpmn2:task id=\"Activity_0x0hrmj\" name=\"Perform evaluation\">\n      <bpmn2:incoming>Flow_19inwdj</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0iarlu0</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_19inwdj\" sourceRef=\"Activity_1lfpz5c\" targetRef=\"Activity_0x0hrmj\" />\n    <bpmn2:task id=\"Activity_07wnr7m\" name=\"Ask for telecommunication\">\n      <bpmn2:incoming>Flow_0iarlu0</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_105j123</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0iarlu0\" sourceRef=\"Activity_0x0hrmj\" targetRef=\"Activity_07wnr7m\" />\n    <bpmn2:exclusiveGateway id=\"Gateway_15t2lh0\" name=\"Availability?\">\n      <bpmn2:incoming>Flow_105j123</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0nb7guy</bpmn2:outgoing>\n      <bpmn2:outgoing>Flow_12wqmc7</bpmn2:outgoing>\n    </bpmn2:exclusiveGateway>\n    <bpmn2:sequenceFlow id=\"Flow_105j123\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Gateway_15t2lh0\" />\n  "}, {"id": "bpmn-doc-2", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" id=\"sid-38422fae-e03e-43a3-bef4-bd33b32041b2\" targetNamespace=\"http://bpmn.io/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <collaboration id=\"Collaboration_0qkiibk\">\n    <participant id=\"Participant_0k6b4yl\" name=\"Italian NMSP\" processRef=\"Process_1\" />\n    <participant id=\"Participant_1iq49au\" name=\"SWIM governance\" processRef=\"Process_0gajlhu\" />\n    <participant id=\"Participant_04m4avf\" name=\"ATM service provider\" processRef=\"Process_05kz2gi\" />\n    <participant id=\"Participant_1fkys0y\" name=\"SWIM\" processRef=\"Process_023rd33\" />\n    <messageFlow id=\"Flow_16lq3f6\" name=\"Accreditation request\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_1rtgu4b\" />\n    <messageFlow id=\"Flow_0n1gc4t\" name=\"Failure report\" sourceRef=\"Activity_0x044fm\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_0xy8c4g\" name=\"Accreditation\" sourceRef=\"Activity_0zavwiq\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_1fn4wae\" name=\"Accreditation\" sourceRef=\"Activity_1ly53ki\" targetRef=\"Event_01fw54c\" />\n    <messageFlow id=\"Flow_0v2k5jr\" name=\"Service description\" sourceRef=\"Activity_1fdig9w\" targetRef=\"Event_1x8h3vn\" />\n  </collaboration>\n  <process id=\"Process_1\" isExecutable=\"false\">\n    <startEvent id=\"Event_18hvqvd\">\n      <outgoing>Flow_0cr5s0h</outgoing>\n    </startEvent>\n    <exclusiveGateway id=\"Gateway_18mrd3l\">\n      <incoming>Flow_0cr5s0h</incoming>\n      <incoming>Flow_1fj8esn</incoming>\n      <outgoing>Flow_0gtjogt</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_08sagin\" name=\"Send accreditation request\">\n      <incoming>Flow_0gtjogt</incoming>\n      <outgoing>Flow_1t26arv</outgoing>\n    </task>\n    <intermediateCatchEvent id=\"Event_0yvo7en\" name=\"Receive failure/ accreditation\">\n      <incoming>Flow_1t26arv</incoming>\n      <outgoing>Flow_0xliwsb</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0s68d4q\">\n        <targetRef>DataObjectReference_0mlzisl</targetRef>\n      </dataOutputAssociation>\n      <messageEventDefinition id=\"MessageEventDefinition_0uoc8r5\" />\n    </intermediateCatchEvent>\n    <dataObjectReference id=\"DataObjectReference_0mlzisl\" name=\"Failure report\" dataObjectRef=\"DataObject_0s8flnj\" />\n    <dataObject id=\"DataObject_0s8flnj\" />\n    <exclusiveGateway id=\"Gateway_19qguzv\" name=\"Report error?\">\n      <incoming>Flow_0xliwsb</incoming>\n      <outgoing>Flow_092prz9</outgoing>\n      <outgoing>Flow_05nf29i</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_06z182s\" name=\"Examine report\">\n      <incoming>Flow_092prz9</incoming>\n      <outgoing>Flow_1uw1wi8</outgoing>\n    </task>\n    <exclusiveGateway id=\"Gateway_1kcy9wn\" name=\"Problems with QoS?\">\n      <incoming>Flow_1uw1wi8</incoming>\n      <outgoing>Flow_10pcgx7</outgoing>\n      <outgoing>Flow_00rcvuy</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_0g3krp9\" name=\"Tune QoS\">\n      <incoming>Flow_10pcgx7</incoming>\n      <outgoing>Flow_1fj8esn</outgoing>\n    </task>\n    <task id=\"Activity_0xmlo79\" name=\"Manage failure report\">\n      <incoming>Flow_00rcvuy</incoming>\n      <outgoing>Flow_0wr5vrh</outgoing>\n    </task>\n    <endEvent id=\"Event_0kfvamv\" name=\"End Event 2\">\n      <incoming>Flow_0wr5vrh</incoming>\n    </endEvent>\n    <task id=\"Activity_1kgdap0\" name=\"Store accreditation\">\n      <incoming>Flow_05nf29i</incoming>\n      <outgoing>Flow_1l6jskx</outgoing>\n      <property id=\"Property_1jdqoi0\" name=\"__targetRef_placeholder\" />\n      <dataInputAssociation id=\"DataInputAssociation_1n171qm\">\n        <sourceRef>DataObjectReference_11smnhx</sourceRef>\n        <targetRef>Property_1jdqoi0</targetRef>\n      </dataInputAssociation>\n    </task>\n    <endEvent id=\"Event_1cunj4v\" name=\"End Event 1\">\n      <incoming>Flow_1l6jskx</incoming>\n    </endEvent>\n    <dataObjectReference id=\"DataObjectReference_11smnhx\" name=\"Accreditation\" dataObjectRef=\"DataObject_1h4sv4u\" />\n    <dataObject id=\"DataObject_1h4sv4u\" />\n    <sequenceFlow id=\"Flow_0cr5s0h\" sourceRef=\"Event_18hvqvd\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_1fj8esn\" sourceRef=\"Activity_0g3krp9\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_0gtjogt\" sourceRef=\"Gateway_18mrd3l\" targetRef=\"Activity_08sagin\" />\n    <sequenceFlow id=\"Flow_1t26arv\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_0yvo7en\" />\n    <sequenceFlow id=\"Flow_0xliwsb\" sourceRef=\"Event_0yvo7en\" targetRef=\"Gateway_19qguzv\" />\n    <sequenceFlow id=\"Flow_092prz9\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_06z182s\" />\n    <sequenceFlow id=\"Flow_05nf29i\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_1kgdap0\" />\n    <sequenceFlow id=\"Flow_1uw1wi8\" sourceRef=\"Activity_06z182s\" targetRef=\"Gateway_1kcy9wn\" />\n    <sequenceFlow id=\"Flow_10pcgx7\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0g3krp9\" />\n    <sequenceFlow id=\"Flow_00rcvuy\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0xmlo79\" />\n    <sequenceFlow id=\"Flow_0wr5vrh\" sourceRef=\"Activity_0xmlo79\" targetRef=\"Event_0kfvamv\" />\n    <sequenceFlow id=\"Flow_1l6jskx\" sourceRef=\"Activity_1kgdap0\" targetRef=\"Event_1cunj4v\" />\n  </process>\n  <process id=\"Process_0gajlhu\">\n    <startEvent id=\"Event_1rtgu4b\" name=\"Start Event 2\">\n      <outgoing>Flow_0bd9nsu</outgoing>\n    </startEvent>\n    <task id=\"Activity_1tg8om5\" name=\"Examine request\">\n      <incoming>Flow_0bd9nsu</incoming>\n      <outgoing>Flow_0ehufg4</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0tvt8xz\">\n        <targetRef>DataObjectReference_0c8fqol</targetRef>\n      </dataOutputAssociation>\n    </task>\n    <dataObjectReference id=\"DataObjectReference_0c"}], "queries": [{"query": "What is the name of the task that produces the 'Flight tickets' output in the Amadeus service process?", "evidence": ["Search less expensive flight"]}, {"query": "Which task does the Pediatric Patient perform immediately after the 'Patient Hospitalized' sub-process completes and before receiving the appropriate diagnosis?", "evidence": ["Explain symptoms and answer the doctor questions"]}, {"query": "After completing the 'Send accreditation request' task in the Italian NMSP process, which intermediate catch event does the process wait for to receive either a failure report or an accreditation response?", "evidence": ["Receive failure/ accreditation"]}]}};
+async function qArena(name){
+  const ds=ARENA[name];if(!ds)return;
+  $('q-arena').innerHTML='灌入文档并评测中…';
+  const scene='arena-'+name;
+  const events=ds.docs.map((d,i)=>({type:'conversation',data:{role:'assistant',text:d.text,scene,source:'arena/'+d.id}}));
+  await api('/api/v1/memories',{events});
+  const r=await api('/api/v1/arena/run',{queries:ds.queries,top_k:5,scene});
+  if(!r||r.error){$('q-arena').innerHTML='评测失败：'+esc((r&&r.error)||'');return}
+  $('q-arena').innerHTML=`<b>hit@${r.top_k} = ${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · 延迟 p50 ${r.p50_ms}ms / p99 ${r.p99_ms}ms / max ${r.max_ms}ms
+   <table style="border-collapse:collapse;font-size:12px;margin-top:6px">${r.rows.map(x=>`<tr><td style="padding:2px 8px">${x.hit?'✅':'❌'}</td><td style="max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.query)}</td><td>${x.latency_ms}ms</td></tr>`).join('')}</table>`;
+}
+function qCustomToggle(){$('q-custom').style.display=$('q-custom').style.display==='none'?'block':'none';$('q-custom-row').style.display=$('q-custom-row').style.display==='none'?'flex':'none'}
+async function qArenaCustom(){
+  const qs=[];$('q-custom').value.trim().split('\n').forEach(l=>{if(!l.trim())return;try{const o=JSON.parse(l);if(o.query&&o.evidence)qs.push({query:o.query,evidence:o.evidence})}catch(e){}});
+  if(!qs.length){toast('没有可用的评测行');return}
+  const r=await api('/api/v1/arena/run',{queries:qs,top_k:5});
+  if(!r||r.error){toast(r.error||'失败');return}
+  $('q-arena').innerHTML=`<b>我的数据</b>：hit@5 = ${(r.recall_at_k*100).toFixed(1)}%（${r.hit_at_k}/${r.n}） · p50 ${r.p50_ms}ms / p99 ${r.p99_ms}ms`;
+}
+function qMatrix(){
+  const rows=[['基准','lymem','mem0','iwe','口径'],['LoCoMo 检索 hit@5','59.0%','3.8%†','55.9%','1,986 问免LLM'],['MemBench MCQ','94.0%','55.0%','28.0%','100 题对齐协议'],['PrefEval MCQ','98.0%','73.0%*','53.0%*','100 题对齐协议'],['MAB-conflict EM','18.0%','不可用','0.0%','多跳事实整合'],['书山·三国（自建）','96.1%','65.3/73.6','—','中文长文档 hit@5'],['七站 PPT 推荐（自建）','95.7%','96.6%','—','442 问 hit@5']];
+  $('q-matrix').innerHTML=rows.map((r,i)=>`<tr${i?'':' style="color:#889"'}>${r.map((c,j)=>`<td style="border:1px solid var(--line);padding:3px 10px">${esc(c)}</td>`).join('')}</tr>`).join('');
+}
+
+function goHash(){
+  const h=location.hash.slice(1);if(!h)return;
+  const b=document.querySelector('#nav button[data-page="'+h+'"]');
+  const s=document.querySelector('section[data-page="'+h+'"]');
+  if(!b||!s)return;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section[data-page]').forEach(x=>x.classList.toggle('on',x.dataset.page===h));
+  ({sq:loadSq})[h]?.();
+}
+window.addEventListener('hashchange',goHash);goHash();
 </script>
 </body>
 </html>

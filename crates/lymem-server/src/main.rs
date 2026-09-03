@@ -91,6 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/conflicts", get(list_conflicts))
         .route("/api/v1/memories/{id}", get(get_memory))
         .route("/api/v1/knowledge", post(add_knowledge))
+        .route("/api/v1/ingest/report", post(ingest_report))
+        .route("/api/v1/arena/run", post(arena_run))
         .route("/api/v1/sensitive/scan", post(sensitive_scan))
         .route("/api/v1/ingest/chapters", post(ingest_chapters))
         .route("/api/v1/ask", post(ask_memory))
@@ -171,6 +173,111 @@ async fn add_memories(State(st): State<Arc<AppState>>, Json(req): Json<AddMemori
     match lymem_core::ingest::ingest_events(&st.store, &req.events) {
         Ok(ids) => (StatusCode::OK, Json(json!({"ok": true, "ids": ids}))),
         Err(e) => (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": e.to_string()}))),
+    }
+}
+
+/// 接入质量报告：逐事件给出清洗/归类/敏感分级/实体/去重判定（不入库，赛题条款 1 演示）。
+#[derive(Deserialize)]
+struct ReportReq {
+    events: Vec<lymem_core::ingest::IngestEvent>,
+}
+
+async fn ingest_report(State(st): State<Arc<AppState>>, Json(req): Json<ReportReq>) -> impl IntoResponse {
+    let recent = st.store.list(None, None, false, 500).unwrap_or_default();
+    let seen: std::collections::HashSet<String> = recent
+        .iter()
+        .map(|r| lymem_core::ingest::fingerprint(&format!("{}|{}", r.title, r.content)))
+        .collect();
+    let mut seen = seen;
+    let mut rows = Vec::new();
+    for ev in &req.events {
+        let raw_len = serde_json::to_string(ev).map(|s| s.chars().count()).unwrap_or(0);
+        let c = ev.clean();
+        let dup = !seen.insert(c.fingerprint.clone());
+        let entities = lymem_core::ingest::extract_entities(&c.content);
+        rows.push(json!({
+            "title": c.title,
+            "kind": c.kind.as_str(),
+            "scene": if c.scene.is_empty() { "general" } else { c.scene.as_str() },
+            "raw_len": raw_len,
+            "clean_len": c.content.chars().count(),
+            "sensitivity": c.sensitivity.as_str(),
+            "entities": entities,
+            "duplicate": dup,
+            "fingerprint": c.fingerprint,
+        }));
+    }
+    (StatusCode::OK, Json(json!({"ok": true, "rows": rows})))
+}
+
+/// 记忆竞技场：对当前库跑一组（查询→金标证据）检索评测，返回 hit@k 与延迟分位数。
+#[derive(Deserialize)]
+struct ArenaReq {
+    queries: Vec<ArenaQuery>,
+    #[serde(default = "default_arena_k")]
+    top_k: usize,
+    #[serde(default)]
+    scene: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ArenaQuery {
+    query: String,
+    evidence: Vec<String>,
+}
+
+fn default_arena_k() -> usize {
+    5
+}
+
+async fn arena_run(State(st): State<Arc<AppState>>, Json(req): Json<ArenaReq>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let scene = req.scene.clone().unwrap_or_else(|| "*".into());
+    let top_k = req.top_k.clamp(1, 50);
+    let res = tokio::task::spawn_blocking(move || {
+        let norm = |s: &str| {
+            s.to_lowercase()
+                .chars()
+                .filter(|c| c.is_alphanumeric())
+                .collect::<String>()
+        };
+        let mut hits = 0usize;
+        let mut lat: Vec<f64> = Vec::new();
+        let mut rows = Vec::new();
+        for q in &req.queries {
+            let t0 = std::time::Instant::now();
+            let mut sp = lymem_core::retrieval::SearchParams::new(q.query.clone());
+            sp.top_k = top_k;
+            sp.scenes = Some(vec![scene.clone()]);
+            let found = st2.store.search(&sp).unwrap_or_default();
+            let ms = t0.elapsed().as_secs_f64() * 1000.0;
+            lat.push(ms);
+            let hit = found.iter().any(|h| {
+                q.evidence.iter().any(|e| {
+                    let ne = norm(e);
+                    ne.len() >= 4
+                        && (norm(&h.record.content).contains(&ne) || norm(&h.snippet).contains(&ne))
+                })
+            });
+            hits += hit as usize;
+            rows.push(json!({"query": q.query, "hit": hit, "latency_ms": (ms * 10.0).round() / 10.0}));
+        }
+        lat.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let pick = |p: f64| {
+            let i = (p * (lat.len().saturating_sub(1)) as f64).round() as usize;
+            (lat.get(i).copied().unwrap_or(0.0) * 10.0).round() / 10.0
+        };
+        json!({
+            "n": req.queries.len(), "top_k": top_k, "hit_at_k": hits,
+            "recall_at_k": if req.queries.is_empty() { 0.0 } else { hits as f64 / req.queries.len() as f64 },
+            "p50_ms": pick(0.5), "p95_ms": pick(0.95), "p99_ms": pick(0.99), "max_ms": pick(1.0),
+            "rows": rows,
+        })
+    })
+    .await;
+    match res {
+        Ok(v) => (StatusCode::OK, Json(v)),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
     }
 }
 
