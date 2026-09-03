@@ -93,6 +93,16 @@ tbody tr:hover td{background:#f7f9ff}
 .empty{color:#9aa1b0;text-align:center;padding:26px 0}
 .toast{position:fixed;right:22px;bottom:22px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:99}
 .toast.show{opacity:1;transform:none}
+/* impeccable · operate 层：语义状态与浏览器表面 */
+:root{--ok:#0b7a4b;--ok-bg:#e9f7ef;--err:#b3261e;--err-bg:#fdecea;--warn:#9a6700;--ring:0 0 0 3px #2f5fe022;--ease:cubic-bezier(.16,1,.3,1)}
+*{scrollbar-width:thin;scrollbar-color:#c9d0dd transparent}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#c9d0dd;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::selection{background:#2f5fe026}
+button:active{transform:translateY(.5px)}
+:focus-visible{outline:2px solid var(--blue,#2f5fe0);outline-offset:2px}
+input,textarea,select{caret-color:var(--blue,#2f5fe0)}
+.num,.sq-kpi .n,td{font-variant-numeric:tabular-nums}
+button.act{transition:background .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease)}
 section[data-page]{display:none}
 section[data-page].on{display:block}
 .muted{color:var(--sub);font-size:12px}
@@ -153,17 +163,17 @@ section[data-page].on{display:block}
   <nav id="nav">
     <div class="sec">总控</div>
     <button data-page="dash" class="on"><span class="ic">◉</span>总览</button>
-    <button data-page="demo"><span class="ic">▶</span>场景演示</button>
-    <button data-page="sq"><span class="ic">✦</span>赛题演示</button>
-    <button data-page="book"><span class="ic">📖</span>书山灌入</button>
+    <button data-page="demo">场景演示</button>
+    <button data-page="sq">赛题演示</button>
+    <button data-page="book">书山灌入</button>
     <div class="sec">记忆中枢</div>
-    <button data-page="hub"><span class="ic">◍</span>多 Agent 中枢</button>
+    <button data-page="hub">多 Agent 中枢</button>
     <div class="sec">记忆管理</div>
-    <button data-page="memories"><span class="ic">☰</span>记忆流</button>
-    <button data-page="search"><span class="ic">⌕</span>检索实验场</button>
-    <button data-page="prefs"><span class="ic">◈</span>偏好时间线</button>
-    <button data-page="conflicts"><span class="ic">⚔</span>冲突仲裁</button>
-    <button data-page="forget"><span class="ic">⌫</span>遗忘工坊</button>
+    <button data-page="memories">记忆流</button>
+    <button data-page="search">检索实验场</button>
+    <button data-page="prefs">偏好时间线</button>
+    <button data-page="conflicts">冲突仲裁</button>
+    <button data-page="forget">遗忘工坊</button>
   </nav>
   <div class="foot">
     <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
@@ -221,42 +231,52 @@ section[data-page].on{display:block}
 <!-- ============ 赛题演示 ============ -->
 <section data-page="sq">
 <style>
-.sq-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-.sq-kpi{background:linear-gradient(135deg,#fff,#f7f9ff);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
-.sq-kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,#2f5fe0)}
-.sq-kpi .n{font-size:34px;font-weight:800;color:var(--c,#2f5fe0);line-height:1.1}
-.sq-kpi .l{font-size:12px;color:#889;margin-top:4px}
-.sq-act{border:2px dashed #c8d2f0;border-radius:14px;padding:22px;text-align:center;transition:.2s;background:#fbfcff}
-.sq-act:hover{border-color:var(--blue);background:#f2f6ff}
-.sq-bar{height:12px;border-radius:8px;background:#edf0f7;overflow:hidden;margin:10px 0}
-.sq-bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2f5fe0,#6f4fd8);transition:width .4s}
-.sq-ans{font-size:17px;line-height:1.75;background:#f8faff;border-left:4px solid var(--blue);border-radius:0 12px 12px 0;padding:14px 18px;margin:12px 0}
-.sq-src{border-left:3px solid var(--violet);background:#fbfaff;border-radius:0 10px 10px 0;padding:8px 12px;margin:6px 0;font-size:13px}
-.sq-src b{color:var(--violet)}
-.sq-chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12px;cursor:pointer;margin:2px;background:#fff}
-.sq-chip:hover{border-color:var(--blue);color:var(--blue)}
-.sq-step{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
-.sq-step .no{flex:none;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
-.new-item{animation:sqNew 2.4s ease-out}
-@keyframes sqNew{0%{background:#d4ffe7;box-shadow:0 0 0 3px #7de0a8 inset}100%{background:transparent}}
-.sq-badge{display:inline-block;font-size:11px;border-radius:6px;padding:2px 8px;background:#eef3ff;color:var(--blue);margin-left:8px}
+.sq-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sq-kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 1px 0 #0f1e4708,0 6px 16px -12px #0f1e4726}
+.sq-kpi .l{font-size:12px;font-weight:600;letter-spacing:.02em;color:#5b6472}
+.sq-kpi .n{font-size:26px;font-weight:750;margin-top:6px;color:#1c2333;font-variant-numeric:tabular-nums}
+.sq-kpi .s{font-size:11px;color:#8a93a3;margin-top:2px}
+.sq-act{border:1.5px dashed #b9c4dd;border-radius:10px;padding:26px 20px;text-align:center;background:#fbfcfe;cursor:pointer;transition:border-color .18s var(--ease),background .18s var(--ease)}
+.sq-act:hover,.sq-act:focus-visible{border-color:#2f5fe0;background:#f3f6ff}
+.sq-act b{font-size:15px}
+.sq-bar{height:8px;border-radius:6px;background:#e8ecf4;overflow:hidden;margin:10px 0 6px}
+.sq-bar>i{display:block;height:100%;width:0;background:#2f5fe0;transition:width .35s var(--ease)}
+.sq-ans{font-size:16px;line-height:1.8;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0;box-shadow:0 6px 18px -14px #0f1e4733}
+.sq-src{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:6px 0;font-size:13px;box-shadow:0 2px 6px -4px #0f1e4722}
+.sq-src .ref{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:5px;background:#eef2fc;color:#2f5fe0;font-weight:700;font-size:11px;margin-right:8px;font-variant-numeric:tabular-nums}
+.sq-chip{border:1px solid var(--line);border-radius:7px;padding:5px 12px;font-size:12.5px;cursor:pointer;background:#fff;transition:border-color .15s var(--ease),color .15s var(--ease)}
+.sq-chip:hover{border-color:#2f5fe0;color:#2f5fe0}
+.sq-step{display:flex;gap:12px;align-items:flex-start;margin:12px 0}
+.sq-step .no{flex:none;width:24px;height:24px;border-radius:50%;background:#eef2fc;color:#2f5fe0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums}
+.sq-hit{display:inline-block;min-width:0;height:0;border-radius:3px;padding:0 0 0 14px;font-size:0;position:relative;margin-right:8px}
+.sq-hit:before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%}
+.sq-hit.y:before{background:var(--ok)} .sq-hit.n:before{background:#c4342b}
+.new-item{animation:sqNew 2s var(--ease)}
+@keyframes sqNew{0%{background:var(--ok-bg)}100%{background:transparent}}
+.sq-race{margin:4px 0 10px}
+.sq-race .rr{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;margin:7px 0;font-size:12.5px}
+.sq-race .bars{display:flex;flex-direction:column;gap:3px}
+.sq-race .bar{display:flex;align-items:center;gap:8px}
+.sq-race .bar i{display:block;height:12px;border-radius:3px;background:#2f5fe0;min-width:2px;transition:width .5s var(--ease)}
+.sq-race .bar.m i{background:#9aa6bd}
+.sq-race .bar b{font-variant-numeric:tabular-nums;font-size:12px;color:#3c4454}
+.sq-badge{display:inline-block;font-size:11px;border-radius:5px;padding:2px 8px;background:#eef2fc;color:#2f5fe0;margin-left:8px;font-weight:600}
 </style>
   <div class="topbar"><h2>赛题演示 · 整书记忆实验</h2><span class="desc">灌入整本《三国演义》 → 检索问答 → 修改文本捕捉新偏好（条款 1/2/3/6/7）</span></div>
 
   <div class="sq-kpis">
-    <div class="sq-kpi" style="--c:#2f5fe0"><div class="n" id="sq-k-total">-</div><div class="l">记忆总数</div></div>
-    <div class="sq-kpi" style="--c:#6f4fd8"><div class="n" id="sq-k-book">-</div><div class="l">知识层 · 章节书库</div></div>
-    <div class="sq-kpi" style="--c:#0b9e6e"><div class="n" id="sq-k-pref">-</div><div class="l">偏好 · 当前生效</div></div>
-    <div class="sq-kpi" style="--c:#d97706"><div class="n" id="sq-k-lat">-</div><div class="l">最近检索延迟</div></div>
+    <div class="sq-kpi"><div class="l">记忆总数</div><div class="n" id="sq-k-total">-</div><div class="s">情景 + 知识 + 偏好</div></div>
+    <div class="sq-kpi"><div class="l">知识层书库</div><div class="n" id="sq-k-book">-</div><div class="s">章 · 含整本《三国演义》</div></div>
+    <div class="sq-kpi"><div class="l">偏好 · 当前生效</div><div class="n" id="sq-k-pref">-</div><div class="s">项 · 双通道自动提取</div></div>
+    <div class="sq-kpi"><div class="l">最近检索延迟</div><div class="n" id="sq-k-lat">-</div><div class="s">指标线 ≤500ms</div></div>
   </div>
 
   <div class="card" style="margin-bottom:16px">
     <h3>第一幕 · 整书灌入 <span class="hint">txt 全文 → 自动分章 → 知识层（清洗/标准化随灌随检）</span></h3>
     <div class="grid g2-1">
       <div>
-        <div class="sq-act" onclick="$('sq-file').click()">
-          <div style="font-size:30px">📄</div>
-          <b>点击选择整书 txt</b>
+        <div class="sq-act" onclick="$('sq-file').click()" tabindex="0" role="button" aria-label="选择整书 txt 文件">
+          <b>选择整书 txt 文件</b>
           <div class="muted" style="margin-top:4px">自动按「第 N 回」分章灌入 · 支持任意长篇 txt</div>
           <input type="file" id="sq-file" accept=".txt,.md" style="display:none" onchange="sqFileIngest(this)">
         </div>
@@ -1319,7 +1339,7 @@ async function sqAsk(q){
   const ok=+retr<=500;
   $('sq-ans').innerHTML=`<div class="sq-ans">${esc(ar.answer||'（无答案）')}</div>
    <div class="muted" style="font-size:12px">纯检索 <b style="color:${ok?'#0b9e6e':'#c33'}">${retr}ms</b>（指标 ≤500ms${ok?' ✓ 达标':' ✗'}） · 含生成的端到端 ${total}s · 引用 ${(ar.sources||[]).length} 处</div>`+
-   (ar.sources||[]).slice(0,5).map(s=>`<div class="sq-src"><b>${esc(s.title||('#'+s.id))}</b><div class="muted">${esc(s.snippet||'')}</div></div>`).join('');
+   (ar.sources||[]).slice(0,5).map((s,i)=>`<div class="sq-src"><span class="ref">${i+1}</span><b>${esc(s.title||('#'+s.id))}</b><div class="muted" style="margin:4px 0 0 28px">${esc(s.snippet||'')}</div></div>`).join('');
 }
 async function sqTail(){
   try{
@@ -1395,7 +1415,7 @@ async function qArena(name){
   const r=await api('/api/v1/arena/run',{queries:ds.queries,top_k:5,scene});
   if(!r||r.error){$('q-arena').textContent('失败');return}
   $('q-arena').innerHTML=`<b>hit@5 = ${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}）· p50 ${r.p50_ms}ms / p99 ${r.p99_ms}ms`+
-   `<table style="border-collapse:collapse;font-size:12px;margin-top:4px">${r.rows.map(x=>`<tr><td style="padding:2px 6px">${x.hit?'✅':'❌'}</td><td>${esc(x.query.slice(0,60))}</td></tr>`).join('')}</table>`;
+   `<table style="border-collapse:collapse;font-size:12px;margin-top:4px">${r.rows.map(x=>`<tr><td style="padding:2px 8px"><span class="sq-hit ${x.hit?'y':'n'}"></span></td><td>${esc(x.query.slice(0,64))}</td></tr>`).join('')}</table>`;
 }
 function qCustomToggle(){$('q-custom').style.display=$('q-custom').style.display==='none'?'block':'none';$('q-custom-row').style.display=$('q-custom-row').style.display==='none'?'flex':'none'}
 async function qArenaCustom(){
@@ -1405,8 +1425,14 @@ async function qArenaCustom(){
   if(r&&!r.error)$('q-arena').innerHTML=`<b>我的数据</b>：hit@5 = ${(r.recall_at_k*100).toFixed(1)}%（${r.hit_at_k}/${r.n}）· p99 ${r.p99_ms}ms`;
 }
 function qMatrix(){
-  const rows=[['基准','lymem','mem0','iwe','口径'],['LoCoMo 检索 hit@5','59.0%','3.8%†','55.9%','1,986 问'],['MemBench MCQ','94.0%','55.0%','28.0%','100 题'],['PrefEval MCQ','98.0%','73.0%*','53.0%*','100 题'],['书山·三国（自建）','96.1%','65.3/73.6','—','中文长文档'],['七站 PPT 推荐','95.7%','96.6%','—','442 问']];
-  $('q-matrix').innerHTML=rows.map((r,i)=>`<tr${i?'':' style="color:#889"'}>${r.map(c=>`<td style="border:1px solid var(--line);padding:3px 10px">${esc(c)}</td>`).join('')}</tr>`).join('');
+  const data=[['LoCoMo 检索 hit@5',59.0,3.8,55.9],['MemBench MCQ',94.0,55.0,28.0],['PrefEval MCQ',98.0,73.0,53.0],['书山·三国（自建）',96.1,73.6,0],['七站 PPT 推荐',95.7,96.6,0]];
+  const mx=Math.max(...data.map(d=>Math.max(d[1],d[2],d[3])));
+  $('q-matrix').outerHTML='<div class="sq-race" id="q-matrix">'+data.map(d=>
+    `<div class="rr"><div style="text-align:right;color:#4a5264">${d[0]}</div><div class="bars">
+      <div class="bar"><i style="width:${d[1]/mx*100}%"></i><b>${d[1].toFixed(1)}%</b><span class="muted">lymem</span></div>
+      <div class="bar m"><i style="width:${d[2]/mx*100}%"></i><b>${d[2].toFixed(1)}%</b><span class="muted">mem0</span></div>
+      ${d[3]?`<div class="bar m" style="opacity:.75"><i style="width:${d[3]/mx*100}%"></i><b>${d[3].toFixed(1)}%</b><span class="muted">iwe</span></div>`:''}
+    </div></div>`).join('')+'</div>';
 }
 
 function goHash(){
