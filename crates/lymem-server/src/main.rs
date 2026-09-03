@@ -713,9 +713,18 @@ struct ForgetParseReq {
 }
 
 async fn forget_parse(State(st): State<Arc<AppState>>, Json(req): Json<ForgetParseReq>) -> impl IntoResponse {
-    match st.store.parse_forget_scope(&req.instruction, Some(st.judge.as_ref())) {
-        Ok(scope) => (StatusCode::OK, Json(json!({"scope": scope}))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    // judge 是阻塞实现（内部 block_on），必须放 spawn_blocking，
+    // 否则 async 上下文内嵌套 runtime 直接 panic
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        st2.store.parse_forget_scope(&req.instruction, Some(judge.as_ref()))
+    })
+    .await;
+    match res {
+        Ok(Ok(scope)) => (StatusCode::OK, Json(json!({"scope": scope}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
     }
 }
 
