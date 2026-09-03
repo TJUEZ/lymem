@@ -362,8 +362,9 @@ async fn extract_preferences_from_sessions(State(st): State<Arc<AppState>>) -> a
         let mut extracted = Vec::new();
         for rec in records.iter().filter(|r| r.kind == lymem_core::model::MemoryKind::Conversation) {
             let Some(analysis) = judge.complete(
-                "你是 OS Agent 的偏好提取器。判断用户消息是否表达了可持续生效的偏好（工具选择/输出风格/安全策略/工作习惯）。\
-                 只输出 JSON：{\"is_preference\": bool, \"key\": \"类别.名称\"（类别限 tool_choice/output_style/security/habit）, \"
+                "你是 OS Agent 的偏好提取器。判断用户消息是否表达了可持续生效的用户偏好：涵盖工具选择/输出风格/安全策略/工作习惯，\
+                 也包含饮食口味、外观主题、阅读娱乐等个人生活喜好（如「我爱喝奶茶」「我喜欢浅色主题」均为偏好）；\
+                 纯叙事文本（小说情节、客观事实）判非偏好。只输出 JSON：{\"is_preference\": bool, \"key\": \"类别.名称\"（类别限 tool_choice/output_style/security/habit/diet/lifestyle）, \"
                  + \"value\": \"偏好内容简述\"}。非偏好输出 {\"is_preference\": false}。",
                 &rec.content,
             ) else { continue };
