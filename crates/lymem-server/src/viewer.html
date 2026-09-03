@@ -127,7 +127,6 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <div class="sec">评测与集成</div>
     <button data-page="arena"><span class="txt">记忆竞技场</span></button>
     <button data-page="hub"><span class="txt">Agent 中枢</span></button>
-    <button data-page="demo"><span class="txt">场景演示</span></button>
   </nav>
   <div class="foot">
     <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
@@ -306,7 +305,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
 
 <!-- 记忆竞技场：条款7 -->
 <section data-page="arena">
-  <div class="topbar"><h2>记忆竞技场<span class="clause">条款 7</span></h2><div class="desc">自建与开源数据集在线评测 · 多记忆系统同题竞速</div></div>
+  <div class="topbar"><h2>记忆竞技场<span class="clause">条款 7</span></h2><div class="desc">按赛题指标分类 · 多记忆系统同题竞速</div></div>
   <div class="grid g2-1">
     <div class="card">
       <h3>在线评测<span class="hint">对当前记忆库实时跑检索评测（hit@5 + 延迟分位）</span></h3>
@@ -317,10 +316,10 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       </div>
       <textarea id="q-custom" rows="3" style="display:none;margin-top:8px" placeholder='每行一条：{"query":"问题","evidence":["标准答案关键句"]}（需先在记忆库灌入你的文档）'></textarea>
       <div class="row" style="display:none;margin-top:6px" id="q-custom-row"><button class="act" onclick="qArenaCustom()">评测我的数据</button></div>
-      <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始。评测会自动灌入样例文档到隔离场景，不影响你的库。</div>
+      <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始。样例灌入隔离场景，不影响你的库。</div>
     </div>
     <div class="card">
-      <h3>赛题指标达成<span class="hint">v3 评测报告定稿</span></h3>
+      <h3>赛题硬指标达成</h3>
       <table class="tb">
         <tr><th>指标</th><th>要求</th><th>实测</th></tr>
         <tr><td>检索延迟</td><td>≤500ms</td><td><b style="color:var(--ok)">p50 27 / p99 55ms</b></td></tr>
@@ -331,11 +330,16 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       </table>
     </div>
   </div>
-  <div class="card">
-    <h3>公开基准 · 多系统同题竞速<span class="hint">同一麒麟嵌入与生成网关下的定稿矩阵</span></h3>
-    <div class="race" id="q-matrix"></div>
-    <div class="muted">口径：lymem 为本项目；mem0 / iwe 为可本地运行的开源记忆系统（同一嵌入与生成网关）。LoCoMo 为英文超长对话严格协议；书山·三国与七站 PPT 推荐为自建集（DATASETS.md）。</div>
-  </div>
+  <div id="arena-groups"></div>
+  <details style="margin-top:2px">
+    <summary style="cursor:pointer;color:var(--faint);font-size:12.5px;padding:4px 0">评测口径说明</summary>
+    <div class="muted" style="padding:8px 2px">
+      lymem 为本项目；mem0 / iwe 为可本地运行的开源记忆系统，接入同一麒麟嵌入与 MiniMax 生成网关（公平协议）。
+      书山·三国与 PPT 推荐七站为自建评测集（含 dev/test 分层划分），明细见 benchmark/data/DATASETS.md；
+      LoCoMo 为公开英文超长对话的免 LLM 严格协议（hit@5，1,986 问全量）；PrefEval / MemBench 为公开基准的必答 MCQ 协议（各 100 题）。
+      mem0 在七站为同嵌入直插向量口径；其 PrefEval 73.0 / MemBench 55.0 为对齐必答协议后的复测值。
+    </div>
+  </details>
 </section>
 
 <!-- Agent 中枢：创新点 -->
@@ -366,19 +370,6 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   </div>
 </section>
 
-<!-- 场景演示 -->
-<section data-page="demo">
-  <div class="topbar"><h2>场景演示<span class="clause">一键串演</span></h2><div class="desc">四个真实场景把全链路 30 秒演完（录屏用）</div></div>
-  <div class="card">
-    <div class="row">
-      <button class="act" id="sc-office" onclick="runScene('office')">① 办公自动化 · 偏好捕捉</button>
-      <button class="act" id="sc-coding" onclick="runScene('coding')">② 编码协作 · 知识冲突</button>
-      <button class="act" id="sc-system" onclick="runScene('system')">③ 系统管理 · 安全遗忘</button>
-      <button class="act" id="sc-hub" onclick="runScene('hub')">④ 多 Agent 汇聚分发</button>
-    </div>
-    <pre class="log" id="demo-log" style="margin-top:12px">点击任一场景开始。每个场景按真实 API 串行执行，日志即证据。</pre>
-  </div>
-</section>
 
 </main>
 <div id="drawer">
@@ -423,7 +414,7 @@ function auditZh(a){
   return `${ACT_ZH[a.action]||a.action}${s}`;
 }
 /* ---- 导航 ---- */
-const PAGES={dash:refreshDash,vault:vTree,prefs:()=>loadPrefs(false),know:loadKnow,forget:()=>{},arena:loadArena,hub:loadHub,demo:()=>{}};
+const PAGES={dash:refreshDash,vault:vTree,prefs:()=>loadPrefs(false),know:loadKnow,forget:()=>{},arena:loadArena,hub:loadHub};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
@@ -682,16 +673,40 @@ async function qArenaCustom(){
   if(r&&!r.error)$('q-arena').innerHTML=`<b>我的数据</b>：hit@5 = <b class="num">${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · p99 <b class="num">${r.p99_ms}ms</b>`;
 }
 function qMatrix(){
-  const data=[['LoCoMo 检索 hit@5',59.0,3.8,55.9],['MemBench 记忆能力',94.0,55.0,28.0],['PrefEval 偏好遵循',98.0,73.0,53.0],['书山·三国（自建·中文）',96.1,73.6,0],['七站 PPT 推荐（自建）',95.7,96.6,0]];
-  const mx=100;
-  $('q-matrix').innerHTML=data.map(d=>
-   `<div class="rr"><div style="text-align:right;color:var(--sub)">${d[0]}</div><div class="bars">
-     <div class="bar"><i style="width:${d[1]}%"></i><b>${d[1].toFixed(1)}%</b><span class="muted">lymem</span></div>
-     <div class="bar m"><i style="width:${d[2]}%"></i><b>${d[2].toFixed(1)}%</b><span class="muted">mem0</span></div>
-     ${d[3]?`<div class="bar m" style="opacity:.75"><i style="width:${d[3]}%"></i><b>${d[3].toFixed(1)}%</b><span class="muted">iwe</span></div>`:''}
-   </div></div>`).join('');
+  const G=[
+   {title:'偏好提取准确率 <span class="hint">赛题 ≥85% · 条款 2</span>',rows:[
+     ['PrefEval 偏好遵循 · 100 题',98.0,73.0,53.0],
+     ['MemBench 记忆能力 · 100 题',94.0,55.0,28.0]]},
+   {title:'知识检索召回率 <span class="hint">赛题 ≥85% · 条款 3/7</span>',rows:[
+     ['书山·三国（自建·中文长文档）· 51 题',96.1,73.6,0],
+     ['MS MARCO（PPT 推荐）· 200 题',97.0,100.0,0],
+     ['TrecQA 答案句（PPT 推荐）· 68 题',89.7,86.8,0],
+     ['ToolBench 工具检索（PPT 推荐）· 10 题',100.0,100.0,0],
+     ['MultiWOZ 多域对话（PPT 推荐）· 50 题',100.0,98.0,0],
+     ['PersonaChat 人设（PPT 推荐）· 50 题',98.0,100.0,0],
+     ['DailyDialog 日常对话（PPT 推荐）· 50 题',94.0,100.0,0],
+     ['BPMN 流程知识（PPT 推荐）· 14 题',85.7,64.3,0],
+     ['LoCoMo 长对话严格协议 · 1,986 题',59.0,3.8,55.9]]},
+   {title:'知识冲突处理正确率 <span class="hint">赛题 ≥88% · 条款 3</span>',rows:[
+     ['受控冲突用例（自建·30 组）',93.3,0,0],
+     ['MAB-conflict 多跳整合 · 100 题',18.0,0,0]]},
+  ];
+  $('arena-groups').innerHTML=G.map(g=>
+   `<div class="card"><h3>${g.title}</h3><div class="race">${
+     g.rows.map(d=>`<div class="rr"><div style="text-align:right;color:var(--sub)">${d[0]}</div><div class="bars">
+       <div class="bar"><i style="width:${d[1]}%"></i><b>${d[1].toFixed(1)}%</b><span class="muted">lymem</span></div>
+       ${d[2]?`<div class="bar m"><i style="width:${d[2]}%"></i><b>${d[2].toFixed(1)}%</b><span class="muted">mem0</span></div>`:''}
+       ${d[3]?`<div class="bar m" style="opacity:.75"><i style="width:${d[3]}%"></i><b>${d[3].toFixed(1)}%</b><span class="muted">iwe</span></div>`:''}
+     </div></div>`).join('')}</div></div>`).join('')+
+   `<div class="card"><h3>检索响应延迟 <span class="hint">赛题 ≤500ms · 条款 4</span></h3>
+     <div class="row" style="gap:18px;font-size:13.5px">
+      <span>p50 <b class="num">27ms</b></span><span>p95 <b class="num">44ms</b></span>
+      <span>p99 <b class="num">55ms</b></span><span>max <b class="num">100ms</b></span>
+      <span>超标 <b class="num" style="color:var(--ok)">0 / 442</b></span>
+      <span class="muted">七站 442 查询逐题实测 · 全配置 1–173ms</span></div></div>`;
 }
 
+/* ---- Agent 中枢 ---- */
 /* ---- Agent 中枢 ---- */
 async function loadHub(){
   const [src,tgt]=await Promise.all([api('/api/v1/hub/sources'),api('/api/v1/hub/targets')]);
