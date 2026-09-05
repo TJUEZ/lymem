@@ -77,7 +77,7 @@ fn tools_spec() -> Value {
     json!([
         {
             "name": "memory_search",
-            "description": "混合检索长期记忆（向量+BM25+图三通道 RRF 融合）。agent 每轮应先调用以注入相关记忆。",
+            "description": "混合检索长期记忆（向量+BM25+图三通道 RRF 融合）。agent 每轮应先调用以注入相关记忆。经验卡（做法/避坑）自动提权，命中时优先参考其 trigger 与要点。",
             "inputSchema": { "type": "object", "properties": {
                 "query": { "type": "string", "description": "检索问题/主题" },
                 "top_k": { "type": "integer", "default": 5 },
@@ -86,16 +86,36 @@ fn tools_spec() -> Value {
         },
         {
             "name": "memory_add",
-            "description": "写入一条记忆（多源：会话轮次/工具结果/行为/配置）。敏感信息自动识别脱敏，重复自动去重。",
+            "description": "写入一条记忆（多源：会话轮次/工具结果/行为/配置；workflow/case/template 直接入知识层并走冲突仲裁）。敏感信息自动识别脱敏，重复自动去重。",
             "inputSchema": { "type": "object", "properties": {
                 "text": { "type": "string", "description": "记忆内容" },
-                "kind": { "type": "string", "enum": ["conversation", "tool_result", "user_behavior", "manual_config"],
-                          "description": "记忆种类" },
+                "kind": { "type": "string", "enum": ["conversation", "tool_result", "user_behavior", "manual_config", "workflow", "case", "template"],
+                          "description": "记忆种类；tool_result 请带 tool/task/ok 以便日后提炼经验" },
+                "title": { "type": "string", "description": "workflow/case/template 的标题（可选，默认取 text 前 30 字）" },
                 "tool": { "type": "string", "description": "kind=tool_result 时的工具名" },
                 "task": { "type": "string", "description": "kind=tool_result 时的任务类目" },
                 "ok": { "type": "boolean", "description": "工具执行是否成功" },
                 "scene": { "type": "string", "default": "general" }
             }, "required": ["text"] }
+        },
+        {
+            "name": "experience_list",
+            "description": "列出已编译的经验卡（做法/避坑，带适用条件、要点、复用成败计数与 verified/draft 状态）。接到相似任务时应先参考。",
+            "inputSchema": { "type": "object", "properties": {
+                "status": { "type": "string", "enum": ["all", "draft", "verified"], "default": "all" }
+            } }
+        },
+        {
+            "name": "memory_feedback",
+            "description": "经验采纳反馈：实际复用某条经验后回报成败。累计复用≥2 次且无失败会使其转为 verified（检索提权）；出现失败则回退 draft。应在完成任务后调用。",
+            "inputSchema": { "type": "object", "properties": {
+                "id": { "type": "integer", "description": "经验卡的记忆 id" },
+                "ok": { "type": "boolean", "description": "该经验是否帮你把任务做成了" },
+                "scene": { "type": "string", "description": "任务场景（tool_result 轨迹用），便于后续经验提炼" },
+                "task": { "type": "string", "description": "本次任务类目（tool_result 轨迹用）" },
+                "tool": { "type": "string", "description": "本次使用的工具（tool_result 轨迹用）" },
+                "text": { "type": "string", "description": "本次执行结果简述（tool_result 轨迹用，喂给经验提炼）" }
+            }, "required": ["id", "ok"] }
         },
         {
             "name": "preference_list",
@@ -137,15 +157,24 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
             st.store
                 .search(&p)
                 .map(|hits| {
+                    let hits = crate::experience_boost(hits);
                     json!(hits
                         .iter()
-                        .map(|h| json!({
-                            "content": h.record.content,
-                            "tier": h.record.tier.as_str(),
-                            "kind": h.record.kind.as_str(),
-                            "scene": h.record.scene,
-                            "score": h.final_score,
-                        }))
+                        .map(|h| {
+                            let exp = lymem_core::experience::experience_of(&h.record)
+                                .map(|e| json!({"status": e.status, "type": e.exp_type,
+                                    "trigger": e.trigger, "steps": e.steps,
+                                    "wins": e.outcome.wins, "fails": e.outcome.fails}));
+                            json!({
+                                "content": h.record.content,
+                                "tier": h.record.tier.as_str(),
+                                "kind": h.record.kind.as_str(),
+                                "scene": h.record.scene,
+                                "score": h.final_score,
+                                "id": h.record.id,
+                                "experience": exp,
+                            })
+                        })
                         .collect::<Vec<_>>())
                 })
                 .map_err(|e| e.to_string())
@@ -153,8 +182,47 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
         "memory_add" => {
             let text = args.get("text").and_then(|v| v.as_str()).ok_or("缺少 text")?;
             let scene = args.get("scene").and_then(|v| v.as_str()).unwrap_or("general").to_string();
-            let event = match args.get("kind").and_then(|v| v.as_str()) {
-                Some("tool_result") => lymem_core::ingest::IngestEvent::ToolResult {
+            let kind_str = args.get("kind").and_then(|v| v.as_str()).unwrap_or("conversation");
+
+            // workflow/case/template：直接入知识层并走冲突仲裁（新旧知识碰撞→取代/共存/合并）
+            if matches!(kind_str, "workflow" | "case" | "template") {
+                let kind = match kind_str {
+                    "workflow" => lymem_core::model::MemoryKind::Workflow,
+                    "case" => lymem_core::model::MemoryKind::Case,
+                    _ => lymem_core::model::MemoryKind::Template,
+                };
+                let title = args
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+                    .unwrap_or_else(|| text.chars().take(30).collect());
+                let mut rec = lymem_core::model::MemoryRecord::new(lymem_core::model::Tier::Knowledge, kind, title.clone(), text);
+                rec.scene = scene;
+                rec.source = "mcp".into();
+                rec.entities = args
+                    .get("entities")
+                    .and_then(|v| v.as_array())
+                    .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                    .unwrap_or_else(|| vec![title.chars().take(12).collect()]);
+                let st2 = Arc::clone(st);
+                let judge = st.judge.clone();
+                return tokio::task::spawn_blocking(move || {
+                    st2.store
+                        .put_knowledge_with_conflicts(rec, Some(judge.as_ref()), 0.8)
+                        .map(|(id, conflicts)| {
+                            json!({ "ok": true, "id": id,
+                                "conflicts": conflicts.iter().map(|c| json!({
+                                    "type": c.ctype.as_str(), "resolution": c.resolution.as_str(),
+                                })).collect::<Vec<_>>() })
+                        })
+                        .map_err(|e| e.to_string())
+                })
+                .await
+                .map_err(|e| format!("任务失败: {e}"))?;
+            }
+
+            let event = match kind_str {
+                "tool_result" => lymem_core::ingest::IngestEvent::ToolResult {
                     tool: args.get("tool").and_then(|v| v.as_str()).unwrap_or("unknown").into(),
                     task: args.get("task").and_then(|v| v.as_str()).unwrap_or("general").into(),
                     args: json!({}),
@@ -163,13 +231,13 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
                     scene,
                     source: "mcp".into(),
                 },
-                Some("user_behavior") => lymem_core::ingest::IngestEvent::UserBehavior {
+                "user_behavior" => lymem_core::ingest::IngestEvent::UserBehavior {
                     event: "agent_observed".into(),
                     detail: text.into(),
                     scene,
                     source: "mcp".into(),
                 },
-                Some("manual_config") => lymem_core::ingest::IngestEvent::ManualConfig {
+                "manual_config" => lymem_core::ingest::IngestEvent::ManualConfig {
                     key: args.get("key").and_then(|v| v.as_str()).unwrap_or("app.config").into(),
                     value: json!(text),
                     scene,
@@ -224,6 +292,45 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
                     c.truncate(limit);
                     json!(c)
                 })
+                .map_err(|e| e.to_string())
+        }
+        "experience_list" => {
+            let filter = args.get("status").and_then(|v| v.as_str()).unwrap_or("all");
+            st.store
+                .list_experiences()
+                .map(|cards| {
+                    let cards: Vec<_> = cards
+                        .into_iter()
+                        .filter(|c| filter == "all" || c.status == filter)
+                        .collect();
+                    json!(cards)
+                })
+                .map_err(|e| e.to_string())
+        }
+        "memory_feedback" => {
+            let id = args.get("id").and_then(|v| v.as_i64()).ok_or("缺少 id")?;
+            let ok = args.get("ok").and_then(|v| v.as_bool()).ok_or("缺少 ok")?;
+            // 顺带把这次复用落成工具轨迹，供下一轮经验提炼消费
+            if let (Some(tool), Some(task), Some(text)) = (
+                args.get("tool").and_then(|v| v.as_str()),
+                args.get("task").and_then(|v| v.as_str()),
+                args.get("text").and_then(|v| v.as_str()),
+            ) {
+                let ev = lymem_core::ingest::IngestEvent::ToolResult {
+                    tool: tool.into(),
+                    task: task.into(),
+                    args: json!({ "experience_id": id }),
+                    ok,
+                    output: text.into(),
+                    scene: args.get("scene").and_then(|v| v.as_str()).unwrap_or("general").into(),
+                    source: "mcp".into(),
+                };
+                let _ = lymem_core::ingest::ingest_events(&st.store, &[ev]);
+            }
+            let _ = st.store.audit("mcp_experience_feedback", &json!({ "id": id, "ok": ok }));
+            st.store
+                .experience_feedback(id, ok)
+                .map(|c| json!({ "ok": true, "card": c }))
                 .map_err(|e| e.to_string())
         }
         "memory_status" => {

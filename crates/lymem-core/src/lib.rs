@@ -22,6 +22,7 @@
 pub mod conflict;
 pub mod embedding;
 pub mod error;
+pub mod experience;
 pub mod forget;
 pub mod fts;
 pub mod hub;

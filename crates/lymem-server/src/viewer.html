@@ -280,6 +280,14 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div id="hub-conf-list"><div class="empty">点击扫描。需要先在 Agent 中枢导入 ≥2 个源。</div></div>
     </div>
   </div>
+  <div class="card">
+    <h3>经验复用<span class="hint">从近期轨迹提炼做法 / 避坑；复用反馈决定能否转正</span></h3>
+    <div class="row" style="margin-bottom:8px">
+      <button class="act" onclick="xCompile()">从近期轨迹编译经验</button>
+      <span class="muted" id="x-msg">成功轨迹→「做法」，失败轨迹→「避坑」；被复用 ≥2 次且无失败自动转为已验证</span>
+    </div>
+    <div id="x-list" class="feed" style="max-height:280px"><div class="empty">还没有经验卡。灌入带任务标签的工具轨迹（或由 Agent 经 MCP 写入）后，点上方按钮编译。</div></div>
+  </div>
 </section>
 
 <!-- 遗忘与安全：敏感分级 · 精准遗忘 -->
@@ -396,7 +404,7 @@ function go(h){location.hash=h}
 /* ---- 中文映射 ---- */
 const TIER_ZH={episodic:'情景·中期',knowledge:'知识·长期',preference:'偏好·长期',working:'工作·短期'};
 const KIND_ZH={tool_result:'工具结果',user_behavior:'用户行为',manual_config:'手动配置',conversation:'会话',fact:'事实',workflow:'工作流',case:'案例',template:'模板'};
-const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发'};
+const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发',experience_compile:'经验编译',experience_feedback:'经验反馈',mcp_experience_feedback:'经验反馈(Agent)'};
 const CONF_ZH={numeric:'数值更新',method:'方法过时',premise:'前提失效',spurious:'表面相似',value_conflict:'取值矛盾'};
 const RESO_ZH={supersede:'新版取代旧版',coexist:'两条共存',merge:'合并为一条',keep_new:'保留新值',keep_old:'保留旧值'};
 const CH_ZH={vec:'向量',bm25:'全文',graph:'关联'};
@@ -418,7 +426,7 @@ function auditZh(a){
   return `${ACT_ZH[a.action]||a.action}${s}`;
 }
 /* ---- 导航 ---- */
-const PAGES={dash:refreshDash,vault:vTree,prefs:()=>loadPrefs(false),know:loadKnow,forget:()=>{},arena:loadArena,hub:loadHub};
+const PAGES={dash:refreshDash,vault:vTree,prefs:()=>loadPrefs(false),know:()=>{loadKnow();xList()},forget:()=>{},arena:loadArena,hub:loadHub};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
@@ -676,6 +684,40 @@ async function sensScan(){
    ?`${badge}<div style="margin-top:6px">${(r.findings||[]).map(x=>`<div class="fi"><span class="hit-dot" style="background:${lv==='blocked'?'var(--err)':'var(--warn)'}"></span>${SENS_ZH[x.kind]||x.kind}：<b class="num">${esc(x.matched||'')}</b></div>`).join('')}
      <div class="fi muted" style="margin-top:4px">脱敏后入库：${esc(r.redacted||'')}</div></div>`
    :`${badge}`;
+}
+
+/* ---- 经验复用 ---- */
+async function xCompile(){
+  $('x-msg').textContent='LLM 提炼近期轨迹中…';
+  const r=await api('/api/v1/experiences/compile',{},'POST');
+  $('x-msg').textContent='';
+  if(!r||r.error){toast(r&&r.error||'编译失败');return}
+  toast(`编译完成：做法 ${r.practice} 条 · 避坑 ${r.pitfall} 条`+(r.skipped_existing?` · 已有跳过 ${r.skipped_existing}`:''));
+  xList();refreshDash();
+}
+async function xList(){
+  const cards=await api('/api/v1/experiences');
+  $('x-list').innerHTML=(cards||[]).length?(cards||[]).map(c=>{
+    const prac=c.exp_type==='practice';
+    const rate=c.wins+c.fails>0?`<span class="muted">复用 ✓${c.wins} / ✗${c.fails}${c.success_rate!=null?` · 成功率 ${Math.round(c.success_rate*100)}%`:''}</span>`:`<span class="muted">尚未被复用</span>`;
+    return `<div class="fi">
+      <span class="tag" style="background:${prac?'var(--blue-weak)':'var(--warn-bg)'};color:${prac?'var(--blue)':'var(--warn)'}">${prac?'做法':'避坑'}</span>
+      <b>${esc(c.title)}</b>
+      <span class="tag" style="background:${c.status==='verified'?'var(--ok-bg)':'var(--warn-bg)'};color:${c.status==='verified'?'var(--ok)':'var(--warn)'}">${c.status==='verified'?'已验证':'草稿'}</span>
+      <span class="muted">· ${esc(c.scene)} · 来源 ${c.source_ids.length} 条轨迹</span><br>
+      <span style="font-size:13px">适用：${esc(c.trigger)}</span>
+      ${c.steps.length?`<div class="muted" style="margin:2px 0">${c.steps.slice(0,3).map(s=>'· '+esc(s)).join('<br>')}</div>`:''}
+      <div class="row" style="margin-top:3px">${rate}
+        <button class="act ghost" style="padding:2px 10px" onclick="xFb(${c.id},true)">用过·成功</button>
+        <button class="act ghost" style="padding:2px 10px" onclick="xFb(${c.id},false)">用过·失败</button>
+        <a href="#" onclick="vDetail(${c.id});return false" class="muted">详情</a></div></div>`;
+  }).join(''):'<div class="empty">还没有经验卡。灌入带任务标签的工具轨迹（或由 Agent 经 MCP 写入）后，点上方按钮编译。</div>';
+}
+async function xFb(id,ok){
+  const r=await api(`/api/v1/experiences/${id}/feedback`,{ok});
+  if(r&&r.ok){const c=r.card;toast(`已记录：${c.status==='verified'?'转为已验证 ✓':'当前 '+c.status}（✓${c.wins} / ✗${c.fails}）`)}
+  else toast(r&&r.error||'失败');
+  xList();loadAudit('dash-audit');
 }
 
 /* ---- 评测对比 ---- */

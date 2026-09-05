@@ -103,6 +103,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/forget/parse", post(forget_parse))
         .route("/api/v1/forget/preview", post(forget_preview))
         .route("/api/v1/forget/exec", post(forget_exec))
+        .route("/api/v1/experiences", get(list_experiences))
+        .route("/api/v1/experiences/compile", post(experience_compile))
+        .route("/api/v1/experiences/{id}/feedback", post(experience_feedback))
         .route("/api/v1/audit", get(list_audit))
         .route("/api/v1/hub/sources", get(hub_sources))
         .route("/api/v1/hub/source/items", get(hub_source_items))
@@ -306,8 +309,67 @@ async fn search(State(st): State<Arc<AppState>>, Json(mut p): Json<SearchParams>
     match st.store.search(&p) {
         Ok(hits) => {
             let ms = t0.elapsed().as_millis();
-            (StatusCode::OK, Json(json!({"took_ms": ms, "hits": hits})))
+            let hits = experience_boost(hits);
+            let mut vals: Vec<Value> = hits.iter().map(|h| json!(h)).collect();
+            for (v, h) in vals.iter_mut().zip(hits.iter()) {
+                if let Some(exp) = lymem_core::experience::experience_of(&h.record) {
+                    v["experience"] = json!({"status": exp.status, "type": exp.exp_type,
+                        "task": exp.task, "trigger": exp.trigger, "wins": exp.outcome.wins, "fails": exp.outcome.fails});
+                }
+            }
+            (StatusCode::OK, Json(json!({"took_ms": ms, "hits": vals})))
         }
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+/// 经验卡检索提权（verified ×1.25 / draft ×1.1）并按新得分重排。core 检索语义不变。
+fn experience_boost(mut hits: Vec<lymem_core::model::ScoredMemory>) -> Vec<lymem_core::model::ScoredMemory> {
+    for h in hits.iter_mut() {
+        let mult = lymem_core::experience::experience_of(&h.record)
+            .map(|e| if e.status == "verified" { 1.25 } else { 1.1 });
+        if let Some(m) = mult {
+            h.final_score *= m;
+        }
+    }
+    hits.sort_by(|a, b| b.final_score.partial_cmp(&a.final_score).unwrap_or(std::cmp::Ordering::Equal));
+    hits
+}
+
+// ---------------- 经验复用层 ----------------
+
+/// 从近期轨迹（情景层）编译经验卡：成功→做法，失败→避坑
+async fn experience_compile(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        st2.store.compile_experiences(Some(judge.as_ref()), &lymem_core::experience::CompileOpts::default())
+    })
+    .await;
+    match res {
+        Ok(Ok(rep)) => (StatusCode::OK, Json(json!(rep))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
+async fn list_experiences(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    match st.store.list_experiences() {
+        Ok(cards) => (StatusCode::OK, Json(json!(cards))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct FeedbackReq {
+    ok: bool,
+}
+
+/// 采纳反馈门控：用过·成功 / 用过·失败 → draft/verified 状态机
+async fn experience_feedback(State(st): State<Arc<AppState>>, axum::extract::Path(id): axum::extract::Path<i64>, Json(req): Json<FeedbackReq>) -> impl IntoResponse {
+    match st.store.experience_feedback(id, req.ok) {
+        Ok(Some(card)) => (StatusCode::OK, Json(json!({"ok": true, "card": card}))),
+        Ok(None) => (StatusCode::NOT_FOUND, Json(json!({"error": "不是经验卡或记忆不存在"}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
 }
@@ -898,6 +960,30 @@ async fn hub_dispatch(State(st): State<Arc<AppState>>, Json(req): Json<HubDispat
     let mut lines: Vec<String> = Vec::new();
     let mut item_n = 0usize;
     if mode != lymem_core::hub::DispatchMode::Remove {
+        // 0) 经验前置注入：与检索词相关的经验卡（verified 优先），Agent 最先读到
+        let mut exp_ids: Vec<i64> = Vec::new();
+        if let Some(q) = req.query.as_deref().filter(|s| !s.trim().is_empty()) {
+            let ql = q.to_lowercase();
+            let mut exps = st.store.list_experiences().unwrap_or_default();
+            exps.retain(|c| {
+                ql.contains(&c.task.to_lowercase())
+                    || c.task.to_lowercase().contains(&ql)
+                    || ql.contains(&c.title.to_lowercase())
+            });
+            exps.sort_by(|a, b| {
+                (b.status == "verified").cmp(&(a.status == "verified")).then(
+                    b.success_rate.unwrap_or(0.0).partial_cmp(&a.success_rate.unwrap_or(0.0)).unwrap_or(std::cmp::Ordering::Equal),
+                )
+            });
+            for c in exps.iter().take(3) {
+                let tag = if c.exp_type == "practice" { "经验·做法" } else { "经验·避坑" };
+                let step: String = c.steps.first().map(|s| s.chars().take(80).collect()).unwrap_or_default();
+                lines.push(format!("- **[{tag}]** 适用:{}；{}（{}，复用 ✓{} / ✗{}）（lymem #{}）",
+                    c.trigger, step, c.status, c.wins, c.fails, c.id));
+                exp_ids.push(c.id);
+                item_n += 1;
+            }
+        }
         // 1) 显式记忆 id
         let mut ids = req.memory_ids.clone();
         // 2) 查询补充：检索 top-N 记忆
@@ -914,7 +1000,19 @@ async fn hub_dispatch(State(st): State<Arc<AppState>>, Json(req): Json<HubDispat
         }
         let ids: Vec<i64> = ids.iter().take(req.limit.max(20).min(50)).copied().collect();
         for id in &ids {
+            if exp_ids.contains(id) {
+                continue; // 已按经验行输出，不重复
+            }
             if let Ok(Some(rec)) = st.store.get(*id) {
+                // 4) 经验卡专用行格式（状态/成败计数）
+                if let Some(exp) = lymem_core::experience::experience_of(&rec) {
+                    let tag = if exp.exp_type == "practice" { "经验·做法" } else { "经验·避坑" };
+                    let step = exp.steps.first().cloned().unwrap_or_default();
+                    lines.push(format!("- **[{tag}]** 适用:{}；{}（{}，复用 ✓{} / ✗{}）（lymem #{id}）",
+                        exp.trigger, step, exp.status, exp.outcome.wins, exp.outcome.fails));
+                    item_n += 1;
+                    continue;
+                }
                 let body = if rec.sensitivity == lymem_core::model::Sensitivity::Sensitive {
                     lymem_core::sensitive::redact(&rec.content)
                 } else {
