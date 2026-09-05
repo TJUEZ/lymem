@@ -122,87 +122,99 @@ impl MemoryStore {
             }
         }
 
-        // 收集全部候选 id（去重）
+        // 收集全部候选 id（HashSet 去重，保持首现顺序）
+        let mut seen: std::collections::HashSet<i64> = std::collections::HashSet::new();
         let mut all_ids: Vec<i64> = Vec::new();
         for (mid, _, _) in &vec_rank {
-            if !all_ids.contains(mid) {
+            if seen.insert(*mid) {
                 all_ids.push(*mid);
             }
         }
         for (mid, _, _, _) in &bm25_rank {
-            if !all_ids.contains(mid) {
+            if seen.insert(*mid) {
                 all_ids.push(*mid);
             }
         }
         for (mid, _) in &graph_rank {
-            if !all_ids.contains(mid) {
+            if seen.insert(*mid) {
                 all_ids.push(*mid);
             }
         }
 
-        // 拉取记录并应用过滤器
-        let mut records: Vec<MemoryRecord> = Vec::new();
-        for id in &all_ids {
-            if let Some(rec) = self.get(*id)? {
-                if !rec.tombstone && rec.is_current
-                    && tier_ok(rec.tier.as_str(), &p.tiers)
-                    && (p.scenes.is_none() || p.scenes.as_ref().unwrap().iter().any(|s| *s == rec.scene || s == "*"))
-                    && (p.after.is_none() || rec.created_at >= p.after.unwrap())
-                    && (p.before.is_none() || rec.created_at <= p.before.unwrap())
-                {
-                    records.push(rec);
-                }
+        // 批量拉取记录并应用过滤器（替代逐候选 get 的 N 次锁+全行读）
+        let mut by_id: std::collections::HashMap<i64, MemoryRecord> = std::collections::HashMap::new();
+        for rec in self.get_many(&all_ids)? {
+            if !rec.tombstone && rec.is_current
+                && tier_ok(rec.tier.as_str(), &p.tiers)
+                && (p.scenes.is_none() || p.scenes.as_ref().unwrap().iter().any(|s| *s == rec.scene || s == "*"))
+                && (p.after.is_none() || rec.created_at >= p.after.unwrap())
+                && (p.before.is_none() || rec.created_at <= p.before.unwrap())
+            {
+                by_id.insert(rec.id, rec);
             }
         }
 
+        // 每通道取各候选的最佳名次（原逻辑为逐候选线性扫描，O(n²)）
+        let mut vec_best: std::collections::HashMap<i64, (usize, i64)> = std::collections::HashMap::new();
+        for (rank, (mid, _, chunk)) in vec_rank.iter().enumerate() {
+            vec_best.entry(*mid).or_insert((rank + 1, *chunk));
+        }
+        let mut bm25_best: std::collections::HashMap<i64, (usize, &String)> = std::collections::HashMap::new();
+        for (rank, (mid, _, _, snip)) in bm25_rank.iter().enumerate() {
+            bm25_best.entry(*mid).or_insert((rank + 1, snip));
+        }
+        let mut graph_best: std::collections::HashMap<i64, usize> = std::collections::HashMap::new();
+        for (rank, (mid, _hop)) in graph_rank.iter().enumerate() {
+            graph_best.entry(*mid).or_insert(rank + 1);
+        }
+        // 向量命中片段批量预取（替代逐命中查库）
+        let chunk_ids: Vec<i64> = vec_best.values().map(|(_, c)| *c).collect();
+        let chunk_snips = self.chunk_contents(&chunk_ids)?;
+
+        // RRF 权重：读一次环境（原为每候选 3 次 env::var）
+        let env_w = |name: &str| std::env::var(name).ok().and_then(|v| v.parse::<f64>().ok()).unwrap_or(1.0);
+        let (w_vec, w_bm25, w_graph) = (env_w("LYMEM_W_VEC"), env_w("LYMEM_W_BM25"), env_w("LYMEM_W_GRAPH"));
+        let first_seen: std::collections::HashMap<i64, usize> =
+            all_ids.iter().enumerate().map(|(i, id)| (*id, i)).collect();
+
         // RRF 融合
         let mut fused: Vec<(i64, f64, Option<usize>, Option<usize>, Option<usize>, String)> = Vec::new();
-        for rec in &records {
+        for rec in by_id.values() {
             let id = rec.id;
             let (mut score, mut rv, mut rb, mut rg) = (0.0, None, None, None);
             let mut snippet = String::new();
-            let w_vec = std::env::var("LYMEM_W_VEC").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
-            for (rank, (mid, dist, chunk)) in vec_rank.iter().enumerate() {
-                if *mid == id {
-                    rv = Some(rank + 1);
-                    score += w_vec / (p.rrf_k + rank as f64 + 1.0);
-                    // 余弦相似度展示用
-                    snippet = self.chunk_content(*chunk).unwrap_or_default().unwrap_or_default();
-                    let _ = dist;
-                    break;
+            if let Some((rank, chunk)) = vec_best.get(&id) {
+                rv = Some(*rank);
+                score += w_vec / (p.rrf_k + *rank as f64);
+                snippet = chunk_snips.get(chunk).cloned().unwrap_or_default();
+            }
+            if let Some((rank, snip)) = bm25_best.get(&id) {
+                rb = Some(*rank);
+                score += w_bm25 / (p.rrf_k + *rank as f64);
+                if snippet.is_empty() {
+                    snippet = snip.to_string();
                 }
             }
-            let w_bm25 = std::env::var("LYMEM_W_BM25").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
-            for (rank, (mid, _, _, snip)) in bm25_rank.iter().enumerate() {
-                if *mid == id {
-                    rb = Some(rank + 1);
-                    score += w_bm25 / (p.rrf_k + rank as f64 + 1.0);
-                    if snippet.is_empty() {
-                        snippet = snip.clone();
-                    }
-                    break;
-                }
-            }
-            let w_graph = std::env::var("LYMEM_W_GRAPH").ok().and_then(|v| v.parse().ok()).unwrap_or(1.0);
-            for (rank, (mid, _hop)) in graph_rank.iter().enumerate() {
-                if *mid == id {
-                    rg = Some(rank + 1);
-                    score += w_graph / (p.rrf_k + rank as f64 + 1.0);
-                    break;
-                }
+            if let Some(rank) = graph_best.get(&id) {
+                rg = Some(*rank);
+                score += w_graph / (p.rrf_k + *rank as f64);
             }
             if snippet.is_empty() {
                 snippet = rec.content.chars().take(120).collect();
             }
             fused.push((id, score, rv, rb, rg, snippet));
         }
-        fused.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        fused.sort_by(|a, b| {
+            b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| first_seen.get(&a.0).cmp(&first_seen.get(&b.0)))
+        });
 
         // 偏好重排：命中偏好作用域的记忆获得提升
         let prefs = if p.preference_rerank { self.effective_preferences(None)? } else { Vec::new() };
         let mut out: Vec<ScoredMemory> = Vec::new();
         for (id, rrf, rv, rb, rg, snippet) in fused.into_iter().take(k) {
-            let rec = records.iter().find(|r| r.id == id).cloned().unwrap();
+            let Some(rec) = by_id.get(&id) else { continue };
+            let rec = rec.clone();
             let mut final_score = rrf;
             for pref in &prefs {
                 // 偏好键形如 tool_choice.xxx / output_style.xxx；作用场景匹配或通配时轻微提升
@@ -220,7 +232,7 @@ impl MemoryStore {
                 snippet,
             });
         }
-        self.touch(&out.iter().map(|s| s.record.id).collect::<Vec<_>>())?;
+        self.touch_many(&out.iter().map(|s| s.record.id).collect::<Vec<_>>())?;
         tracing::debug!("检索完成 {}ms, 候选{}条", t0.elapsed().as_millis(), all_ids.len());
         Ok(out)
     }

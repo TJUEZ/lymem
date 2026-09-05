@@ -348,7 +348,7 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
             Ok(json!({
                 "tiers": counts, "preferences": prefs,
                 "embedder": st.embedder_name, "embed_dim": st.store.vec_dim,
-                "llm": st.llm_name,
+                "llm": st.llm_name.lock().unwrap().clone(),
             }))
         }
         other => Err(format!("未知工具: {other}")),

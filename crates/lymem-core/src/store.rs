@@ -222,6 +222,11 @@ impl MemoryStore {
         let conn = Connection::open(db_path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
+        // 端侧读多写少：连接级缓存/mmap/忙等待，均为进程内安全设置
+        conn.pragma_update(None, "busy_timeout", 5000)?;
+        conn.pragma_update(None, "cache_size", -16000)?; // 16MB 页缓存
+        conn.pragma_update(None, "mmap_size", 268_435_456)?; // 256MB mmap
+        conn.pragma_update(None, "temp_store", "MEMORY")?;
         conn.execute_batch(SCHEMA)?;
 
         let vec_dim = embedder.dim();
@@ -398,6 +403,52 @@ impl MemoryStore {
                 params![id, now],
             );
         }
+        Ok(())
+    }
+
+    /// 批量拉取记忆（一次 SQL，替代逐候选 get 的 N 次锁+全行读）
+    pub fn get_many(&self, ids: &[i64]) -> Result<Vec<MemoryRecord>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let conn = self.conn.lock().unwrap();
+        let ph = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let sql = format!("SELECT {RECORD_COLS} FROM memories WHERE id IN ({ph})");
+        let mut stmt = conn.prepare(&sql)?;
+        let params: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let rows = stmt.query_map(params.as_slice(), row_to_record)?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    /// 批量取片段正文（检索 snippet 组装用）
+    pub fn chunk_contents(&self, chunk_ids: &[i64]) -> Result<std::collections::HashMap<i64, String>> {
+        if chunk_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+        let conn = self.conn.lock().unwrap();
+        let ph = chunk_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let sql = format!("SELECT chunk_id, content FROM chunks WHERE chunk_id IN ({ph})");
+        let mut stmt = conn.prepare(&sql)?;
+        let params: Vec<&dyn rusqlite::ToSql> = chunk_ids.iter().map(|v| v as &dyn rusqlite::ToSql).collect();
+        let rows = stmt.query_map(params.as_slice(), |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    /// 批量更新访问计数：单次锁定 + 单事务（替代逐条 UPDATE 的 N 次加锁写）
+    pub fn touch_many(&self, ids: &[i64]) -> Result<()> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let conn = self.conn.lock().unwrap();
+        let now = Self::now();
+        conn.execute_batch("BEGIN IMMEDIATE")?;
+        for id in ids {
+            let _ = conn.execute(
+                "UPDATE memories SET access_count = access_count + 1, last_access_at = ?2 WHERE id = ?1",
+                params![id, now],
+            );
+        }
+        conn.execute_batch("COMMIT")?;
         Ok(())
     }
 

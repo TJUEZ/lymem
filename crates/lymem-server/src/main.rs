@@ -5,6 +5,7 @@
 //!   供 mem0 / Letta / memmy 等 Python 基线复用同一嵌入模型，保证横向对比公平；
 //! - `/viewer`：中文管理界面（记忆总管）占位页，正式前端后续迭代。
 
+mod caching_embedder;
 mod mcp;
 
 use std::collections::BTreeMap;
@@ -30,7 +31,8 @@ struct AppState {
     store: MemoryStore,
     judge: Arc<dyn LlmJudge>,
     embedder_name: String,
-    llm_name: String,
+    /// 后台探测完成后由 "probing" 变为 llm-ready / rules-only
+    llm_name: Arc<std::sync::Mutex<String>>,
 }
 
 fn default_data_dir() -> PathBuf {
@@ -50,6 +52,8 @@ fn build_store() -> Result<MemoryStore, Box<dyn std::error::Error>> {
             Some("hash") => Box::new(lymem_core::embedding::HashEmbedder::new(64)),
             _ => Box::new(lymem_kylin::KylinEmbedder::connect_auto()?),
         };
+    // 查询向量 LRU 缓存：消除重复嵌入（检索热路径 ~30ms/次）
+    let embedder = Box::new(caching_embedder::CachingEmbedder::new(embedder));
     Ok(MemoryStore::open(&dir.join("lymem.db"), &dir.join("fts"), embedder)?)
 }
 
@@ -67,17 +71,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("hash") => "hash".to_string(),
         _ => "kylin(auto)".to_string(),
     };
-    // 探测含阻塞 LLM 调用，须移出 async 运行时
-    let probe = judge.clone();
-    let llm_ok = tokio::task::spawn_blocking(move || judge_complete_probe(probe.as_ref()))
-        .await
-        .unwrap_or(false);
-    let llm_name = if llm_ok { "llm-ready".into() } else { "rules-only".into() };
+    // LLM 探测含阻塞网络调用（最长 60s）：移到后台，不阻塞端口绑定
+    let llm_name = Arc::new(std::sync::Mutex::new("probing".into()));
     let state = Arc::new(AppState {
         store,
-        judge,
+        judge: judge.clone(),
         embedder_name,
-        llm_name,
+        llm_name: llm_name.clone(),
+    });
+    tokio::task::spawn_blocking(move || {
+        let ok = judge_complete_probe(judge.as_ref());
+        *llm_name.lock().unwrap() = if ok { "llm-ready".into() } else { "rules-only".into() };
+        tracing::info!("LLM 后台探测完成: {}", if ok { "llm-ready" } else { "rules-only" });
     });
 
     let app = Router::new()
@@ -159,7 +164,7 @@ async fn status(State(st): State<Arc<AppState>>) -> impl IntoResponse {
         "service": "lymem",
         "embedder": st.embedder_name,
         "embed_dim": st.store.vec_dim,
-        "llm": st.llm_name,
+        "llm": st.llm_name.lock().unwrap().clone(),
         "tiers": counts,
         "preferences": prefs,
     }))
@@ -305,9 +310,12 @@ async fn search(State(st): State<Arc<AppState>>, Json(mut p): Json<SearchParams>
     if p.top_k == 0 {
         p.top_k = 8;
     }
+    let st2 = Arc::clone(&st);
     let t0 = std::time::Instant::now();
-    match st.store.search(&p) {
-        Ok(hits) => {
+    // 检索含嵌入 IPC 与库查询，均为阻塞操作，移出 async worker
+    let res = tokio::task::spawn_blocking(move || st2.store.search(&p)).await;
+    match res {
+        Ok(Ok(hits)) => {
             let ms = t0.elapsed().as_millis();
             let hits = experience_boost(hits);
             let mut vals: Vec<Value> = hits.iter().map(|h| json!(h)).collect();
@@ -319,7 +327,8 @@ async fn search(State(st): State<Arc<AppState>>, Json(mut p): Json<SearchParams>
             }
             (StatusCode::OK, Json(json!({"took_ms": ms, "hits": vals})))
         }
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
     }
 }
 
