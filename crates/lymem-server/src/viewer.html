@@ -33,7 +33,9 @@ main{flex:1;min-width:0;padding:26px 34px;overflow:auto}
 .topbar{margin-bottom:20px}
 .topbar h2{font-size:19px;letter-spacing:.01em}
 .topbar .desc{font-size:12.5px;color:var(--faint);margin-top:3px}
-.topbar .clause{display:inline-block;font-size:11px;color:var(--blue);background:var(--blue-weak);border-radius:5px;padding:1px 8px;margin-left:8px;font-weight:600;vertical-align:2px}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+.sq-chip{display:inline-block;font-size:12px;color:var(--blue);background:var(--blue-weak);border-radius:14px;padding:3px 12px;cursor:pointer;transition:background .16s var(--ease)}
+.sq-chip:hover{background:#dbe5fb}
 section[data-page]{display:none}
 section[data-page].on{display:block;animation:pgIn .25s var(--ease)}
 @keyframes pgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
@@ -116,7 +118,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
 </head>
 <body>
 <aside>
-  <div class="brand"><b>麟忆尽智</b><small>lymem · 记忆管理台</small></div>
+  <div class="brand"><b>麟忆尽智</b><small>lymem · 记忆管理台 <span id="foot-ver"></span></small></div>
   <nav id="nav">
     <div class="sec">记忆</div>
     <button data-page="dash" class="on"><span class="txt">总览</span></button>
@@ -125,7 +127,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <button data-page="know"><span class="txt">知识与冲突</span></button>
     <button data-page="forget"><span class="txt">遗忘与安全</span></button>
     <div class="sec">评测与集成</div>
-    <button data-page="arena"><span class="txt">记忆竞技场</span></button>
+    <button data-page="arena"><span class="txt">评测对比</span></button>
     <button data-page="hub"><span class="txt">Agent 中枢</span></button>
   </nav>
   <div class="foot">
@@ -136,18 +138,18 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
 </aside>
 <main>
 
-<!-- 总览：条款4/6 + 硬性规定状态 -->
+<!-- 总览 -->
 <section data-page="dash" class="on">
-  <div class="topbar"><h2>总览<span class="clause">条款 4 · 6</span></h2><div class="desc">四层记忆体系 · 数据流转 · 全操作留痕 · 麒麟端侧状态</div></div>
+  <div class="topbar"><h2>总览</h2><div class="desc">四层记忆体系 · 数据流转 · 全操作留痕 · 端侧实时状态</div></div>
   <div class="kpi">
     <div><div class="l">记忆总数</div><div class="n" id="k-total">-</div><div class="s">情景 + 知识 + 偏好</div></div>
-    <div><div class="l">知识条目</div><div class="n" id="k-know">-</div><div class="s">含整本《三国演义》120 回</div></div>
+    <div><div class="l">知识条目</div><div class="n" id="k-know">-</div><div class="s">长期沉淀 · 版本化</div></div>
     <div><div class="l">偏好 · 当前生效</div><div class="n" id="k-pref">-</div><div class="s">双通道自动提取</div></div>
-    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">指标线 ≤500ms</div></div>
+    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">目标 ≤500ms</div></div>
   </div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>记忆流转管道<span class="hint">工作(短期) → 情景(中期) → 知识/偏好(长期) —— 条款 6</span></h3>
+      <h3>记忆流转管道<span class="hint">工作(短期) → 情景(中期) → 知识/偏好(长期)</span></h3>
       <div class="pipe" id="d-pipe"></div>
       <div class="row">
         <button class="act ghost" onclick="consolidate()">蒸馏一轮（情景 → 知识）</button>
@@ -156,25 +158,25 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       </div>
     </div>
     <div class="card">
-      <h3>赛题条款 ↔ 界面索引</h3>
+      <h3>功能导览<span class="hint">每项能力都有对应页面可亲手操作</span></h3>
       <table class="tb">
-        <tr><td>条款1 多源接入·清洗校验</td><td><a href="#vault" onclick="go('vault')">记忆库 · 灌入</a></td></tr>
-        <tr><td>条款2 偏好动态捕捉</td><td><a href="#prefs" onclick="go('prefs')">偏好中心</a></td></tr>
-        <tr><td>条款3 知识整合·冲突融合</td><td><a href="#know" onclick="go('know')">知识与冲突</a></td></tr>
-        <tr><td>条款4 端侧部署·延迟</td><td>本页 KPI + 底栏麒麟状态</td></tr>
-        <tr><td>条款5 敏感识别·精准遗忘</td><td><a href="#forget" onclick="go('forget')">遗忘与安全</a></td></tr>
-        <tr><td>条款6 短中期记忆流转</td><td>本页管道图</td></tr>
-        <tr><td>条款7 量化评测</td><td><a href="#arena" onclick="go('arena')">记忆竞技场</a></td></tr>
-        <tr><td>创新点 多 Agent 记忆中枢</td><td><a href="#hub" onclick="go('hub')">Agent 中枢</a></td></tr>
+        <tr><td>多源接入 · 清洗校验</td><td><a href="#vault" onclick="go('vault')">记忆库 · 灌入</a></td></tr>
+        <tr><td>偏好动态捕捉</td><td><a href="#prefs" onclick="go('prefs')">偏好中心</a></td></tr>
+        <tr><td>知识整合 · 冲突仲裁</td><td><a href="#know" onclick="go('know')">知识与冲突</a></td></tr>
+        <tr><td>敏感识别 · 精准遗忘</td><td><a href="#forget" onclick="go('forget')">遗忘与安全</a></td></tr>
+        <tr><td>短期 → 长期记忆流转</td><td>本页管道图</td></tr>
+        <tr><td>低延迟端侧检索</td><td>本页 KPI + 底栏状态</td></tr>
+        <tr><td>量化评测</td><td><a href="#arena" onclick="go('arena')">评测对比</a></td></tr>
+        <tr><td>多 Agent 记忆中枢</td><td><a href="#hub" onclick="go('hub')">Agent 中枢</a></td></tr>
       </table>
     </div>
   </div>
   <div class="card"><h3>最近活动<span class="hint">全部操作留痕（审计）</span></h3><div class="feed" id="dash-audit"><div class="empty">加载中…</div></div></div>
 </section>
 
-<!-- 记忆库：条款1 + 条款6 -->
+<!-- 记忆库：多源灌入 · 质量校验 · 检索问答 -->
 <section data-page="vault">
-  <div class="topbar"><h2>记忆库<span class="clause">条款 1 · 6</span></h2><div class="desc">长记忆灌入（贴标签分库）· 质量校验 · 库内检索问答</div></div>
+  <div class="topbar"><h2>记忆库</h2><div class="desc">长记忆灌入（贴标签分库）· 质量校验 · 库内检索问答</div></div>
   <div class="grid g2-1">
     <div class="card">
       <h3>长记忆灌入<span class="hint">支持任意文档 / 笔记 / 知识 —— 自动清洗、分块、贴库标签</span></h3>
@@ -182,7 +184,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div id="tab-paste">
         <textarea id="v-text" rows="5" placeholder="粘贴任意长文本：工作流、项目笔记、小说、文档…将按语义块自动切分入库"></textarea>
         <div class="row" style="margin-top:8px">
-          <input type="text" id="v-lib" placeholder="库标签（如：公共库 / 办公知识 / 三国演义）" style="max-width:280px" value="公共库">
+          <input type="text" id="v-lib" placeholder="库标签（如：公共库 / 办公知识 / 项目文档）" style="max-width:280px" value="公共库">
           <button class="act" onclick="vIngestText()">灌入记忆库</button>
           <span class="muted" id="v-msg"></span>
         </div>
@@ -207,8 +209,9 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <h3>检索问答<span class="hint">混合检索 · 端侧直答</span></h3>
       <div class="row"><input type="text" id="v-q" placeholder="问库里的任何内容…" onkeydown="if(event.key==='Enter')vAsk()"><button class="act" onclick="vAsk()">提问</button></div>
       <div class="row" style="margin-top:6px">
-        <span class="sq-chip" onclick="vAsk('孔明借东风是在哪里？')">孔明借东风？</span>
-        <span class="sq-chip" onclick="vAsk('谁向曹操献了连环船计策？')">连环船计策？</span>
+        <span class="muted">试一试：</span>
+        <span class="sq-chip" onclick="vAsk('周报工作流是怎样的？')">周报工作流是怎样的？</span>
+        <span class="sq-chip" onclick="vAsk('部署路径是什么？')">部署路径是什么？</span>
       </div>
       <div id="v-ans" class="muted" style="margin-top:10px"></div>
     </div>
@@ -220,9 +223,9 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   </div>
 </section>
 
-<!-- 偏好中心：条款2 -->
+<!-- 偏好中心：自动提取 · 版本化 -->
 <section data-page="prefs">
-  <div class="topbar"><h2>偏好中心<span class="clause">条款 2</span></h2><div class="desc">自动提取 · 版本化管理 · 跨场景适配 · 任意时点回溯</div></div>
+  <div class="topbar"><h2>偏好中心</h2><div class="desc">自动提取 · 版本化管理 · 跨场景适配 · 任意时点回溯</div></div>
   <div class="row" style="margin-bottom:12px">
     <button class="act ghost" onclick="minePrefs({},'p-msg')">规则通道挖掘（工具使用统计）</button>
     <button class="act ghost" onclick="extractPrefs()">会话通道提取（LLM 陈述分析）</button>
@@ -246,9 +249,9 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   </div>
 </section>
 
-<!-- 知识与冲突：条款3 -->
+<!-- 知识与冲突：结构化入库 · 冲突仲裁 -->
 <section data-page="know">
-  <div class="topbar"><h2>知识与冲突<span class="clause">条款 3</span></h2><div class="desc">工作流 / 案例 / 模板的结构化入库 · 新旧知识冲突检测与仲裁 · 跨源矛盾</div></div>
+  <div class="topbar"><h2>知识与冲突</h2><div class="desc">工作流 / 案例 / 模板的结构化入库 · 新旧知识冲突检测与仲裁 · 跨源矛盾</div></div>
   <div class="grid g2-1">
     <div class="card">
       <h3>知识提取入库<span class="hint">写入即走四步管道：检测 → 分类 → 仲裁 → 版本化</span></h3>
@@ -256,7 +259,8 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <textarea id="k-body" rows="3" style="margin-top:6px" placeholder="粘贴工作流 / 历史案例 / 可复用模板…">每周五 16:00 前把周报发给直属领导，抄送部门秘书</textarea>
       <div class="row" style="margin-top:8px">
         <button class="act" onclick="kAdd()">提取入库（自动冲突检测）</button>
-        <span class="muted">提示：写入两条同主题不同内容的知识即可看到冲突仲裁</span>
+        <button class="act ghost" onclick="kDemoConflict()">演示冲突：改值重提</button>
+        <span class="muted">先按上方内容入库，再把 16:00 改成 18:00 重新提交，即可看到冲突仲裁</span>
       </div>
       <div id="k-conf" style="margin-top:8px"></div>
     </div>
@@ -278,11 +282,11 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   </div>
 </section>
 
-<!-- 遗忘与安全：条款5 -->
+<!-- 遗忘与安全：敏感分级 · 精准遗忘 -->
 <section data-page="forget">
-  <div class="topbar"><h2>遗忘与安全<span class="clause">条款 5</span></h2><div class="desc">自然语言遗忘 · 前后对比见效 · 敏感信息分级</div></div>
+  <div class="topbar"><h2>遗忘与安全</h2><div class="desc">自然语言遗忘 · 前后对比见效 · 敏感信息分级</div></div>
   <div class="card">
-    <h3>遗忘演示（前后对比）<span class="hint">同一问题，遗忘前后各检索一次，直观看到记忆消失</span></h3>
+    <h3>精准遗忘（前后对比）<span class="hint">同一问题，遗忘前后各检索一次，直观看到记忆消失</span></h3>
     <div class="sq-step"><div class="no">1</div><div style="flex:1">先问一个将被遗忘的主题：<div class="row" style="margin-top:6px"><input type="text" id="f-q" value="部署路径是什么？" style="max-width:320px"><button class="act ghost" onclick="fBefore()">遗忘前检索</button><span class="muted" id="f-before-n"></span></div></div></div>
     <div class="sq-step"><div class="no">2</div><div style="flex:1">下达遗忘指令：<input type="text" id="f-instr" value="忘掉关于部署路径的一切" style="max-width:320px;margin-top:6px"></div></div>
     <div class="sq-step"><div class="no">3</div><div style="flex:1;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -303,9 +307,9 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   </div>
 </section>
 
-<!-- 记忆竞技场：条款7 -->
+<!-- 评测对比：在线评测 · 同题对比 -->
 <section data-page="arena">
-  <div class="topbar"><h2>记忆竞技场<span class="clause">条款 7</span></h2><div class="desc">按赛题指标分类 · 多记忆系统同题竞速</div></div>
+  <div class="topbar"><h2>评测对比</h2><div class="desc">内置数据集在线评测 · 与主流记忆系统同题对比</div></div>
   <div class="grid g2-1">
     <div class="card">
       <h3>在线评测<span class="hint">对当前记忆库实时跑检索评测（hit@5 + 延迟分位）</span></h3>
@@ -319,9 +323,9 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始。样例灌入隔离场景，不影响你的库。</div>
     </div>
     <div class="card">
-      <h3>赛题硬指标达成</h3>
+      <h3>核心性能指标</h3>
       <table class="tb">
-        <tr><th>指标</th><th>要求</th><th>实测</th></tr>
+        <tr><th>指标</th><th>目标</th><th>实测</th></tr>
         <tr><td>检索延迟</td><td>≤500ms</td><td><b style="color:var(--ok)">p50 27 / p99 55ms</b></td></tr>
         <tr><td>冲突处理正确率</td><td>≥88%</td><td><b style="color:var(--ok)">93.3%</b></td></tr>
         <tr><td>记忆能力 MCQ</td><td>≥85%</td><td><b style="color:var(--ok)">94.0%</b></td></tr>
@@ -334,17 +338,17 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   <details style="margin-top:2px">
     <summary style="cursor:pointer;color:var(--faint);font-size:12.5px;padding:4px 0">评测口径说明</summary>
     <div class="muted" style="padding:8px 2px">
-      lymem 为本项目；mem0 / iwe 为可本地运行的开源记忆系统，接入同一麒麟嵌入与 MiniMax 生成网关（公平协议）。
-      书山·三国与 PPT 推荐七站为自建评测集（含 dev/test 分层划分），明细见 benchmark/data/DATASETS.md；
+      lymem 为本系统；mem0 / iwe 为可本地运行的开源记忆系统，接入同一麒麟嵌入与 MiniMax 生成网关（公平协议）。
+      整本书问答（三国）为自建中文长文档评测集，BPMN 等其余七站为公开评测集（均含 dev/test 分层划分），明细见 benchmark/data/DATASETS.md；
       LoCoMo 为公开英文超长对话的免 LLM 严格协议（hit@5，1,986 问全量）；PrefEval / MemBench 为公开基准的必答 MCQ 协议（各 100 题）。
       mem0 在七站为同嵌入直插向量口径；其 PrefEval 73.0 / MemBench 55.0 为对齐必答协议后的复测值。
     </div>
   </details>
 </section>
 
-<!-- Agent 中枢：创新点 -->
+<!-- Agent 中枢：多源汇聚 · 记忆分发 -->
 <section data-page="hub">
-  <div class="topbar"><h2>Agent 中枢<span class="clause">创新点</span></h2><div class="desc">把本机各终端 Agent 的记忆汇聚为一 · 按需分发回任意 Agent</div></div>
+  <div class="topbar"><h2>Agent 中枢</h2><div class="desc">把本机各终端 Agent 的记忆汇聚为一 · 按需分发回任意 Agent</div></div>
   <div class="grid g2-1">
     <div class="card">
       <h3>本机记忆源<span class="hint">自动发现 · 只列出真实存在的</span></h3>
@@ -440,6 +444,7 @@ async function refreshDash(){
       <div><b>知识 · 长期 <span class="num">${s.tiers.knowledge??0}</span></b><span class="muted">版本链+仲裁</span></div><div class="arr">⇡ 提取</div>
       <div><b>偏好 · 长期 <span class="num">${s.preferences??0}</span></b><span class="muted">习惯/风格/策略</span></div>`;
   }catch(e){}
+  api('/api/v1/health').then(h=>{const v=$('foot-ver');if(v&&h&&h.version)v.textContent='v'+h.version}).catch(()=>{});
   loadAudit('dash-audit');
 }
 async function loadAudit(el){
@@ -510,7 +515,7 @@ async function vAsk(q){
   const t0=performance.now();
   const [sr,ar]=await Promise.all([api('/api/v1/search',{query:question,top_k:8,use_graph:false}),api('/api/v1/ask',{question,top_k:8})]);
   const total=((performance.now()-t0)/1000).toFixed(1);
-  if(!ar||ar.error){$('v-ans').textContent('失败');return}
+  if(!ar||ar.error){$('v-ans').textContent='检索失败：'+((ar&&ar.error)||'未知错误');return}
   $('k-lat').textContent=sr.took_ms+'ms';
   const ok=sr.took_ms<=500;
   $('v-ans').innerHTML=`<div style="font-size:15px;line-height:1.8;background:#fff;border:1px solid var(--line);border-radius:9px;padding:13px 15px">${esc(ar.answer||'（无答案）')}</div>
@@ -582,6 +587,21 @@ async function kAdd(){
    :'<span class="muted">无冲突，作为新知识入库。试试把内容改成同一主题的另一种说法再提交一次。</span>';
   loadKnow();refreshDash();
 }
+async function kDemoConflict(){
+  const title=$('k-title').value.trim(),content=$('k-body').value.trim();
+  if(!title||!content){toast('标题与内容都要填');return}
+  const m=content.match(/\d+/);
+  if(!m){toast('内容中需含一个数字（时间/端口/份数等），改值才能演示数值冲突');return}
+  const alt=content.replace(m[0],String(Number(m[0])+2));
+  const ent=[title.slice(0,8)];
+  await api('/api/v1/knowledge',{title,content,entities:ent,scene:'知识库'});
+  const r=await api('/api/v1/knowledge',{title,content:alt,entities:ent,scene:'知识库'});
+  if(!r||r.error){toast((r&&r.error)||'失败');return}
+  $('k-conf').innerHTML=r.conflicts&&r.conflicts.length
+   ?`<b style="color:var(--warn)">检测到冲突并完成仲裁（改值：${esc(m[0])} → ${Number(m[0])+2}）：</b>`+r.conflicts.map(c=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span><b>${CONF_ZH[c.type]||c.type}</b> → <b style="color:var(--ok)">${RESO_ZH[c.resolution]||c.resolution}</b><div class="muted">${esc(c.reason||'')}</div></div>`).join('')
+   :'<span class="muted">两条文本相似度未达 0.8 门槛：保持措辞接近、只改一个数值，更容易触发仲裁。</span>';
+  loadKnow();refreshDash();
+}
 async function kList(){
   const r=await api('/api/v1/memories?tier=knowledge&limit=12');
   $('k-list').innerHTML=(r||[]).map(x=>`<div class="fi" style="cursor:pointer" onclick="vDetail(${x.id})"><b>${esc(x.title)}</b><span class="muted"> · ${esc(x.scene)} · ${ts(x.updated_at||x.created_at)}</span></div>`).join('')||'<div class="empty">空</div>';
@@ -589,7 +609,7 @@ async function kList(){
 async function kLedger(){
   const r=await api('/api/v1/conflicts');
   $('k-ledger').innerHTML=(r||[]).length?(r||[]).slice(-12).reverse().map(x=>
-   `<div class="fi"><time>${ts(x.at)}</time><b>${CONF_ZH[x.type]||x.type}</b> → <b style="color:var(--ok)">${RESO_ZH[x.resolution]||x.resolution}</b><div class="muted">${esc((x.reason||'').slice(0,64))}</div></div>`).join(''):'<div class="empty">暂无冲突：在左侧写入两条同主题不同内容的知识即可触发。</div>';
+   `<div class="fi"><time>${ts(x.at)}</time><b>${CONF_ZH[x.type]||x.type}</b> → <b style="color:var(--ok)">${RESO_ZH[x.resolution]||x.resolution}</b><div class="muted">${esc((x.reason||'').slice(0,64))}</div></div>`).join(''):'<div class="empty">暂无冲突：点「演示冲突」按钮，或只改一个数值重新提交即可触发。</div>';
 }
 async function hubScan(){
   $('hub-scan-msg').textContent='扫描中…';
@@ -647,12 +667,18 @@ async function fAfter(){
    hits.map(h=>`<div class="fi"><span class="hit-dot" style="background:var(--faint)"></span>${esc((h.record.title||h.record.content).slice(0,46))}</div>`).join('');
   refreshDash();
 }
+const SENS_ZH={idcard:'身份证号',bankcard:'银行卡号',phone:'手机号',apikey:'密钥 / Token',email:'邮箱',ip:'IP 地址',password:'密码'};
 async function sensScan(){
   const r=await api('/api/v1/sensitive/scan',{text:$('sens-in').value});
-  $('sens-out').innerHTML=(r.items||[]).map(x=>`<div class="fi"><span class="tag" style="background:${x.level==='blocked'?'var(--err-bg)':x.level==='sensitive'?'var(--warn-bg)':'var(--blue-weak)'};color:${x.level==='blocked'?'var(--err)':x.level==='sensitive'?'var(--warn)':'var(--blue)'}">${x.level==='blocked'?'阻断':x.level==='sensitive'?'敏感':'提示'}</span> ${esc(x.type)}：${esc(String(x.match).slice(0,24))}…</div>`).join('')||'<div class="empty">未检出</div>';
+  const lv=r.level||'none';
+  const badge=`<span class="tag" style="background:${lv==='blocked'?'var(--err-bg)':lv==='sensitive'?'var(--warn-bg)':'var(--blue-weak)'};color:${lv==='blocked'?'var(--err)':lv==='sensitive'?'var(--warn)':'var(--blue)'}">${lv==='blocked'?'阻断入库':lv==='sensitive'?'敏感·脱敏入库':'未见敏感内容'}</span>`;
+  $('sens-out').innerHTML=(r.findings||[]).length
+   ?`${badge}<div style="margin-top:6px">${(r.findings||[]).map(x=>`<div class="fi"><span class="hit-dot" style="background:${lv==='blocked'?'var(--err)':'var(--warn)'}"></span>${SENS_ZH[x.kind]||x.kind}：<b class="num">${esc(x.matched||'')}</b></div>`).join('')}
+     <div class="fi muted" style="margin-top:4px">脱敏后入库：${esc(r.redacted||'')}</div></div>`
+   :`${badge}`;
 }
 
-/* ---- 记忆竞技场 ---- */
+/* ---- 评测对比 ---- */
 const ARENA={"multiwoz": {"docs": [{"id": "multiwoz-doc-0", "text": "I am looking for a place to stay in the north. Yes I have many options in the moderate price range. Do you need wifi or free parking? Yes, I need both wifi and free parking. How does the acorn guest house sound?  It is in the north part of town, in the moderate price range, and has both free wifi and parking. That sounds great. Can you book it for 6 people starting Tuesday for a total of 2 nights? The Acorn Guest House is unavailable at that time, but I booked you for the Arbury Lodge Guesthouse instead. It has all of the same features.  Okay. May I have the reference number? Reference number is : 3Y3AE0U7. Thank you for booking it.Goodbye. Is there anything else you need?"}, {"id": "multiwoz-doc-1", "text": "Hello, can you help me with my plans as far as finding a place to stay? Of course, do you need anything specific? Yes. The hotel should be 4 stars and located in the west with free parking please. We have three choices, any other preferences? As long as it is a hotel, I would like to book it. How many nights and for how many people? I would like it starting Thursday for 8 people for 5 nights.  I will need the day you want to arrive. I will need to be there on wednesday. There are 2 hotels available, The Huntingdon Marriott and the Cambridge Belfry. Do you want an expensive hotel or a cheap hotel? I'm sorry I actually need it for Thursday, sorry.  Any price range is fine. Okay. Your booking at the Cambridge Belfry was successful. The reference number is LJOEY6H2. Can I help you with anything else today? I am also looking for a train. The train should depart from bishops stortford and should go to cambridge. On what day will you be travelling? I will be traveling on Thursday.  What time would you like to arrive in Cambridge? Arrival time isn't the issue, but I have morning meeting so I can't leave bishops stortford until after 12:15 . There is a train leaving at 13:29 and arriving at 14:07. Would you like me to book that for you? What is the price and travel time? The price is 10.10 pounds, and the travel time is 38 minutes. Thank you so much. I think that's all I need now. Have a safe trip. Thank you for your help. Can I look up anything else for you? That was all I needed. Ok"}, {"id": "multiwoz-doc-2", "text": "I will need to take a train here from london kings cross, I will need ot get here by 19:45. And what day do you want to travel? I would like to leave Wednesday please. Train TR5725 would work for you, would you like me to book you passage? Please, I'll need 6 tickets. OK, you have 6 seats reserved on TR5725, ref# J7XP2Z15. Get to bed early - that's a 05:16 departure! Can I help with anything else today? Yes you can! I'm also looking for information about a place called Cineworld Cinema. Do you have any details about it?  It is a great cinema in the south part of town. They are located at Cambridge Leisure Park, Clifton Way. Their postcode is cb17dy. Their phone number is 00872208000.  Thank you that was all I needed.  Do you need me to book or look up info about anything else? That was all for today, thank you. Have a great day!"}, {"id": "multiwoz-doc-3", "text": "I am looking for a restaurant. What type of food are you looking for? I'm looking for unusual food. And I want a place in the centre of town. I don't have anything matching unusual but I do have an African restaurant in the center of town as well as some gastropubs. Would either interest you? I'll take something that is cheap. There are a total of 15 restaurants that are cheap in the centre. Is there another type you would like to try? Do you recommend a restaurant that is a little more different then the rest? I would recommend golden house Is that Italian? I would like an Italian restaurant, please. Okay, how about the pizza hut city centre? I heard it's pretty good. Okay, that sounds good. I need to make a reservation for 2 people on Tuesday. What time would you like to visit?  How about 13:15? I was able to book the table for you. It will be reserved for 15 minutes. The reference number is 97AAF776. That's great, thank you. Awesome. Have a good day!"}, {"id": "multiwoz-doc-4", "text": "I'd looking for a good restaurant on the east side.  I'd prefer the moderate price range, if possible. Would you prefer Indian or Italian food? I would like Indian please. There is curry prince, and rajmahal, would either of those work for you? I'd like to book curry prince for 6 people at 15:45 on saturday please. Alright, I have you reservation made. The reference number is SMAMRCQ9. Great, thanks for your help.  Is there anything else I can help you with? No, that will be everything today. Thank you. Thank you, goodbye."}], "queries": [{"query": "What is the reference number for the booking at Arbury Lodge Guesthouse in the north for 6 people starting Tuesday for 2 nights with free wifi and parking?", "evidence": ["3Y3AE0U7"]}, {"query": "What time does the train from Bishop's Stortford to Cambridge depart on Thursday after my morning meeting?", "evidence": ["13:29"]}, {"query": "What is the phone number for the Cineworld Cinema in the south part of town you mentioned?", "evidence": ["00872208000"]}, {"query": "What is the reference number for my Pizza Hut City Centre reservation for 2 people on Tuesday at 13:15?", "evidence": ["97AAF776"]}, {"query": "What is the reference number for the curry prince reservation for 6 people on Saturday at 15:45?", "evidence": ["SMAMRCQ9"]}]}, "bpmn": {"docs": [{"id": "bpmn-doc-0", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_05t7lhh\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <bpmn:collaboration id=\"Collaboration_1214ttx\">\n    <bpmn:participant id=\"Participant_0hhyxuq\" name=\"P.Amadeus Service\" processRef=\"Process_07l0ucu\" />\n  </bpmn:collaboration>\n  <bpmn:process id=\"Process_07l0ucu\" isExecutable=\"false\">\n    <bpmn:startEvent id=\"StartEvent_0artoew\" name=\"StartEvent 10\">\n      <bpmn:outgoing>Flow_0o27bwr</bpmn:outgoing>\n    </bpmn:startEvent>\n    <bpmn:task id=\"Activity_14yd03m\" name=\"Search less expensive flight\">\n      <bpmn:incoming>Flow_0o27bwr</bpmn:incoming>\n      <bpmn:outgoing>Flow_002zu91</bpmn:outgoing>\n      <bpmn:property id=\"Property_0mqagpw\" name=\"__targetRef_placeholder\" />\n      <bpmn:dataInputAssociation id=\"DataInputAssociation_0259uan\">\n        <bpmn:sourceRef>DataObjectReference_0329ma9</bpmn:sourceRef>\n        <bpmn:targetRef>Property_0mqagpw</bpmn:targetRef>\n      </bpmn:dataInputAssociation>\n      <bpmn:dataOutputAssociation id=\"DataOutputAssociation_0xugwz9\">\n        <bpmn:targetRef>DataObjectReference_1x0juwz</bpmn:targetRef>\n      </bpmn:dataOutputAssociation>\n    </bpmn:task>\n    <bpmn:endEvent id=\"Event_0xno17b\" name=\"EndEvent 10\">\n      <bpmn:incoming>Flow_002zu91</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:dataObjectReference id=\"DataObjectReference_1x0juwz\" name=\"Flight tickets\" dataObjectRef=\"DataObject_1ywle6h\" />\n    <bpmn:dataObject id=\"DataObject_1ywle6h\" />\n    <bpmn:dataObjectReference id=\"DataObjectReference_0329ma9\" name=\"Itinerary details\" dataObjectRef=\"DataObject_0txg7x5\" />\n    <bpmn:dataObject id=\"DataObject_0txg7x5\" />\n    <bpmn:sequenceFlow id=\"Flow_0o27bwr\" sourceRef=\"StartEvent_0artoew\" targetRef=\"Activity_14yd03m\" />\n    <bpmn:sequenceFlow id=\"Flow_002zu91\" sourceRef=\"Activity_14yd03m\" targetRef=\"Event_0xno17b\" />\n  </bpmn:process>\n  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Collaboration_1214ttx\">\n      <bpmndi:BPMNShape id=\"Participant_0hhyxuq_di\" bpmnElement=\"Participant_0hhyxuq\" isHorizontal=\"true\">\n        <dc:Bounds x=\"156\" y=\"80\" width=\"600\" height=\"335\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_0artoew\" bioc:stroke=\"#205022\" bioc:fill=\"#c8e6c9\" color:background-color=\"#c8e6c9\" color:border-color=\"#205022\">\n        <dc:Bounds x=\"206\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"191\" y=\"255\" width=\"67\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Activity_14yd03m_di\" bpmnElement=\"Activity_14yd03m\">\n        <dc:Bounds x=\"300\" y=\"190\" width=\"100\" height=\"80\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Event_0xno17b_di\" bpmnElement=\"Event_0xno17b\" bioc:stroke=\"#831311\" bioc:fill=\"#ffcdd2\" color:background-color=\"#ffcdd2\" color:border-color=\"#831311\">\n        <dc:Bounds x=\"642\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"629\" y=\"255\" width=\"63\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_1x0juwz_di\" bpmnElement=\"DataObjectReference_1x0juwz\">\n        <dc:Bounds x=\"412\" y=\"105\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"399\" y=\"162\" width=\"62\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_0329ma9_di\" bpmnElement=\"DataObjectReference_0329ma9\">\n        <dc:Bounds x=\"552\" y=\"115\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"602\" y=\"143\" width=\"75\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"Flow_0o27bwr_di\" bpmnElement=\"Flow_0o27bwr\">\n        <di:waypoint x=\"242\" y=\"230\" />\n        <di:waypoint x=\"300\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"Flow_002zu91_di\" bpmnElement=\"Flow_002zu91\">\n        <di:waypoint x=\"400\" y=\"230\" />\n        <di:waypoint x=\"642\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataInputAssociation_0259uan_di\" bpmnElement=\"DataInputAssociation_0259uan\">\n        <di:waypoint x=\"570\" y=\"165\" />\n        <di:waypoint x=\"570\" y=\"200\" />\n        <di:waypoint x=\"400\" y=\"200\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataOutputAssociation_0xugwz9_di\" bpmnElement=\"DataOutputAssociation_0xugwz9\">\n        <di:waypoint x=\"350\" y=\"190\" />\n        <di:waypoint x=\"350\" y=\"125\" />\n        <di:waypoint x=\"412\" y=\"125\" />\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n"}, {"id": "bpmn-doc-1", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn2:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn2=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"sample-diagram\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\" xsi:schemaLocation=\"http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd\">\n  <bpmn2:process id=\"Process_1\" isExecutable=\"false\" />\n  <bpmn2:collaboration id=\"Collab_Process_1\">\n    <bpmn2:participant id=\"Participant_auto_1755899398911\" processRef=\"Process_auto_1755899398911\" />\n    <bpmn2:participant id=\"Participant_1qny7ss\" name=\"P.Pedriatic Patient\" processRef=\"Process_19yic6m\" />\n    <bpmn2:participant id=\"Participant_10wyygy\" name=\"Medical Sttaff\" processRef=\"Process_0sqcvmd\" />\n    <bpmn2:participant id=\"Participant_0oefxxq\" name=\"Specialised group\" processRef=\"Process_06hv6zd\" />\n    <bpmn2:messageFlow id=\"Flow_0nn7zl5\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:messageFlow id=\"Flow_15hty6q\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:messageFlow id=\"Flow_0ri3iv0\" sourceRef=\"Activity_0ptuabh\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:messageFlow id=\"Flow_0ez29k5\" name=\"Proposal for telecommunication\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Activity_02rh9d7\" />\n    <bpmn2:messageFlow id=\"Flow_0dkjche\" sourceRef=\"Activity_0h91p56\" targetRef=\"Activity_1x5ihib\" />\n    <bpmn2:messageFlow id=\"Flow_0dzqgp0\" sourceRef=\"Activity_0wyll7y\" targetRef=\"Activity_0bwrtbd\" />\n    <bpmn2:messageFlow id=\"Flow_1ra884s\" sourceRef=\"Activity_0l0dwp2\" targetRef=\"Activity_0vcui6z\" />\n    <bpmn2:messageFlow id=\"Flow_0og7oyr\" sourceRef=\"Activity_0bwrtbd\" targetRef=\"Activity_0wyll7y\" />\n  </bpmn2:collaboration>\n  <bpmn2:process id=\"Process_auto_1755899398911\" />\n  <bpmn2:process id=\"Process_19yic6m\">\n    <bpmn2:startEvent id=\"Event_118d1ec\" name=\"StartEvent 7\">\n      <bpmn2:outgoing>Flow_08ytv9g</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:sequenceFlow id=\"Flow_08ytv9g\" sourceRef=\"Event_118d1ec\" targetRef=\"Activity_18966yx\" />\n    <bpmn2:subProcess id=\"Activity_18966yx\" name=\"Patient Hospitalized\">\n      <bpmn2:incoming>Flow_08ytv9g</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1fv0a86</bpmn2:outgoing>\n    </bpmn2:subProcess>\n    <bpmn2:task id=\"Activity_15cggj7\" name=\"Explain symptoms and answer the doctor questions\">\n      <bpmn2:incoming>Flow_1fv0a86</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0qalb0o</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1fv0a86\" sourceRef=\"Activity_18966yx\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:task id=\"Activity_0869egn\" name=\"Receive appropiated diagnosis\">\n      <bpmn2:incoming>Flow_0qalb0o</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_089tkiz</bpmn2:outgoing>\n      <bpmn2:dataOutputAssociation id=\"DataOutputAssociation_0xgv46j\">\n        <bpmn2:targetRef>DataObjectReference_0l7myph</bpmn2:targetRef>\n      </bpmn2:dataOutputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0qalb0o\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:endEvent id=\"Event_0gq6cfj\" name=\"EndEvent 4\">\n      <bpmn2:incoming>Flow_089tkiz</bpmn2:incoming>\n    </bpmn2:endEvent>\n    <bpmn2:sequenceFlow id=\"Flow_089tkiz\" sourceRef=\"Activity_0869egn\" targetRef=\"Event_0gq6cfj\" />\n    <bpmn2:dataObjectReference id=\"DataObjectReference_0l7myph\" name=\"Final diagnosis report\" dataObjectRef=\"DataObject_058p317\" />\n    <bpmn2:dataObject id=\"DataObject_058p317\" />\n  </bpmn2:process>\n  <bpmn2:process id=\"Process_0sqcvmd\">\n    <bpmn2:startEvent id=\"Event_0edzmr0\" name=\"StartEvent 3\">\n      <bpmn2:outgoing>Flow_06nltwo</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:task id=\"Activity_0jnvjmj\" name=\"Receive patient\">\n      <bpmn2:incoming>Flow_06nltwo</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_00uqkd4</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_06nltwo\" sourceRef=\"Event_0edzmr0\" targetRef=\"Activity_0jnvjmj\" />\n    <bpmn2:task id=\"Activity_090jlby\" name=\"Interview patient\">\n      <bpmn2:incoming>Flow_00uqkd4</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1a4b5dx</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_00uqkd4\" sourceRef=\"Activity_0jnvjmj\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:task id=\"Activity_1lfpz5c\" name=\"consult patient record\">\n      <bpmn2:incoming>Flow_1a4b5dx</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_19inwdj</bpmn2:outgoing>\n      <bpmn2:property id=\"Property_0rxcxkr\" name=\"__targetRef_placeholder\" />\n      <bpmn2:dataInputAssociation id=\"DataInputAssociation_03sv9az\">\n        <bpmn2:sourceRef>DataObjectReference_1aprr83</bpmn2:sourceRef>\n        <bpmn2:targetRef>Property_0rxcxkr</bpmn2:targetRef>\n      </bpmn2:dataInputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1a4b5dx\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_1lfpz5c\" />\n    <bpmn2:task id=\"Activity_0x0hrmj\" name=\"Perform evaluation\">\n      <bpmn2:incoming>Flow_19inwdj</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0iarlu0</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_19inwdj\" sourceRef=\"Activity_1lfpz5c\" targetRef=\"Activity_0x0hrmj\" />\n    <bpmn2:task id=\"Activity_07wnr7m\" name=\"Ask for telecommunication\">\n      <bpmn2:incoming>Flow_0iarlu0</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_105j123</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0iarlu0\" sourceRef=\"Activity_0x0hrmj\" targetRef=\"Activity_07wnr7m\" />\n    <bpmn2:exclusiveGateway id=\"Gateway_15t2lh0\" name=\"Availability?\">\n      <bpmn2:incoming>Flow_105j123</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0nb7guy</bpmn2:outgoing>\n      <bpmn2:outgoing>Flow_12wqmc7</bpmn2:outgoing>\n    </bpmn2:exclusiveGateway>\n    <bpmn2:sequenceFlow id=\"Flow_105j123\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Gateway_15t2lh0\" />\n  "}, {"id": "bpmn-doc-2", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" id=\"sid-38422fae-e03e-43a3-bef4-bd33b32041b2\" targetNamespace=\"http://bpmn.io/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <collaboration id=\"Collaboration_0qkiibk\">\n    <participant id=\"Participant_0k6b4yl\" name=\"Italian NMSP\" processRef=\"Process_1\" />\n    <participant id=\"Participant_1iq49au\" name=\"SWIM governance\" processRef=\"Process_0gajlhu\" />\n    <participant id=\"Participant_04m4avf\" name=\"ATM service provider\" processRef=\"Process_05kz2gi\" />\n    <participant id=\"Participant_1fkys0y\" name=\"SWIM\" processRef=\"Process_023rd33\" />\n    <messageFlow id=\"Flow_16lq3f6\" name=\"Accreditation request\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_1rtgu4b\" />\n    <messageFlow id=\"Flow_0n1gc4t\" name=\"Failure report\" sourceRef=\"Activity_0x044fm\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_0xy8c4g\" name=\"Accreditation\" sourceRef=\"Activity_0zavwiq\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_1fn4wae\" name=\"Accreditation\" sourceRef=\"Activity_1ly53ki\" targetRef=\"Event_01fw54c\" />\n    <messageFlow id=\"Flow_0v2k5jr\" name=\"Service description\" sourceRef=\"Activity_1fdig9w\" targetRef=\"Event_1x8h3vn\" />\n  </collaboration>\n  <process id=\"Process_1\" isExecutable=\"false\">\n    <startEvent id=\"Event_18hvqvd\">\n      <outgoing>Flow_0cr5s0h</outgoing>\n    </startEvent>\n    <exclusiveGateway id=\"Gateway_18mrd3l\">\n      <incoming>Flow_0cr5s0h</incoming>\n      <incoming>Flow_1fj8esn</incoming>\n      <outgoing>Flow_0gtjogt</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_08sagin\" name=\"Send accreditation request\">\n      <incoming>Flow_0gtjogt</incoming>\n      <outgoing>Flow_1t26arv</outgoing>\n    </task>\n    <intermediateCatchEvent id=\"Event_0yvo7en\" name=\"Receive failure/ accreditation\">\n      <incoming>Flow_1t26arv</incoming>\n      <outgoing>Flow_0xliwsb</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0s68d4q\">\n        <targetRef>DataObjectReference_0mlzisl</targetRef>\n      </dataOutputAssociation>\n      <messageEventDefinition id=\"MessageEventDefinition_0uoc8r5\" />\n    </intermediateCatchEvent>\n    <dataObjectReference id=\"DataObjectReference_0mlzisl\" name=\"Failure report\" dataObjectRef=\"DataObject_0s8flnj\" />\n    <dataObject id=\"DataObject_0s8flnj\" />\n    <exclusiveGateway id=\"Gateway_19qguzv\" name=\"Report error?\">\n      <incoming>Flow_0xliwsb</incoming>\n      <outgoing>Flow_092prz9</outgoing>\n      <outgoing>Flow_05nf29i</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_06z182s\" name=\"Examine report\">\n      <incoming>Flow_092prz9</incoming>\n      <outgoing>Flow_1uw1wi8</outgoing>\n    </task>\n    <exclusiveGateway id=\"Gateway_1kcy9wn\" name=\"Problems with QoS?\">\n      <incoming>Flow_1uw1wi8</incoming>\n      <outgoing>Flow_10pcgx7</outgoing>\n      <outgoing>Flow_00rcvuy</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_0g3krp9\" name=\"Tune QoS\">\n      <incoming>Flow_10pcgx7</incoming>\n      <outgoing>Flow_1fj8esn</outgoing>\n    </task>\n    <task id=\"Activity_0xmlo79\" name=\"Manage failure report\">\n      <incoming>Flow_00rcvuy</incoming>\n      <outgoing>Flow_0wr5vrh</outgoing>\n    </task>\n    <endEvent id=\"Event_0kfvamv\" name=\"End Event 2\">\n      <incoming>Flow_0wr5vrh</incoming>\n    </endEvent>\n    <task id=\"Activity_1kgdap0\" name=\"Store accreditation\">\n      <incoming>Flow_05nf29i</incoming>\n      <outgoing>Flow_1l6jskx</outgoing>\n      <property id=\"Property_1jdqoi0\" name=\"__targetRef_placeholder\" />\n      <dataInputAssociation id=\"DataInputAssociation_1n171qm\">\n        <sourceRef>DataObjectReference_11smnhx</sourceRef>\n        <targetRef>Property_1jdqoi0</targetRef>\n      </dataInputAssociation>\n    </task>\n    <endEvent id=\"Event_1cunj4v\" name=\"End Event 1\">\n      <incoming>Flow_1l6jskx</incoming>\n    </endEvent>\n    <dataObjectReference id=\"DataObjectReference_11smnhx\" name=\"Accreditation\" dataObjectRef=\"DataObject_1h4sv4u\" />\n    <dataObject id=\"DataObject_1h4sv4u\" />\n    <sequenceFlow id=\"Flow_0cr5s0h\" sourceRef=\"Event_18hvqvd\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_1fj8esn\" sourceRef=\"Activity_0g3krp9\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_0gtjogt\" sourceRef=\"Gateway_18mrd3l\" targetRef=\"Activity_08sagin\" />\n    <sequenceFlow id=\"Flow_1t26arv\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_0yvo7en\" />\n    <sequenceFlow id=\"Flow_0xliwsb\" sourceRef=\"Event_0yvo7en\" targetRef=\"Gateway_19qguzv\" />\n    <sequenceFlow id=\"Flow_092prz9\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_06z182s\" />\n    <sequenceFlow id=\"Flow_05nf29i\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_1kgdap0\" />\n    <sequenceFlow id=\"Flow_1uw1wi8\" sourceRef=\"Activity_06z182s\" targetRef=\"Gateway_1kcy9wn\" />\n    <sequenceFlow id=\"Flow_10pcgx7\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0g3krp9\" />\n    <sequenceFlow id=\"Flow_00rcvuy\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0xmlo79\" />\n    <sequenceFlow id=\"Flow_0wr5vrh\" sourceRef=\"Activity_0xmlo79\" targetRef=\"Event_0kfvamv\" />\n    <sequenceFlow id=\"Flow_1l6jskx\" sourceRef=\"Activity_1kgdap0\" targetRef=\"Event_1cunj4v\" />\n  </process>\n  <process id=\"Process_0gajlhu\">\n    <startEvent id=\"Event_1rtgu4b\" name=\"Start Event 2\">\n      <outgoing>Flow_0bd9nsu</outgoing>\n    </startEvent>\n    <task id=\"Activity_1tg8om5\" name=\"Examine request\">\n      <incoming>Flow_0bd9nsu</incoming>\n      <outgoing>Flow_0ehufg4</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0tvt8xz\">\n        <targetRef>DataObjectReference_0c8fqol</targetRef>\n      </dataOutputAssociation>\n    </task>\n    <dataObjectReference id=\"DataObjectReference_0c"}], "queries": [{"query": "What is the name of the task that produces the 'Flight tickets' output in the Amadeus service process?", "evidence": ["Search less expensive flight"]}, {"query": "Which task does the Pediatric Patient perform immediately after the 'Patient Hospitalized' sub-process completes and before receiving the appropriate diagnosis?", "evidence": ["Explain symptoms and answer the doctor questions"]}, {"query": "After completing the 'Send accreditation request' task in the Italian NMSP process, which intermediate catch event does the process wait for to receive either a failure report or an accreditation response?", "evidence": ["Receive failure/ accreditation"]}]}};
 async function loadArena(){qMatrix()}
 async function qArena(name){
@@ -674,20 +700,20 @@ async function qArenaCustom(){
 }
 function qMatrix(){
   const G=[
-   {title:'偏好提取准确率 <span class="hint">赛题 ≥85% · 条款 2</span>',rows:[
+   {title:'偏好提取准确率 <span class="hint">目标 ≥85%</span>',rows:[
      ['PrefEval 偏好遵循 · 100 题',98.0,73.0,53.0],
      ['MemBench 记忆能力 · 100 题',94.0,55.0,28.0]]},
-   {title:'知识检索召回率 <span class="hint">赛题 ≥85% · 条款 3/7</span>',rows:[
-     ['书山·三国（自建·中文长文档）· 51 题',96.1,73.6,0],
-     ['MS MARCO（PPT 推荐）· 200 题',97.0,100.0,0],
-     ['TrecQA 答案句（PPT 推荐）· 68 题',89.7,86.8,0],
-     ['ToolBench 工具检索（PPT 推荐）· 10 题',100.0,100.0,0],
-     ['MultiWOZ 多域对话（PPT 推荐）· 50 题',100.0,98.0,0],
-     ['PersonaChat 人设（PPT 推荐）· 50 题',98.0,100.0,0],
-     ['DailyDialog 日常对话（PPT 推荐）· 50 题',94.0,100.0,0],
-     ['BPMN 流程知识（PPT 推荐）· 14 题',85.7,64.3,0],
+   {title:'知识检索召回率 <span class="hint">目标 ≥85%</span>',rows:[
+     ['整本书问答 · 三国（自建中文长文档）· 51 题',96.1,73.6,0],
+     ['MS MARCO 网页检索（公开评测集）· 200 题',97.0,100.0,0],
+     ['TrecQA 答案句（公开评测集）· 68 题',89.7,86.8,0],
+     ['ToolBench 工具检索（公开评测集）· 10 题',100.0,100.0,0],
+     ['MultiWOZ 多域对话（公开评测集）· 50 题',100.0,98.0,0],
+     ['PersonaChat 人设（公开评测集）· 50 题',98.0,100.0,0],
+     ['DailyDialog 日常对话（公开评测集）· 50 题',94.0,100.0,0],
+     ['BPMN 流程知识（公开评测集）· 14 题',85.7,64.3,0],
      ['LoCoMo 长对话严格协议 · 1,986 题',59.0,3.8,55.9]]},
-   {title:'知识冲突处理正确率 <span class="hint">赛题 ≥88% · 条款 3</span>',rows:[
+   {title:'知识冲突处理正确率 <span class="hint">目标 ≥88%</span>',rows:[
      ['受控冲突用例（自建·30 组）',93.3,0,0],
      ['MAB-conflict 多跳整合 · 100 题',18.0,0,0]]},
   ];
@@ -698,7 +724,7 @@ function qMatrix(){
        ${d[2]?`<div class="bar m"><i style="width:${d[2]}%"></i><b>${d[2].toFixed(1)}%</b><span class="muted">mem0</span></div>`:''}
        ${d[3]?`<div class="bar m" style="opacity:.75"><i style="width:${d[3]}%"></i><b>${d[3].toFixed(1)}%</b><span class="muted">iwe</span></div>`:''}
      </div></div>`).join('')}</div></div>`).join('')+
-   `<div class="card"><h3>检索响应延迟 <span class="hint">赛题 ≤500ms · 条款 4</span></h3>
+   `<div class="card"><h3>检索响应延迟 <span class="hint">目标 ≤500ms</span></h3>
      <div class="row" style="gap:18px;font-size:13.5px">
       <span>p50 <b class="num">27ms</b></span><span>p95 <b class="num">44ms</b></span>
       <span>p99 <b class="num">55ms</b></span><span>max <b class="num">100ms</b></span>
@@ -761,90 +787,6 @@ async function hubDispatchRemove(){
   const t=$('hub-target').value;
   const r=await api('/api/v1/hub/dispatch',{target:t,mode:'remove'});
   $('hub-disp').textContent=r.ok?`已从 ${t} 撤回受管区块`:'失败';
-}
-
-/* ---- 场景演示 ---- */
-const DLOG=$('demo-log');
-function dlog(h){DLOG.innerHTML+='\n'+h;DLOG.scrollTop=DLOG.scrollHeight}
-function dclear(){DLOG.textContent=''}
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function runScene(name){
-  const btn=$('sc-'+name);btn.disabled=true;btn.textContent='运行中…';dclear();
-  try{await ({office:sceneOffice,coding:sceneCoding,system:sceneSystem,hub:sceneHub})[name]();}
-  catch(e){dlog(`<span class="err">[错误] ${esc(e.message||e)}</span>`)}
-  btn.disabled=false;btn.textContent=({office:'① 办公自动化 · 偏好捕捉',coding:'② 编码协作 · 知识冲突',system:'③ 系统管理 · 安全遗忘',hub:'④ 多 Agent 汇聚分发'})[name];
-  refreshDash();
-}
-async function sceneOffice(){
-  dlog('<span class="dim">—— 场景① 办公自动化：多源接入 → 偏好捕捉 ——</span>');
-  let r=await api('/api/v1/memories',{events:[{type:'manual_config',data:{key:'output_style.language',value:'中文',scene:'office'}}]});
-  dlog(`<span class="ok">✓ 手动配置入库 #${r.ids}，同步写入偏好链 v1</span>`);
-  await sleep(400);
-  for(const t of ['libreoffice','libreoffice','libreoffice','wps']){
-    r=await api('/api/v1/memories',{events:[{type:'tool_result',data:{tool:t,task:'doc_edit',ok:true,output:'文档导出 pdf 完成',scene:'office'}}]});
-    dlog(`  → 工具调用 #${r.ids}（${t}）`);await sleep(300);
-  }
-  dlog('<span class="dim">[偏好挖掘：规则通道统计工具使用频次]</span>');
-  r=await api('/api/v1/preferences/mine',{});
-  for(const u of r.updates||[])dlog(`<span class="ok">✓ 沉淀偏好「工具选择·文档编辑」= ${esc(JSON.stringify(u.value))}（置信 ${Math.round(u.confidence*100)}%）</span>`);
-  if(!(r.updates||[]).length)dlog('<span class="warn">（偏好已存在，幂等跳过 —— 到「偏好中心」看版本链）</span>');
-  r=await api('/api/v1/search',{query:'帮我把报告转成 pdf 发出去',top_k:3});
-  dlog(`检索命中 ${r.hits.length} 条（${r.took_ms}ms）：偏好已影响排序`);
-  for(const h of r.hits)dlog(`  <span class="ok">•</span> ${esc(h.record.content.slice(0,46))}…`);
-  dlog('<span class="dim">→ 到「偏好中心」页查看完整偏好库与版本回溯。</span>');
-}
-async function sceneCoding(){
-  dlog('<span class="dim">—— 场景② 编码协作：同一主题新旧知识碰撞 ——</span>');
-  dlog('<span class="dim">[步骤1] 写入旧知识</span>');
-  let r=await api('/api/v1/knowledge',{title:'部署路径规范',content:'项目部署脚本位于 `/opt/apps` 目录，端口 8080',entities:['部署路径'],scene:'coding'});
-  dlog(`<span class="ok">✓ 旧知识 #${r.id}：/opt/apps · 8080</span>`);
-  await sleep(500);
-  dlog('<span class="dim">[步骤2] 写入矛盾的新知识（2026 版迁移了路径和端口）</span>');
-  r=await api('/api/v1/knowledge',{title:'部署路径规范 v2',content:'2026 版起部署脚本迁移至 `/usr/local/deploy`，端口 8081',entities:['部署路径'],scene:'coding'});
-  dlog(`<span class="ok">✓ 新知识 #${r.id}，冲突管道触发：</span>`);
-  for(const c of r.conflicts||[])dlog(`  <span class="warn">⚡ ${CONF_ZH[c.type]||c.type} → <b>${RESO_ZH[c.resolution]||c.resolution}</b>（${c.decided_by==='rule'?'规则仲裁':'LLM 仲裁'}）</span>`);
-  if(!(r.conflicts||[]).length)dlog('  <span class="warn">（两条已仲裁过，幂等 —— 到「知识与冲突」页看台账）</span>');
-  r=await api('/api/v1/search',{query:'部署脚本在哪个目录',top_k:3});
-  dlog(`<span class="dim">[步骤3] 检索验证（${r.took_ms}ms）：</span>`);
-  for(const h of r.hits)dlog(`  <span class="ok">•</span> ${esc(h.record.content.slice(0,52))}…`);
-  dlog('<span class="dim">→ 完整仲裁记录在「知识与冲突」页台账。</span>');
-}
-async function sceneSystem(){
-  dlog('<span class="dim">—— 场景③ 系统管理：安全策略 → 遗忘（前后对比）——</span>');
-  let r=await api('/api/v1/memories',{events:[{type:'manual_config',data:{key:'security.auto_install',value:'禁止未经确认安装软件',scene:'system'}}]});
-  dlog(`<span class="ok">✓ 安全偏好入库 #${r.ids}</span>`);
-  dlog('<span class="dim">[遗忘前] 检索「自动安装软件的策略」：</span>');
-  r=await api('/api/v1/search',{query:'自动安装软件的策略',top_k:3});
-  dlog(`  命中 ${r.hits.length} 条：${esc((r.hits[0]?.record.content||'').slice(0,40))}…`);
-  await sleep(300);
-  dlog('<span class="dim">[执行] 自然语言遗忘「忘掉关于自动安装策略的一切」：</span>');
-  const p=await api('/api/v1/forget/preview',{instruction:'忘掉关于自动安装策略的一切'});
-  dlog(`  解析范围：主题=${JSON.stringify(p.scope?.topics||[])} · 命中 ${(p.hits||[]).length} 条`);
-  const e=await api('/api/v1/forget/exec',{instruction:'忘掉关于自动安装策略的一切',mode:'tombstone'});
-  dlog(`<span class="ok">✓ 已软删除 ${e.affected} 条（墓碑可恢复）</span>`);
-  await sleep(300);
-  dlog('<span class="dim">[遗忘后] 同问题再检索：</span>');
-  r=await api('/api/v1/search',{query:'自动安装软件的策略',top_k:3});
-  dlog(`  命中 ${r.hits.length} 条${r.hits.length===0?' —— 记忆已消失 ✨':''}`);
-  dlog('<span class="dim">→ 到「遗忘与安全」页可亲手做前后对比。</span>');
-}
-async function sceneHub(){
-  dlog('<span class="dim">—— 场景④ 多 Agent 中枢：汇聚 → 分发 ——</span>');
-  dlog('<span class="dim">[1/3] 两个终端 agent 各自汇报部署事实（模拟跨源）</span>');
-  let r=await api('/api/v1/memories',{events:[
-    {type:'conversation',data:{role:'user',text:'记住：`deploy.portal` 网关的部署端口是 8080，部署目录 `/opt/apps`',scene:'hub',source:'zcode-agent'}},
-    {type:'conversation',data:{role:'user',text:'部署同步完成：`deploy.portal` 网关的部署端口是 9090，部署目录 `/opt/apps`',scene:'hub',source:'codex-agent'}},
-  ]});
-  dlog(`<span class="ok">✓ 两条跨源记忆入库 #${r.ids}</span>`);
-  await sleep(300);
-  dlog('<span class="dim">[2/3] 扫描跨源矛盾（同一实体数值不一致）</span>');
-  const cs=await api('/api/v1/hub/conflicts/scan',{});
-  for(const c of (cs.conflicts||[]).slice(0,3))dlog(`  <span class="warn">⚡ ${esc(c.entity||'')}：${(c.evidences||[]).map(e=>(AGENT_ZH[e.source]||e.source)+':'+e.value).join(' vs ')}</span>`);
-  if(!(cs.conflicts||[]).length)dlog('  （本轮无新矛盾）');
-  dlog('<span class="dim">[3/3] 分发记忆回 agent 规则文件（受管区块）</span>');
-  r=await api('/api/v1/hub/dispatch',{target:'dsh/workspace.json',query:'部署',limit:3});
-  dlog(r.ok?`  <span class="ok">✓ 已分发 ${r.lines??3} 条到 DeepSeek Harness（可撤回）</span>`:`  <span class="warn">（${esc(r.error||'目标不可写')}）</span>`);
-  dlog('<span class="dim">→ 到「Agent 中枢」页管理源、索引与分发。</span>');
 }
 
 refreshDash();

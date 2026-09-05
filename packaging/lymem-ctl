@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# 麟忆尽智 lymem 本地服务控制脚本（deb 安装与用户安装通用）
+# 用法: lymem-ctl {start|stop|restart|status|open|logs}
+set -u
+
+SELF_DIR=$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")" && pwd)
+BIN="${LYMEM_BIN:-$SELF_DIR/lymem-server}"
+[ -x "$BIN" ] || BIN=/opt/lymem/lymem-server
+[ -x "$BIN" ] || { echo "错误: 找不到 lymem-server 可执行文件"; exit 1; }
+
+PORT="${LYMEM_PORT:-8801}"
+RUN_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/lymem"
+PID_FILE="$RUN_DIR/lymem.pid"
+LOG_FILE="$RUN_DIR/server.log"
+mkdir -p "$RUN_DIR"
+
+load_env() {
+  # 依次加载系统级与用户级配置（export 语法，后者覆盖前者）
+  for f in /etc/lymem/env "${XDG_CONFIG_HOME:-$HOME/.config}/lymem/env"; do
+    [ -f "$f" ] && . "$f"
+  done
+  PORT="${LYMEM_PORT:-8801}"
+}
+
+alive() { [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null; }
+health() { curl -sf "http://127.0.0.1:${PORT}/api/v1/health" >/dev/null 2>&1; }
+
+cmd_start() {
+  if health; then echo "lymem 已在运行: http://127.0.0.1:${PORT}/viewer (pid $(cat "$PID_FILE" 2>/dev/null || echo '?'))"; return 0; fi
+  load_env
+  nohup "$BIN" >>"$LOG_FILE" 2>&1 &
+  echo $! >"$PID_FILE"
+  for _ in $(seq 1 60); do
+    health && { echo "lymem 启动成功: http://127.0.0.1:${PORT}/viewer"; return 0; }
+    alive || break
+    sleep 0.25
+  done
+  echo "lymem 启动失败，最近日志（$LOG_FILE）:"
+  tail -n 6 "$LOG_FILE" 2>/dev/null
+  return 1
+}
+
+cmd_stop() {
+  if alive; then
+    kill "$(cat "$PID_FILE")" 2>/dev/null
+    for _ in $(seq 1 20); do alive || break; sleep 0.15; done
+    alive && kill -9 "$(cat "$PID_FILE")" 2>/dev/null
+    echo "lymem 已停止"
+  else
+    echo "lymem 未在运行"
+  fi
+  rm -f "$PID_FILE"
+}
+
+cmd_status() {
+  if health; then
+    local v; v=$(curl -sf "http://127.0.0.1:${PORT}/api/v1/health" 2>/dev/null | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+    echo "运行中 · 版本 ${v:-?} · http://127.0.0.1:${PORT}/viewer"
+    return 0
+  fi
+  echo "未运行"; return 1
+}
+
+cmd_open() {
+  cmd_start || return 1
+  xdg-open "http://127.0.0.1:${PORT}/viewer" >/dev/null 2>&1 || echo "请用浏览器打开: http://127.0.0.1:${PORT}/viewer"
+}
+
+cmd_logs() { touch "$LOG_FILE"; tail -n "${1:-40}" -f "$LOG_FILE"; }
+
+case "${1:-}" in
+  start)   cmd_start ;;
+  stop)    cmd_stop ;;
+  restart) cmd_stop; cmd_start ;;
+  status)  cmd_status ;;
+  open)    cmd_open ;;
+  logs)    shift; cmd_logs "${1:-40}" ;;
+  *) echo "用法: $(basename "$0") {start|stop|restart|status|open|logs}"; exit 1 ;;
+esac

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+update-desktop-database -q /usr/share/applications >/dev/null 2>&1 || true
+gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor >/dev/null 2>&1 || true
+
+echo "麟忆尽智 lymem 已安装："
+echo "  · 应用菜单 →「麟忆尽智」：启动服务并打开管理台"
+echo "  · 登录自启：已注册桌面会话自启（/etc/xdg/autostart）"
+echo "  · 命令行：/opt/lymem/lymem-ctl {start|stop|status|open|logs}"
+echo "  · 配置（可选 LLM Key）：编辑 /etc/lymem/env 或 ~/.config/lymem/env"
+echo "  · 数据目录：~/.local/share/lymem（按登录用户）"
+
+exit 0

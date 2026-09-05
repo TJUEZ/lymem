@@ -176,7 +176,7 @@ async fn add_memories(State(st): State<Arc<AppState>>, Json(req): Json<AddMemori
     }
 }
 
-/// 接入质量报告：逐事件给出清洗/归类/敏感分级/实体/去重判定（不入库，赛题条款 1 演示）。
+/// 接入质量报告：逐事件给出清洗/归类/敏感分级/实体/去重判定（不入库，仅预检）。
 #[derive(Deserialize)]
 struct ReportReq {
     events: Vec<lymem_core::ingest::IngestEvent>,
@@ -351,7 +351,7 @@ async fn preference_history(State(st): State<Arc<AppState>>, Path(key): Path<Str
 
 // ---------------- 冲突 / 遗忘 / 审计 ----------------
 
-/// 会话陈述偏好捕捉（赛题条款 2：从会话数据源动态提取偏好，LLM 通道）
+/// 会话陈述偏好捕捉（从会话数据源动态提取偏好，LLM 通道）
 async fn extract_preferences_from_sessions(State(st): State<Arc<AppState>>) -> axum::response::Response {
     // 各分支 into_response()
     let st2 = Arc::clone(&st);

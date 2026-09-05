@@ -1,0 +1,11 @@
+Package: lymem
+Version: PLACEHOLDER_VERSION
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: lymem <dev@lymem.local>
+Description: 麟忆尽智 · Agent 端侧长期记忆管理台 (lymem)
+ 端侧四层记忆系统：多源接入与清洗、偏好动态捕捉、
+ 知识冲突仲裁、精准遗忘、记忆流转与量化评测，
+ 内置 Web 管理台（http://127.0.0.1:8801/viewer）。
+ 服务以登录用户运行，随桌面会话自启。
