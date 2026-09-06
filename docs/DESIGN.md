@@ -1,0 +1,27 @@
+# DESIGN · 管理台视觉决策记录
+
+依 impeccable 设计语言(product 寄存器)做出的选择,供后续迭代对照。
+
+## 已消灭的反模式
+
+- KPI 四卡阵(hero-metric 模板)→ 单条统计带,极细线分隔,无卡片框。
+- 色彩:新主题中性色全部带品牌色相微着色(oklch,chroma≈0.004-0.01),不用纯 #fff/#000。
+- 无侧条边框(border-left 强调条)、无渐变字、无玻璃拟态;强调只用一个 accent(≤10% 面积)。
+- 动效只碰透明度与 transform,缓动 ease-out 指数族(既有 --ease)。
+
+## 主题系统(用户可选,localStorage 持久化)
+
+| 主题 | 场景一句话 | 决策 |
+|---|---|---|
+| classic 经典藏青 | 默认出厂态,延续产品已有身份 | 冷白面板+深藏青侧栏+蓝 accent;既有数字全部保留 |
+| github 清朗白 | 白天办公,信息密度优先 | 全浅色(侧栏并入画布)、系统字体栈、6px 小圆角、边框 #d0d7de 系、蓝 #0969da |
+| claude 暖纸衬线 | 阅读型场景,长文本/审计多 | 暖米纸底、衬线标题(Georgia+Noto Serif CJK)、赤陶 accent #d97757、14px 大圆角、去线框改面差 |
+| night 夜间 | 值守/暗环境 | 近黑蓝底、面板抬一档、同 accent 提亮;pre.log 天然融入 |
+
+四主题共享同一套 DOM 与组件类名,只换 token(html[data-theme]);accent/语义色/圆角/字体栈/侧栏处理各主题自定,布局不动。
+
+## 保留的既有约定
+
+- accent = 蓝(classic/github/night)/ 赤陶(claude),语义色 ok/err/warn 全主题保留;
+- 12px 以下字号仅用于 hint/来源行;正文 13-14px,层级靠字重与 1.25 倍字号差;
+- 触达密度:14px 级 padding 的可点行,不缩到 40px 以下(桌面工具不是手机)。
