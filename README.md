@@ -19,7 +19,7 @@
 - **跨源矛盾**：按实体聚合跨 agent 记忆，数值矛盾成对检测 + LLM 复核，仲裁（保留新/保留旧/共存）落版本链与冲突台账；
 - **总管巡检**：重复指纹 / 失活记忆 / 墓碑积压 / 来源体量，一键执行维护计划。
 
-前端 `/viewer` →「多 Agent 中枢」页；REST：`/api/v1/hub/sources|import|dispatch|index|index/build|index/graph|conflicts/scan|conflicts/resolve|maintenance`。场景演示页第 ④ 场景一键串演全链路。
+前端 `/viewer` →「Agent 中枢」页（源发现 / 汇聚导入 / 记忆调度 / 总索引 / 巡检全功能可视）；REST：`/api/v1/hub/sources|import|dispatch|index|index/build|index/graph|conflicts/scan|conflicts/resolve|maintenance`。首次启动可在「总览」页一键灌入演示数据快速体验。
 
 ## 架构
 

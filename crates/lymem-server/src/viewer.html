@@ -145,7 +145,15 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <div><div class="l">记忆总数</div><div class="n" id="k-total">-</div><div class="s">情景 + 知识 + 偏好</div></div>
     <div><div class="l">知识条目</div><div class="n" id="k-know">-</div><div class="s">长期沉淀 · 版本化</div></div>
     <div><div class="l">偏好 · 当前生效</div><div class="n" id="k-pref">-</div><div class="s">双通道自动提取</div></div>
-    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">目标 ≤500ms</div></div>
+    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">发起检索后显示 · 目标 ≤500ms</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h3>快速体验<span class="hint">一键灌入一组演示数据（工具轨迹 / 会话 / 配置 / 行为 / 知识与冲突），隔离在「演示」场景，随时一键清除</span></h3>
+    <div class="row">
+      <button class="act" onclick="demoSeed()">灌入演示数据</button>
+      <button class="act ghost" onclick="demoClear()">清除演示数据</button>
+      <span class="muted" id="demo-msg">首次使用建议先灌入，再逐页体验各项功能</span>
+    </div>
   </div>
   <div class="grid g2-1">
     <div class="card">
@@ -436,6 +444,23 @@ function goHash(){const h=location.hash.slice(1);if(!h)return;const b=document.q
 window.addEventListener('hashchange',goHash);
 
 /* ---- 总览 ---- */
+async function demoSeed(){
+  const m=$('demo-msg');m.textContent='灌入中…';
+  try{
+    const r=await api('/api/v1/demo/seed',{});
+    if(r.already){m.textContent=`演示数据已存在（${r.memories} 条），无需重复灌入；可先清除再体验`;}
+    else{m.textContent=`已灌入 ${r.memories} 条记忆、${r.knowledge} 条知识（含 ${r.conflicts} 起冲突仲裁）— 可去「知识与冲突」页一键编译经验卡`;}
+    refreshDash();
+  }catch(e){m.textContent='灌入失败：'+e.message;}
+}
+async function demoClear(){
+  const m=$('demo-msg');m.textContent='清除中…';
+  try{
+    const r=await api('/api/v1/demo/clear',{});
+    m.textContent=`已清除 ${r.removed} 条演示数据（演示偏好同步回收，审计留痕保留）`;
+    refreshDash();
+  }catch(e){m.textContent='清除失败：'+e.message;}
+}
 async function refreshDash(){
   try{
     const s=await api('/api/v1/status');
@@ -537,7 +562,7 @@ async function vTree(){
   $('v-tree').innerHTML=Object.entries(libs).map(([lib,items])=>
    `<details class="lib"${lib==='公共库'?' open':''}><summary>${esc(lib)}<span class="muted" style="font-weight:400">${items.length} 条</span></summary><div class="bd">${
      items.slice(0,80).map(r=>`<div class="mi" onclick="vDetail(${r.id})"><span class="tag t-${r.tier==='knowledge'?'know':r.tier==='preference'?'pref':'epi'}">${TIER_ZH[r.tier]||r.tier}</span><span class="tag k">${KIND_ZH[r.kind]||r.kind}</span><span class="t">${esc(r.title||r.content.slice(0,40))}</span><span class="muted">${ts(r.created_at)}</span></div>`).join('')||'<div class="empty">空</div>'
-   }</div></details>`).join('')||'<div class="empty">库为空，先灌入。</div>';
+   }</div></details>`).join('')||'<div class="empty">库为空：回「总览」一键灌入演示数据，或在上方灌入你的文档。</div>';
 }
 async function vDetail(id){
   const r=await api('/api/v1/memories/'+id);

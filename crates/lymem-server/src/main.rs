@@ -3,9 +3,10 @@
 //! - REST API：记忆/检索/偏好/冲突/遗忘/审计；
 //! - `/v1/embeddings`：OpenAI 兼容嵌入代理（后端为麒麟端侧嵌入），
 //!   供 mem0 / Letta / memmy 等 Python 基线复用同一嵌入模型，保证横向对比公平；
-//! - `/viewer`：中文管理界面（记忆总管）占位页，正式前端后续迭代。
+//! - `/viewer`：中文管理界面（总览/记忆库/偏好/知识与冲突/遗忘/评测/Agent 中枢）。
 
 mod caching_embedder;
+mod demo;
 mod mcp;
 
 use std::collections::BTreeMap;
@@ -111,6 +112,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/experiences", get(list_experiences))
         .route("/api/v1/experiences/compile", post(experience_compile))
         .route("/api/v1/experiences/{id}/feedback", post(experience_feedback))
+        .route("/api/v1/demo/seed", post(demo_seed))
+        .route("/api/v1/demo/clear", post(demo_clear))
         .route("/api/v1/audit", get(list_audit))
         .route("/api/v1/hub/sources", get(hub_sources))
         .route("/api/v1/hub/source/items", get(hub_source_items))
@@ -832,6 +835,34 @@ async fn list_audit(State(st): State<Arc<AppState>>, axum::extract::Query(q): ax
     }
 }
 
+// ---------------- 演示数据（全新安装开箱即见） ----------------
+
+/// 一键灌入演示数据（隔离「演示」场景，幂等：已存在则跳过）。
+async fn demo_seed(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || demo::seed_demo(&st2.store, judge.as_ref())).await;
+    match res {
+        Ok(Ok((memories, knowledge, conflicts, already))) => (
+            StatusCode::OK,
+            Json(json!({"ok": true, "already": already, "memories": memories, "knowledge": knowledge, "conflicts": conflicts})),
+        ),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
+/// 清除演示数据（该场景记忆硬删除 + 演示偏好回收；审计留痕不删）。
+async fn demo_clear(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || demo::clear_demo(&st2.store)).await;
+    match res {
+        Ok(Ok(removed)) => (StatusCode::OK, Json(json!({"ok": true, "removed": removed}))),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
 // ---------------- 记忆中枢（hub）：多 agent 源发现 / 导入 / 分发 / 总索引 / 矛盾 / 巡检 ----------------
 
 /// 源发现：本机终端 agent 记忆载体 + 各 agent 已入库计数 + 导入映射计数
@@ -1438,7 +1469,7 @@ async fn chat_completions_gateway(
     }
 }
 
-// ---------------- 管理界面占位 ----------------
+// ---------------- 管理界面 ----------------
 
 async fn viewer() -> impl IntoResponse {
     (
