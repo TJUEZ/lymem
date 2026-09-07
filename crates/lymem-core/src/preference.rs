@@ -160,6 +160,41 @@ impl MemoryStore {
             .find(|v| v.valid_from <= at && v.valid_to.is_none_or(|t| at <= t)))
     }
 
+    /// 全部键在某时刻的生效偏好（时间机器：拖动时点看偏好全貌）。
+    /// 同键多个版本落在时点窗口内时取最新版本。
+    pub fn effective_preferences_at(&self, at: i64) -> Result<Vec<PreferenceView>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT p.key, v.version, v.value, v.evidence, v.source, v.confidence, v.scenes, v.valid_from, v.valid_to
+             FROM pref_versions v JOIN preferences p ON p.id = v.pref_id
+             WHERE v.valid_from <= ?1 AND (v.valid_to IS NULL OR v.valid_to > ?1)
+               AND v.version = (SELECT MAX(v2.version) FROM pref_versions v2
+                                WHERE v2.pref_id = v.pref_id AND v2.valid_from <= ?1
+                                  AND (v2.valid_to IS NULL OR v2.valid_to > ?1))
+             ORDER BY p.key ASC",
+        )?;
+        let rows = stmt.query_map(params![at], |row| {
+            let k: String = row.get(0)?;
+            Self::row_to_view(&k, row)
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    /// 全部键的全部版本（时间机器滑块域与版本浏览）。
+    pub fn preferences_history_all(&self) -> Result<Vec<PreferenceView>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT p.key, v.version, v.value, v.evidence, v.source, v.confidence, v.scenes, v.valid_from, v.valid_to
+             FROM pref_versions v JOIN preferences p ON p.id = v.pref_id
+             ORDER BY p.key ASC, v.version ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            let k: String = row.get(0)?;
+            Self::row_to_view(&k, row)
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
     /// 偏好规则快通道：统计最近的工具调用记录，产出工具选择偏好。
     /// 阈值：同一任务类目下某工具占比 ≥ share 且调用次数 ≥ min_count 时更新偏好。
     pub fn preference_rules_from_tools(&self, lookback: usize, min_count: usize, share: f64) -> Result<Vec<PreferenceView>> {

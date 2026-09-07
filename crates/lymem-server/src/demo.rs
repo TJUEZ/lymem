@@ -97,6 +97,20 @@ pub fn seed_demo(store: &MemoryStore, judge: &dyn LlmJudge) -> Result<(usize, us
         conflicts += outcomes.len();
     }
     store.audit("demo_seed", &json!({"memories": ids.len(), "knowledge": knowledge, "conflicts": conflicts}))?;
+    // 给时间机器留一个变化点：若「导出格式」只有初版，追加 v2（此后用户可拖动滑块看到差异）
+    if let Ok(h) = store.preference_history("导出格式") {
+        if h.len() == 1 {
+            let _ = store.set_preference(&lymem_core::preference::PreferenceSet {
+                key: "导出格式".into(),
+                value: json!("DOCX 初稿，终稿转 PDF"),
+                evidence: vec![json!({"source": "demo", "note": "对外提交文件改用 PDF 终稿"})],
+                source: "demo".into(),
+                confidence: 0.9,
+                scenes: vec![DEMO_SCENE.to_string()],
+                force: true,
+            });
+        }
+    }
     Ok((ids.len(), knowledge, conflicts, false))
 }
 

@@ -129,6 +129,19 @@ CREATE TABLE IF NOT EXISTS graph_meta(
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+-- 文件雷达：授权目录内容的索引状态(增量扫描/敏感拦截/可彻底清除)
+CREATE TABLE IF NOT EXISTS radar_files(
+  path TEXT PRIMARY KEY,
+  dir TEXT NOT NULL DEFAULT '',
+  mtime INTEGER NOT NULL DEFAULT 0,
+  size INTEGER NOT NULL DEFAULT 0,
+  memory_id INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'indexed',
+  reason TEXT NOT NULL DEFAULT '',
+  at INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_radar_dir ON radar_files(dir);
 "#;
 
 /// 记忆库：组合 SQLite 连接、全文索引与嵌入器。

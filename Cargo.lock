@@ -1305,6 +1305,7 @@ dependencies = [
  "lymem-kylin",
  "lymem-llm",
  "reqwest",
+ "rusqlite",
  "serde",
  "serde_json",
  "tokio",

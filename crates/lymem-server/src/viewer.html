@@ -181,6 +181,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <button data-page="prefs"><span class="txt">偏好中心</span></button>
     <button data-page="know"><span class="txt">知识与冲突</span></button>
     <button data-page="forget"><span class="txt">遗忘与安全</span></button>
+    <button data-page="radar"><span class="txt">文件雷达</span></button>
     <div class="sec">评测与集成</div>
     <button data-page="arena"><span class="txt">评测对比</span></button>
     <button data-page="hub"><span class="txt">Agent 中枢</span></button>
@@ -316,6 +317,16 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div class="muted" style="margin-top:6px">同一键重复写入会追加版本并关闭旧版本；重复同值会标注。</div>
     </div>
   </div>
+  <div class="card">
+    <h3>时间机器<span class="hint">拖动时间点，看那一刻的偏好全貌；与当前差异一目了然</span></h3>
+    <div class="row">
+      <input type="range" id="tm-range" min="0" max="1000" value="1000" style="flex:1;min-width:200px" oninput="tmSlide()">
+      <span class="muted" id="tm-label" style="min-width:160px">现在</span>
+      <select id="tm-scene" style="max-width:140px" onchange="tmRender()"><option value="">全部场景</option></select>
+      <button class="act ghost" onclick="tmNow()">回到现在</button>
+    </div>
+    <div id="tm-list" class="feed" style="max-height:260px;margin-top:8px"><div class="empty">加载中…</div></div>
+  </div>
 </section>
 
 <!-- 知识与冲突：结构化入库 · 冲突仲裁 -->
@@ -357,6 +368,10 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     </div>
     <div id="x-list" class="feed" style="max-height:280px"><div class="empty">还没有经验卡。灌入带任务标签的工具轨迹（或由 Agent 经 MCP 写入）后，点上方按钮编译。</div></div>
   </div>
+  <div class="card">
+    <h3>冲突调解台<span class="hint">自动仲裁只是建议，你才是最终裁判；改判随时可再改</span></h3>
+    <div id="med-list" class="feed" style="max-height:340px"><div class="empty">加载中…</div></div>
+  </div>
 </section>
 
 <!-- 遗忘与安全：敏感分级 · 精准遗忘 -->
@@ -381,6 +396,37 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <textarea id="sens-in" rows="3">联系我 13812345678，密钥 sk-abcdefghijklmnopqrst，服务器 10.20.30.40</textarea>
     <button class="act ghost" style="margin-top:8px" onclick="sensScan()">扫描</button>
     <div id="sens-out" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- 文件雷达：授权目录内容索引 · 按内容找文件 -->
+<section data-page="radar">
+  <div class="topbar"><h2>文件雷达</h2><div class="desc">授权目录内的文件内容检索：按「讲了什么」找文件，不局限于文件名</div></div>
+  <div class="grid g2-1">
+    <div class="card">
+      <h3>授权目录<span class="hint">默认不索引任何目录；逐目录授权，删除即彻底清除</span></h3>
+      <div class="row">
+        <input type="text" id="rd-dir" placeholder="文件夹绝对路径，如 /home/you/文档" style="max-width:380px">
+        <button class="act" onclick="radarAdd()">授权此目录</button>
+        <button class="act ghost" onclick="radarScan()">扫描全部目录</button>
+        <span class="muted" id="rd-scan-msg"></span>
+      </div>
+      <div id="rd-dirs" class="feed" style="max-height:140px;margin-top:8px"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="card">
+      <h3>索引状态</h3>
+      <div id="rd-status" class="muted">加载中…</div>
+      <div class="muted" style="margin-top:12px;line-height:1.9">隐私承诺：含<b>密钥/密码/身份证/银行卡</b>的文件拒绝入库；含手机号/邮箱/IP 的自动脱敏后入库；支持 txt/md/代码/CSV/JSON/HTML 与 PDF，删除授权即清除全部索引。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>按内容找文件<span class="hint">在已授权目录的文件内容中检索（语义 + 全文）</span></h3>
+    <div class="row">
+      <input type="text" id="rd-q" placeholder="描述内容，如：讲打印服务器配置的文档" style="max-width:460px" onkeydown="if(event.key==='Enter')radarSearch()">
+      <button class="act" onclick="radarSearch()">检索</button>
+      <span class="muted" id="rd-msg"></span>
+    </div>
+    <div id="rd-hits" class="feed" style="max-height:320px;margin-top:8px"><div class="empty">授权并扫描后，这里可以按内容搜文件。</div></div>
   </div>
 </section>
 
@@ -440,6 +486,15 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     </div>
   </div>
   <div class="card">
+    <h3>记忆关系图谱<span class="hint">实体共现网络 · 拖拽节点 · 滚轮缩放 · 点击实体看关联记忆</span></h3>
+    <div class="row">
+      <button class="act ghost" onclick="gLoad()">加载图谱</button>
+      <select id="g-top" style="max-width:140px" onchange="gLoad()"><option value="18">18 个实体</option><option value="30" selected>30 个实体</option><option value="50">50 个实体</option></select>
+      <span class="muted" id="g-msg">需先构建全局关联索引（上方「全局关联索引」卡）。</span>
+    </div>
+    <canvas id="g-canvas" height="380" style="width:100%;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);touch-action:none;cursor:grab"></canvas>
+  </div>
+  <div class="card">
     <h3>记忆分发<span class="hint">把 lymem 记忆写进目标 Agent 的规则文件（只写受管区块，不动用户内容）</span></h3>
     <div class="row">
       <select id="hub-target" style="max-width:220px"></select>
@@ -480,7 +535,7 @@ function setTheme(t){
 /* ---- 中文映射 ---- */
 const TIER_ZH={episodic:'情景·中期',knowledge:'知识·长期',preference:'偏好·长期',working:'工作·短期'};
 const KIND_ZH={tool_result:'工具结果',user_behavior:'用户行为',manual_config:'手动配置',conversation:'会话',fact:'事实',workflow:'工作流',case:'案例',template:'模板'};
-const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发',experience_compile:'经验编译',experience_feedback:'经验反馈',mcp_experience_feedback:'经验反馈(Agent)'};
+const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发',experience_compile:'经验编译',experience_feedback:'经验反馈',mcp_experience_feedback:'经验反馈(Agent)',conflict_resolve_manual:'冲突人工改判',radar_purge_dir:'文件雷达·清除目录',demo_seed:'灌入演示数据',demo_clear:'清除演示数据'};
 const CONF_ZH={numeric:'数值更新',method:'方法过时',premise:'前提失效',spurious:'表面相似',value_conflict:'取值矛盾'};
 const RESO_ZH={supersede:'新版取代旧版',coexist:'两条共存',merge:'合并为一条',keep_new:'保留新值',keep_old:'保留旧值'};
 const CH_ZH={vec:'向量',bm25:'全文',graph:'关联'};
@@ -502,7 +557,7 @@ function auditZh(a){
   return `${ACT_ZH[a.action]||a.action}${s}`;
 }
 /* ---- 导航 ---- */
-const PAGES={dash:refreshDash,vault:vTree,prefs:()=>loadPrefs(false),know:()=>{loadKnow();xList()},forget:()=>{},arena:loadArena,hub:loadHub};
+const PAGES={dash:refreshDash,vault:vTree,prefs:()=>{loadPrefs(false);tmInit()},know:()=>{loadKnow();xList();medLoad()},forget:()=>{},radar:radarRefresh,arena:loadArena,hub:loadHub};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
@@ -926,6 +981,226 @@ async function hubDispatchRemove(){
 
 refreshDash();
 goHash();
+
+refreshDash();
+goHash();
+
+/* ---- 文件雷达 ---- */
+async function radarRefresh(){radarDirs();radarStatus()}
+async function radarDirs(){
+  const r=await api('/api/v1/radar/dirs');
+  $('rd-dirs').innerHTML=(r.dirs||[]).length?r.dirs.map(d=>`<div class="fi"><span class="t" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d)}</span><button class="act ghost" style="padding:2px 10px;font-size:12px" onclick="radarRemove('${encodeURIComponent(d)}')">删除并清除</button></div>`).join(''):'<div class="empty">还没有授权目录。添加一个文件夹开始。</div>';
+}
+async function radarAdd(){
+  const p=$('rd-dir').value.trim();if(!p){toast('先填目录路径');return}
+  const r=await api('/api/v1/radar/dirs',{path:p});
+  if(r.ok){$('rd-dir').value='';radarDirs();radarStatus();toast('已授权 '+r.dirs.length+' 个目录')}else toast(r.error||'添加失败');
+}
+async function radarRemove(enc){
+  const d=decodeURIComponent(enc);
+  const r=await api('/api/v1/radar/dirs',{path:d,purge:true},'DELETE');
+  if(r.ok){radarDirs();radarStatus();toast(`已删除授权，清除 ${r.purged} 条索引`)}else toast(r.error||'删除失败');
+}
+async function radarScan(){
+  const m=$('rd-scan-msg');m.textContent='扫描中…（逐文件抽取并嵌入，首次较慢）';
+  const r=await api('/api/v1/radar/scan',{});
+  if(r.ok){m.textContent=`完成：新索引 ${r.indexed} · 更新 ${r.updated} · 跳过 ${r.skipped} · 拦截 ${r.blocked} · 不支持 ${r.unsupported}（${(r.elapsed_ms/1000).toFixed(1)}s）`}
+  else m.textContent=r.error||'扫描失败';
+  radarStatus();
+}
+async function radarStatus(){
+  const r=await api('/api/v1/radar/status');
+  const zh={indexed:'已索引',blocked:'已拦截',unsupported:'不支持',empty:'空文件',error:'出错'};
+  const b=r.by_status||{};
+  $('rd-status').innerHTML=`扫描中：${r.scanning?'是':'否'}<br>${Object.entries(b).map(([k,v])=>`${zh[k]||k}：<b>${v}</b>`).join('<br>')||'尚无索引'}<br><span style="color:var(--faint)">授权目录 ${r.dirs.length} 个</span>`;
+}
+async function radarSearch(){
+  const q=$('rd-q').value.trim();if(!q)return;
+  const m=$('rd-msg');m.textContent='检索中…';
+  const r=await api('/api/v1/search',{query:q,scenes:['file'],top_k:10});
+  const hits=r.hits||[];
+  m.textContent=`${hits.length} 条命中 · ${r.took_ms}ms`;
+  $('rd-hits').innerHTML=hits.map(h=>`<div class="mi" onclick="vDetail(${h.record.id})"><span class="tag k">文件</span><span class="t">${esc(h.record.title)}</span><span class="muted" style="flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((h.snippet||'').slice(0,90))}</span></div>`).join('')||'<div class="empty">没有命中。换个描述试试，或先「扫描全部目录」。</div>';
+}
+
+/* ---- 偏好时间机器 ---- */
+const TM={versions:[],cur:{},min:0,max:Date.now()/1000};
+async function tmInit(){
+  try{
+    const [all,cur]=await Promise.all([api('/api/v1/preferences/history/all'),api('/api/v1/preferences')]);
+    TM.versions=all.versions||[];TM.cur={};(cur||[]).forEach(p=>TM.cur[p.key]=p);
+    TM.min=TM.versions.length?Math.min(...TM.versions.map(v=>v.valid_from)):Math.round(Date.now()/1000);
+    TM.max=Math.max(Date.now()/1000,TM.min+60);
+    const scenes=new Set();TM.versions.forEach(v=>(v.scenes||[]).forEach(s=>{if(s!=='*')scenes.add(s)}));
+    $('tm-scene').innerHTML='<option value="">全部场景</option>'+[...scenes].map(s=>`<option>${esc(s)}</option>`).join('');
+    tmRender();
+  }catch(e){$('tm-list').innerHTML='<div class="empty">加载失败</div>'}
+}
+function tmSlide(){
+  const ts=Math.round(TM.min+(TM.max-TM.min)*($('tm-range').value/1000));
+  $('tm-label').textContent=ts>=Math.round(TM.max)-60?'现在':new Date(ts*1000).toLocaleString('zh-CN',{hour12:false});
+  $('tm-label').dataset.ts=ts;
+  clearTimeout(TM._t);TM._t=setTimeout(tmRender,180);
+}
+async function tmRender(){
+  const at=Number($('tm-label').dataset.ts||Math.round(TM.max));
+  const scene=$('tm-scene').value;
+  const r=await api('/api/v1/preferences/at?ts='+at);
+  const rows=(r.preferences||[]).filter(p=>!scene||(p.scenes||[]).includes(scene));
+  $('tm-list').innerHTML=rows.length?rows.map(p=>{
+    const c=TM.cur[p.key],val=x=>JSON.stringify(x.value);
+    let badge='<span class="tag k">与现在一致</span>';
+    if(!c)badge='<span class="tag t-epi">当时才有 · 现已移除</span>';
+    else if(val(c)!==val(p))badge=`<span class="tag t-know">现为 ${esc(val(c))}</span>`;
+    return `<div class="fi"><b>${esc(prefZh(p.key))}</b> <span class="muted">v${p.version} = ${esc(val(p))}</span> ${badge}<span class="muted" style="float:right">${ts(p.valid_from)}</span></div>`;
+  }).join(''):'<div class="empty">该时点还没有偏好。</div>';
+}
+function tmNow(){$('tm-range').value=1000;delete $('tm-label').dataset.ts;tmSlide()}
+
+/* ---- 冲突调解台 ---- */
+const MED_ZH={numeric_update:'数值更新',method_obsolete:'方法过时',premise_invalid:'前提失效',spurious:'表面相似',unknown:'语义冲突'};
+const MED_CHOICE={keep_new:'维持新版',keep_old:'恢复旧版',coexist:'两条并存',merge:'合并为一条'};
+let MED=[];
+async function medLoad(){
+  MED=await api('/api/v1/conflicts');
+  if(!Array.isArray(MED))MED=[];
+  $('med-list').innerHTML=MED.length?MED.slice(0,15).map(c=>{
+    const who=c.decided_by==='user'?'<span class="tag t-pref">人工改判</span>':c.decided_by==='llm'?'<span class="tag t-know">LLM · 建议复核</span>':'<span class="tag k">规则</span>';
+    return `<div class="fi"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted">#${c.id}</span><span class="tag k">${MED_ZH[c.type]||c.type}</span><span class="tag t-epi">${RESO_ZH[c.resolution]||c.resolution}</span>${who}<span class="muted">${ts(c.at)}</span><button class="act ghost" style="margin-left:auto;padding:3px 12px;font-size:12px" onclick="medOpen(${c.id})">对比与改判</button></div><div class="muted" style="margin-top:3px">${esc(c.reason)}</div><div id="med-x-${c.id}" style="display:none;margin-top:8px"></div></div>`;
+  }).join(''):'<div class="empty">还没有冲突记录。可在上方入库两条相近知识，制造一次仲裁来体验。</div>';
+}
+async function medOpen(id){
+  const box=$('med-x-'+id);
+  if(box.style.display==='block'){box.style.display='none';return}
+  const c=MED.find(x=>x.id===id);
+  const [o,n]=await Promise.all([api('/api/v1/memories/'+c.old_id),api('/api/v1/memories/'+c.new_id)]);
+  const oldR=o.record||o,newR=n.record||n;
+  box.innerHTML=`<div class="cmp">
+      <div><h4 style="color:var(--warn)">旧记忆 #${c.old_id} ${oldR.is_current?'':'<span class="tag k">已退役</span>'}</h4><div id="med-o-${id}" style="font-size:12.5px;white-space:pre-wrap">${esc(String(oldR.content).slice(0,600))}</div></div>
+      <div><h4 style="color:var(--ok)">新记忆 #${c.new_id} ${newR.is_current?'':'<span class="tag k">已退役</span>'}</h4><div id="med-n-${id}" style="font-size:12.5px;white-space:pre-wrap">${esc(String(newR.content).slice(0,600))}</div></div>
+    </div>
+    <textarea id="med-t-${id}" rows="2" style="margin-top:8px" placeholder="合并稿（选「合并为一条」时生效；留空则自动拼接两版）"></textarea>
+    <div class="row" style="margin-top:6px">
+      <button class="act ghost" onclick="medResolve(${id},'keep_new')">维持新版</button>
+      <button class="act ghost" onclick="medResolve(${id},'keep_old')">恢复旧版</button>
+      <button class="act ghost" onclick="medResolve(${id},'coexist')">两条并存</button>
+      <button class="act" onclick="medResolve(${id},'merge')">合并为一条</button>
+      <span class="muted">标红=旧版有而新版无的内容；标绿=新版新增的内容</span>
+    </div>`;
+  // 轻量字符级 LCS diff（≤300 字），高亮两版差异
+  const a=String(oldR.content).replace(/\s+/g,' ').slice(0,300),b=String(newR.content).replace(/\s+/g,' ').slice(0,300);
+  if(a.length&&b.length&&a.length<=300&&b.length<=300){
+    const m=a.length,n2=b.length,dp=Array.from({length:m+1},()=>new Array(n2+1).fill(0));
+    for(let i=m-1;i>=0;i--)for(let j=n2-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+    const del=[],add=[];let i=0,j=0;
+    while(i<m&&j<n2){if(a[i]===b[j]){i++;j++}else if(dp[i+1][j]>=dp[i][j+1]){del.push(a[i++])}else{add.push(b[j++])}}
+    while(i<m)del.push(a[i++]);while(j<n2)add.push(b[j++]);
+    const mk=(arr,cls)=>arr.length?`<mark style="background:var(--${cls}-bg);color:inherit;border-radius:3px">${esc(arr.join(''))}</mark>`:'';
+    $('med-o-'+id).innerHTML=esc(a)+mk(del,'err');
+    $('med-n-'+id).innerHTML=mk(add,'ok')+esc(b);
+  }
+  box.style.display='block';
+}
+async function medResolve(id,choice){
+  const merged=choice==='merge'?($('med-t-'+id).value.trim()||null):null;
+  const r=await api('/api/v1/conflicts/'+id+'/resolve',{choice,merged_text:merged,note:''});
+  if(r.ok){toast('已改判：'+MED_CHOICE[choice]);medLoad();kLedger()}
+  else toast(r.error||'改判失败');
+}
+
+/* ---- 记忆关系图谱 ---- */
+const G={nodes:[],links:[],w:0,h:0,scale:1,ox:0,oy:0,drag:-1,dragging:false,moved:false,lx:0,ly:0,raf:0};
+async function gLoad(){
+  const cv=$('g-canvas');
+  const top=$('g-top').value;
+  const r=await api('/api/v1/hub/index/graph?top='+top);
+  if(!r.nodes||!r.nodes.length){$('g-msg').textContent='图数据为空：先构建全局关联索引（需要有实体与记忆）。';return}
+  G.w=cv.clientWidth||900;G.h=380;
+  cv.width=G.w*devicePixelRatio;cv.height=G.h*devicePixelRatio;cv.style.height=G.h+'px';
+  const R=Math.min(G.w,G.h)*0.36;
+  G.nodes=r.nodes.map((n,i)=>{const a=2*Math.PI*i/r.nodes.length;return{name:n.name,deg:n.degree||1,x:G.w/2+R*Math.cos(a),y:G.h/2+R*Math.sin(a),vx:0,vy:0}});
+  const idx={};G.nodes.forEach((n,i)=>idx[n.name]=i);
+  G.links=(r.edges||[]).map(e=>({s:idx[e.a],t:idx[e.b],w:e.w||1})).filter(l=>l.s!==undefined&&l.t!==undefined);
+  G.scale=1;G.ox=0;G.oy=0;
+  $('g-msg').textContent=`${G.nodes.length} 个实体 · ${G.links.length} 条共现边 · 点击实体看关联记忆`;
+  gKick();
+}
+function gKick(){if(!G.raf)gStep()}
+function gStep(){
+  G.raf=0;
+  let maxV=0;
+  for(let i=0;i<G.nodes.length;i++)for(let j=i+1;j<G.nodes.length;j++){
+    const a=G.nodes[i],b=G.nodes[j];let dx=a.x-b.x,dy=a.y-b.y;const d2=dx*dx+dy*dy||1;
+    const f=2200/d2,d=Math.sqrt(d2);dx/=d;dy/=d;
+    a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;
+  }
+  for(const l of G.links){
+    const a=G.nodes[l.s],b=G.nodes[l.t];const dx=b.x-a.x,dy=b.y-a.y;const d=Math.sqrt(dx*dx+dy*dy)||1;
+    const f=(d-90)*0.02*Math.min(2,0.4+l.w*0.08);
+    a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;
+  }
+  for(const n of G.nodes){
+    n.vx+=(G.w/2-n.x)*0.003;n.vy+=(G.h/2-n.y)*0.003;
+    n.vx*=0.85;n.vy*=0.85;n.x+=n.vx;n.y+=n.vy;
+    maxV=Math.max(maxV,Math.abs(n.vx)+Math.abs(n.vy));
+  }
+  gDraw();
+  if(maxV>0.08||G.dragging)G.raf=requestAnimationFrame(gStep);
+}
+function gDraw(){
+  const cv=$('g-canvas'),ctx=cv.getContext('2d');
+  const cs=getComputedStyle(document.documentElement);
+  const ink=cs.getPropertyValue('--ink').trim()||'#1d2433';
+  const line=cs.getPropertyValue('--faint').trim()||'#8a93a3';
+  const accent=cs.getPropertyValue('--blue').trim()||'#2f5fe0';
+  const fam=getComputedStyle(document.body).fontFamily;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0,0,G.w,G.h);
+  ctx.save();ctx.translate(G.ox,G.oy);ctx.scale(G.scale,G.scale);
+  ctx.strokeStyle=line;ctx.globalAlpha=.45;
+  for(const l of G.links){
+    const a=G.nodes[l.s],b=G.nodes[l.t];
+    ctx.lineWidth=Math.min(4,0.6+l.w*0.08);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  for(const n of G.nodes){
+    const r=6+Math.min(16,Math.sqrt(n.deg)*2.2);
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=accent;ctx.fill();
+    ctx.fillStyle=ink;ctx.font='11px '+fam;ctx.textAlign='center';
+    ctx.fillText(n.name.slice(0,10),n.x,n.y+r+12);
+  }
+  ctx.restore();
+}
+async function gEntity(name){
+  const v=await api('/api/v1/hub/index/entity?name='+encodeURIComponent(name));
+  $('dr-title').textContent='实体 · '+name;
+  $('dr-body').innerHTML=`<div class="muted">共现邻居：${esc((v.neighbors||[]).map(n=>n.name).join('、')||'无')}</div>
+    <div style="margin-top:8px">${(v.memory_ids||[]).map(id=>`<div class="mi" onclick="vDetail(${id})"><span class="tag k">记忆</span><span class="t">记忆 #${id}</span></div>`).join('')||'<div class="empty">无关联记忆</div>'}</div>`;
+  $('drawer').classList.add('open');
+}
+(function gCanvasEvents(){
+  const cv=$('g-canvas');
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-G.ox)/G.scale,y:(e.clientY-r.top-G.oy)/G.scale}};
+  const hit=p=>G.nodes.findIndex(n=>{const r=6+Math.min(16,Math.sqrt(n.deg)*2.2);const dx=n.x-p.x,dy=n.y-p.y;return dx*dx+dy*dy<=r*r+25});
+  cv.addEventListener('mousedown',e=>{const p=pos(e);G.drag=hit(p);G.dragging=true;G.moved=false;G.lx=e.clientX;G.ly=e.clientY;gKick()});
+  cv.addEventListener('mousemove',e=>{
+    if(!G.dragging)return;
+    const p=pos(e);
+    if(G.drag>=0){G.nodes[G.drag].x=p.x;G.nodes[G.drag].y=p.y;G.moved=true;gKick()}
+    else{G.ox+=e.clientX-G.lx;G.oy+=e.clientY-G.ly;G.lx=e.clientX;G.ly=e.clientY;gDraw()}
+  });
+  window.addEventListener('mouseup',()=>{
+    if(G.dragging&&!G.moved&&G.drag>=0)gEntity(G.nodes[G.drag].name);
+    G.dragging=false;G.drag=-1;
+  });
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const f=e.deltaY<0?1.15:0.87,r=cv.getBoundingClientRect();
+    const mx=e.clientX-r.left,my=e.clientY-r.top;
+    G.ox=mx-(mx-G.ox)*f;G.oy=my-(my-G.oy)*f;G.scale*=f;gDraw();
+  },{passive:false});
+})();
 </script>
 </body>
 </html>

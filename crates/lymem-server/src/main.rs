@@ -8,6 +8,7 @@
 mod caching_embedder;
 mod demo;
 mod mcp;
+mod radar;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -114,6 +115,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/experiences/{id}/feedback", post(experience_feedback))
         .route("/api/v1/demo/seed", post(demo_seed))
         .route("/api/v1/demo/clear", post(demo_clear))
+        .route("/api/v1/radar/dirs", get(radar_dirs).post(radar_dirs_add).delete(radar_dirs_remove))
+        .route("/api/v1/radar/scan", post(radar_scan))
+        .route("/api/v1/radar/status", get(radar_status))
+        .route("/api/v1/preferences/at", get(preferences_at))
+        .route("/api/v1/preferences/history/all", get(preferences_history_all))
+        .route("/api/v1/conflicts/{id}/resolve", post(conflict_resolve_manual))
         .route("/api/v1/audit", get(list_audit))
         .route("/api/v1/hub/sources", get(hub_sources))
         .route("/api/v1/hub/source/items", get(hub_source_items))
@@ -860,6 +867,113 @@ async fn demo_clear(State(st): State<Arc<AppState>>) -> impl IntoResponse {
         Ok(Ok(removed)) => (StatusCode::OK, Json(json!({"ok": true, "removed": removed}))),
         Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
+}
+
+// ---------------- 文件雷达 ----------------
+
+#[derive(Deserialize)]
+struct RadarDirReq {
+    path: String,
+    /// 删除目录时是否连同索引数据一并清除
+    #[serde(default)]
+    purge: bool,
+}
+
+async fn radar_dirs() -> impl IntoResponse {
+    Json(json!({"ok": true, "dirs": radar::load_dirs()}))
+}
+
+async fn radar_dirs_add(Json(req): Json<RadarDirReq>) -> axum::response::Response {
+    let p = PathBuf::from(&req.path);
+    if !p.is_dir() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "目录不存在"}))).into_response();
+    }
+    let canon = p.canonicalize().map(|c| c.to_string_lossy().to_string()).unwrap_or(req.path.clone());
+    let mut dirs = radar::load_dirs();
+    if !dirs.contains(&canon) {
+        dirs.push(canon.clone());
+    }
+    match radar::save_dirs(&dirs) {
+        Ok(_) => (StatusCode::OK, Json(json!({"ok": true, "dirs": dirs}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))).into_response(),
+    }
+}
+
+async fn radar_dirs_remove(State(st): State<Arc<AppState>>, Json(req): Json<RadarDirReq>) -> axum::response::Response {
+    let canon = PathBuf::from(&req.path)
+        .canonicalize()
+        .map(|c| c.to_string_lossy().to_string())
+        .unwrap_or(req.path.clone());
+    let dirs: Vec<String> = radar::load_dirs().into_iter().filter(|d| *d != canon).collect();
+    let purged = if req.purge { radar::purge_dir(&st.store, &canon) } else { 0 };
+    let _ = radar::save_dirs(&dirs);
+    (StatusCode::OK, Json(json!({"ok": true, "dirs": dirs, "purged": purged}))).into_response()
+}
+
+async fn radar_scan(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || radar::scan(&st2.store)).await;
+    match res {
+        Ok(v) => (StatusCode::OK, Json(v)),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+async fn radar_status(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    Json(radar::status(&st.store))
+}
+
+// ---------------- 时间机器 / 冲突调解 ----------------
+
+/// 任意时点的生效偏好（时间机器）
+async fn preferences_at(
+    State(st): State<Arc<AppState>>,
+    axum::extract::Query(q): axum::extract::Query<Value>,
+) -> impl IntoResponse {
+    let Some(ts) = q.get("ts").and_then(|v| v.as_str()).and_then(|s| s.parse::<i64>().ok()) else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "缺少 ts（unix 秒）"})));
+    };
+    match st.store.effective_preferences_at(ts) {
+        Ok(p) => (StatusCode::OK, Json(json!({"ts": ts, "preferences": p}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+/// 全部键的全部偏好版本（时间机器滑块域）
+async fn preferences_history_all(State(st): State<Arc<AppState>>) -> impl IntoResponse {
+    match st.store.preferences_history_all() {
+        Ok(rows) => (StatusCode::OK, Json(json!({"versions": rows}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct ManualResolveReq {
+    /// keep_new | keep_old | coexist | merge
+    choice: String,
+    #[serde(default)]
+    merged_text: Option<String>,
+    #[serde(default)]
+    note: String,
+}
+
+/// 冲突人工改判（调解台）
+async fn conflict_resolve_manual(
+    State(st): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(req): Json<ManualResolveReq>,
+) -> impl IntoResponse {
+    let Some(choice) = lymem_core::conflict::ManualChoice::parse(&req.choice, req.merged_text) else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "choice 需为 keep_new/keep_old/coexist/merge"})));
+    };
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || st2.store.resolve_conflict_manual(id, &choice, &req.note)).await;
+    match res {
+        Ok(Ok(v)) if v["ok"] == true => (StatusCode::OK, Json(v)),
+        Ok(Ok(v)) => (StatusCode::NOT_FOUND, Json(v)),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
     }
 }
 

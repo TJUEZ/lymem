@@ -5,6 +5,8 @@
 //! - 仲裁：规则（时间戳+来源可信度）优先，模糊时 LLM 三选一（取代/合并/共存）；
 //! - 版本化：取代 → 旧版本 is_current=0 保留可回溯；合并 → 生成合并稿；共存 → 双双保留。
 
+use rusqlite::params;
+use rusqlite::OptionalExtension;
 use serde::{Deserialize, Serialize};
 
 use crate::embedding::cosine;
@@ -115,6 +117,55 @@ pub struct ConflictOutcome {
     pub resolution: Resolution,
     pub reason: String,
     pub decided_by: &'static str,
+}
+
+/// 人工改判选项（冲突调解台：自动仲裁之上的最终人工裁决，可重复改判）。
+#[derive(Debug, Clone)]
+pub enum ManualChoice {
+    /// 新版生效（维持/恢复"新版取代旧版"）
+    KeepNew,
+    /// 恢复旧版生效
+    KeepOld,
+    /// 两条并存（各自进入有效集）
+    Coexist,
+    /// 合并为一条：merged_text 缺省时拼接两版
+    Merge { merged_text: Option<String> },
+}
+
+impl ManualChoice {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ManualChoice::KeepNew => "keep_new",
+            ManualChoice::KeepOld => "keep_old",
+            ManualChoice::Coexist => "coexist",
+            ManualChoice::Merge { .. } => "merge",
+        }
+    }
+    /// 落库的 resolution 值（沿用既有三值语义）
+    fn resolution_str(&self) -> &'static str {
+        match self {
+            ManualChoice::KeepNew | ManualChoice::KeepOld => "supersede",
+            ManualChoice::Coexist => "coexist",
+            ManualChoice::Merge { .. } => "merge",
+        }
+    }
+    fn label(&self) -> &'static str {
+        match self {
+            ManualChoice::KeepNew => "维持新版生效",
+            ManualChoice::KeepOld => "恢复旧版生效",
+            ManualChoice::Coexist => "改为两条并存",
+            ManualChoice::Merge { .. } => "合并为一条",
+        }
+    }
+    pub fn parse(choice: &str, merged_text: Option<String>) -> Option<ManualChoice> {
+        match choice {
+            "keep_new" => Some(ManualChoice::KeepNew),
+            "keep_old" => Some(ManualChoice::KeepOld),
+            "coexist" => Some(ManualChoice::Coexist),
+            "merge" => Some(ManualChoice::Merge { merged_text }),
+            _ => None,
+        }
+    }
 }
 
 impl MemoryStore {
@@ -309,6 +360,79 @@ impl MemoryStore {
         Ok((new_id, outcomes))
     }
 
+    /// 人工改判:调整某条冲突的仲裁结果并把 decided_by 记为 user(人在回路,可重复改判)。
+    /// 返回 {ok, resolution};conflict_id 不存在或 old/new 记录缺失时 ok=false。
+    pub fn resolve_conflict_manual(&self, conflict_id: i64, choice: &ManualChoice, note: &str) -> Result<serde_json::Value> {
+        let (old_id, new_id, old_reason) = {
+            let conn = self.conn.lock().unwrap();
+            let row: Option<(Option<i64>, Option<i64>, String)> = conn
+                .query_row(
+                    "SELECT old_id, new_id, reason FROM conflicts WHERE id = ?1",
+                    params![conflict_id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .optional()?;
+            match row {
+                Some((Some(o), Some(n), reason)) => (o, n, reason),
+                _ => return Ok(serde_json::json!({"ok": false, "error": "冲突记录不存在或缺少新旧记忆"})),
+            }
+        };
+        let (old, new) = match (self.get(old_id)?, self.get(new_id)?) {
+            (Some(o), Some(n)) => (o, n),
+            _ => return Ok(serde_json::json!({"ok": false, "error": "新旧记忆已不存在（可能已被清除）"})),
+        };
+        let resolution_str = choice.resolution_str();
+        match choice {
+            ManualChoice::KeepNew => {
+                self.mark_superseded(old_id, new_id)?;
+                // mark_superseded 只退役旧版；改判路径可能刚执行过 KeepOld(新版被退出),
+                // 这里必须把新版拉回有效集
+                let conn = self.conn.lock().unwrap();
+                conn.execute("UPDATE memories SET is_current = 1 WHERE id = ?1", params![new_id])?;
+            }
+            ManualChoice::KeepOld => {
+                let conn = self.conn.lock().unwrap();
+                conn.execute("UPDATE memories SET is_current = 1 WHERE id = ?1", params![old_id])?;
+                conn.execute("UPDATE memories SET is_current = 0 WHERE id = ?1", params![new_id])?;
+            }
+            ManualChoice::Coexist => {
+                let conn = self.conn.lock().unwrap();
+                conn.execute("UPDATE memories SET is_current = 1 WHERE id = ?1", params![old_id])?;
+                conn.execute("UPDATE memories SET is_current = 1 WHERE id = ?1", params![new_id])?;
+            }
+            ManualChoice::Merge { merged_text } => {
+                let text = merged_text
+                    .clone()
+                    .filter(|t| !t.trim().is_empty())
+                    .unwrap_or_else(|| format!("{}\n\n----\n\n{}", old.content, new.content));
+                let mut rec = MemoryRecord::new(Tier::Knowledge, new.kind, format!("{}（合并）", new.title), text);
+                rec.source = new.source.clone();
+                rec.scene = new.scene.clone();
+                rec.entities = old.entities.iter().chain(new.entities.iter()).cloned().collect();
+                rec.version_of = Some(old_id);
+                let merged_id = self.put(rec)?;
+                self.mark_superseded(old_id, merged_id)?;
+                self.mark_superseded(new_id, merged_id)?;
+            }
+        }
+        {
+            let conn = self.conn.lock().unwrap();
+            let reason_upd = if note.trim().is_empty() {
+                format!("{}（原仲裁：{}。人工改判）", choice.label(), old_reason)
+            } else {
+                format!("{}（原仲裁：{}。人工改判：{}）", choice.label(), old_reason, note.trim())
+            };
+            conn.execute(
+                "UPDATE conflicts SET resolution = ?2, decided_by = 'user', reason = ?3 WHERE id = ?1",
+                params![conflict_id, resolution_str, reason_upd],
+            )?;
+        }
+        self.audit("conflict_resolve_manual", &serde_json::json!({"id": conflict_id, "choice": choice.as_str()}))?;
+        Ok(serde_json::json!({"ok": true, "resolution": resolution_str, "choice": choice.as_str()}))
+    }
+
+
+
     /// 冲突处理正确率统计（评测用）：以 conflicts 表中 decided_by/ctype 汇总
     pub fn conflict_stats(&self) -> Result<serde_json::Value> {
         let conflicts = self.conflicts_all()?;
@@ -366,5 +490,58 @@ mod tests {
             let stats = s.conflict_stats().unwrap();
             assert!(stats["total"].as_u64().unwrap() >= 1);
         }
+    }
+
+    #[test]
+    fn test_manual_resolve() {
+        let s = store();
+        let mut a = MemoryRecord::new(Tier::Knowledge, MemoryKind::Fact, "打印服务器地址", "办公区打印服务器地址为 192.168.1.100，端口 631");
+        a.entities = vec!["打印服务器".into()];
+        let (id1, _) = s.put_knowledge_with_conflicts(a, None, 0.8).unwrap();
+        let mut b = MemoryRecord::new(Tier::Knowledge, MemoryKind::Fact, "打印服务器地址", "办公区打印服务器地址为 192.168.1.102，端口 631");
+        b.entities = vec!["打印服务器".into()];
+        let (id2, _) = s.put_knowledge_with_conflicts(b, None, 0.8).unwrap();
+
+        // 确保有一条冲突记录（管道未产出时插入合成行，聚焦改判本身）
+        let conflict_id: i64 = {
+            let have: i64 = {
+                let conn = s.conn.lock().unwrap();
+                conn.query_row("SELECT COUNT(*) FROM conflicts WHERE old_id=?1 AND new_id=?2", params![id1, id2], |r| r.get(0)).unwrap_or(0)
+            };
+            if have > 0 {
+                let conn = s.conn.lock().unwrap();
+                conn.query_row("SELECT id FROM conflicts WHERE old_id=?1 AND new_id=?2 LIMIT 1", params![id1, id2], |r| r.get(0)).unwrap()
+            } else {
+                let conn = s.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT INTO conflicts(old_id,new_id,ctype,resolution,reason,decided_by,created_at) VALUES (?1,?2,'unknown','supersede','测试','rule',0)",
+                    params![id1, id2],
+                )
+                .unwrap();
+                conn.last_insert_rowid()
+            }
+        };
+
+        // 改判：恢复旧版
+        let r = s.resolve_conflict_manual(conflict_id, &ManualChoice::KeepOld, "").unwrap();
+        assert_eq!(r["ok"], true);
+        assert!(s.get(id1).unwrap().unwrap().is_current);
+        assert!(!s.get(id2).unwrap().unwrap().is_current);
+        // 再改判：维持新版（幂等可重复）
+        let r = s.resolve_conflict_manual(conflict_id, &ManualChoice::KeepNew, "以新地址为准").unwrap();
+        assert_eq!(r["ok"], true);
+        assert!(s.get(id2).unwrap().unwrap().is_current);
+        assert!(!s.get(id1).unwrap().unwrap().is_current);
+        // 改判记录应落到冲突行
+        let c = s.conflicts_all().unwrap().into_iter().find(|c| c["id"].as_i64() == Some(conflict_id)).unwrap();
+        assert_eq!(c["decided_by"], "user");
+        assert!(c["reason"].as_str().unwrap().contains("以新地址为准"));
+        // 合并（自定义文本）
+        let r = s.resolve_conflict_manual(conflict_id, &ManualChoice::Merge { merged_text: Some("地址以 IT 公告为准".into()) }, "").unwrap();
+        assert_eq!(r["resolution"], "merge");
+        let merged_current = s.list(Some(Tier::Knowledge), None, false, 100).unwrap();
+        assert!(merged_current.iter().any(|m| m.content == "地址以 IT 公告为准"));
+        assert!(!s.get(id1).unwrap().unwrap().is_current);
+        assert!(!s.get(id2).unwrap().unwrap().is_current);
     }
 }
