@@ -19,6 +19,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use rusqlite::params;
 use lymem_core::forget::{ForgetMode, ForgetScope};
 use lymem_core::llm_hook::LlmJudge;
 use lymem_core::model::Tier;
@@ -96,7 +97,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/preferences/{key}", get(get_preference))
         .route("/api/v1/preferences/{key}/history", get(preference_history))
         .route("/api/v1/conflicts", get(list_conflicts))
-        .route("/api/v1/memories/{id}", get(get_memory))
+        .route("/api/v1/memories/{id}", get(get_memory).delete(forget_memory))
+        .route("/app", get(app_html))
         .route("/api/v1/knowledge", post(add_knowledge))
         .route("/api/v1/ingest/report", post(ingest_report))
         .route("/api/v1/arena/run", post(arena_run))
@@ -305,7 +307,8 @@ async fn list_memories(
 ) -> impl IntoResponse {
     let tier = q.get("tier").and_then(|v| v.as_str()).and_then(Tier::parse);
     let scene = q.get("scene").and_then(|v| v.as_str());
-    let limit = q.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+    // Query<Value> 下数值参数是字符串,必须按 str 解析(as_u64 恒为 None)
+    let limit = q.get("limit").and_then(|v| v.as_str()).and_then(|s| s.parse::<usize>().ok()).unwrap_or(50).min(2000);
     let history = q.get("history").and_then(|v| v.as_str()) == Some("1");
     match st.store.list(tier, scene, history, limit) {
         Ok(recs) => (StatusCode::OK, Json(json!(recs))),
@@ -531,6 +534,28 @@ async fn get_memory(State(st): State<Arc<AppState>>, Path(id): Path<i64>) -> imp
     match st.store.get(id) {
         Ok(Some(r)) => (StatusCode::OK, Json(serde_json::to_value(r).unwrap_or_default())),
         _ => (StatusCode::NOT_FOUND, Json(json!({"error": "不存在"}))),
+    }
+}
+
+/// 单条记忆遗忘（软删除，用户版界面用；范围化遗忘走 /forget/*）
+async fn forget_memory(State(st): State<Arc<AppState>>, Path(id): Path<i64>) -> impl IntoResponse {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let n = {
+        let conn = st.store.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE memories SET tombstone = 1, tombstoned_at = ?2, is_current = 0 WHERE id = ?1 AND tombstone = 0",
+            params![id, now],
+        )
+        .unwrap_or(0)
+    };
+    if n > 0 {
+        let _ = st.store.audit("forget_tombstone", &json!({"id": id, "via": "app"}));
+        (StatusCode::OK, Json(json!({"ok": true})))
+    } else {
+        (StatusCode::NOT_FOUND, Json(json!({"error": "不存在或已删除"})))
     }
 }
 
@@ -835,7 +860,7 @@ async fn forget_exec(State(st): State<Arc<AppState>>, Json(req): Json<ForgetExec
 }
 
 async fn list_audit(State(st): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<Value>) -> impl IntoResponse {
-    let limit = q.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+    let limit = q.get("limit").and_then(|v| v.as_str()).and_then(|s| s.parse::<usize>().ok()).unwrap_or(50).min(500);
     match st.store.audit_recent(limit) {
         Ok(a) => (StatusCode::OK, Json(json!(a))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
@@ -1593,3 +1618,12 @@ async fn viewer() -> impl IntoResponse {
 }
 
 const VIEWER_HTML: &str = include_str!("viewer.html");
+const APP_HTML: &str = include_str!("app.html");
+
+/// 用户版简洁界面（日常使用）；/viewer 为完整演示版
+async fn app_html() -> impl IntoResponse {
+    (
+        [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+        APP_HTML,
+    )
+}

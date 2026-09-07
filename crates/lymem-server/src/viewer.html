@@ -162,6 +162,8 @@ details.lib .bd{padding:2px 14px 10px;border-top:1px dashed var(--hairline)}
 .race .bar b{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink2)}
 .new-item{animation:newIn 2s var(--ease)}
 @keyframes newIn{0%{background:var(--ok-bg)}100%{background:transparent}}
+.pbar{height:6px;background:var(--hairline);border-radius:4px;overflow:hidden;flex:1;min-width:120px}
+.pbar i{display:block;height:100%;background:var(--blue);width:0;transition:width .2s var(--ease)}
 .sq-step{display:flex;gap:11px;align-items:flex-start;margin:10px 0}
 .sq-step .no{flex:none;width:23px;height:23px;border-radius:50%;background:var(--blue-weak);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 pre.log{background:#101a33;color:#c7d4f2;border-radius:9px;padding:14px;font:12px/1.7 ui-monospace,Consolas,monospace;overflow:auto;max-height:340px;white-space:pre-wrap}
@@ -193,6 +195,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <option value="claude">暖纸衬线(Claude 风)</option>
       <option value="night">夜间</option>
     </select></div>
+    <div class="st"><a href="/app" style="color:var(--side-ok)">→ 简洁版(日常使用)</a></div>
     <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
     <div class="st"><span>维度</span><b id="foot-dim">-</b></div>
     <div class="st"><span>LLM</span><b id="foot-llm">-</b></div>
@@ -251,6 +254,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <div class="card">
       <h3>长记忆灌入<span class="hint">支持任意文档 / 笔记 / 知识 —— 自动清洗、分块、贴库标签</span></h3>
       <div class="tabs"><button class="on" onclick="vTab(this,'paste')">粘贴文本</button><button onclick="vTab(this,'file')">上传文档</button><button onclick="vTab(this,'json')">事件 JSON</button></div>
+      <div class="pbar" id="v-prog" style="display:none;margin-bottom:8px"><i></i></div>
       <div id="tab-paste">
         <textarea id="v-text" rows="5" placeholder="粘贴任意长文本：工作流、项目笔记、小说、文档…将按语义块自动切分入库"></textarea>
         <div class="row" style="margin-top:8px">
@@ -277,7 +281,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     </div>
     <div class="card">
       <h3>检索问答<span class="hint">混合检索 · 端侧直答</span></h3>
-      <div class="row"><input type="text" id="v-q" placeholder="问库里的任何内容…" onkeydown="if(event.key==='Enter')vAsk()"><button class="act" onclick="vAsk()">提问</button></div>
+      <div class="row"><input type="text" id="v-q" placeholder="问库里的任何内容…" onkeydown="if(event.key==='Enter')vAsk()"><select id="v-ask-lib" style="max-width:150px" onchange="if($('v-q').value.trim())vAsk()"><option value="">全部库</option></select><button class="act" onclick="vAsk()">提问</button></div>
       <div class="row" style="margin-top:6px">
         <span class="muted">试一试：</span>
         <span class="sq-chip" onclick="vAsk('周报工作流是怎样的？')">周报工作流是怎样的？</span>
@@ -486,13 +490,16 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     </div>
   </div>
   <div class="card">
-    <h3>记忆关系图谱<span class="hint">实体共现网络 · 拖拽节点 · 滚轮缩放 · 点击实体看关联记忆</span></h3>
+    <h3>记忆关系图谱<span class="hint">圆点=从记忆里抽出的实体/主题 · 连线=它们共同出现在同一条记忆 · 颜色=关联紧密的主题簇</span></h3>
     <div class="row">
       <button class="act ghost" onclick="gLoad()">加载图谱</button>
       <select id="g-top" style="max-width:140px" onchange="gLoad()"><option value="18">18 个实体</option><option value="30" selected>30 个实体</option><option value="50">50 个实体</option></select>
-      <span class="muted" id="g-msg">需先构建全局关联索引（上方「全局关联索引」卡）。</span>
+      <span class="muted" id="g-msg">需先构建全局关联索引（上方「全局关联索引」卡）。悬停看详情,点击实体跳到它的关联记忆。</span>
     </div>
-    <canvas id="g-canvas" height="380" style="width:100%;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);touch-action:none;cursor:grab"></canvas>
+    <div style="position:relative">
+      <canvas id="g-canvas" height="380" style="width:100%;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);touch-action:none;cursor:grab"></canvas>
+      <div id="g-tip" style="position:absolute;display:none;pointer-events:none;background:var(--toast-bg);color:var(--toast-ink);padding:6px 10px;border-radius:7px;font-size:12px;z-index:5;max-width:260px"></div>
+    </div>
   </div>
   <div class="card">
     <h3>记忆分发<span class="hint">把 lymem 记忆写进目标 Agent 的规则文件（只写受管区块，不动用户内容）</span></h3>
@@ -647,10 +654,21 @@ async function vIngestFile(){
   rd.readAsText(f);
 }
 async function vCommit(evs,msg){
-  $('v-msg').textContent='灌入中…';
-  const r=await api('/api/v1/memories',{events:evs});
+  const bar=$('v-prog'),inner=bar?bar.querySelector('i'):null;
+  if(bar){bar.style.display='block';if(inner)inner.style.width='0'}
+  $('v-msg').textContent=`灌入中 0/${evs.length} 块…`;
+  const B=8;let ids=[];
+  for(let i=0;i<evs.length;i+=B){
+    const r=await api('/api/v1/memories',{events:evs.slice(i,i+B)});
+    if(!r.ok){$('v-msg').textContent='';if(bar)bar.style.display='none';toast('失败：'+(r.error||''));return}
+    ids=ids.concat(r.ids||[]);
+    const done=Math.min(i+B,evs.length);
+    $('v-msg').textContent=`灌入中 ${done}/${evs.length} 块…`;
+    if(inner)inner.style.width=(done/evs.length*100)+'%';
+  }
   $('v-msg').textContent='';
-  toast(r.ok?msg+`（id ${r.ids.slice(0,5).join(',')}…）`:'失败：'+(r.error||''));
+  if(bar)setTimeout(()=>bar.style.display='none',800);
+  toast(msg+`（id ${ids.slice(0,5).join(',')}…）`);
   vTree();refreshDash();
 }
 async function vReport(){
@@ -667,9 +685,11 @@ async function vCommitJson(){
 }
 async function vAsk(q){
   const question=(q||$('v-q').value).trim();if(!question){toast('输入问题');return}
+  const lib=$('v-ask-lib').value;
   $('v-ans').innerHTML='<span class="muted">检索中…</span>';
   const t0=performance.now();
-  const [sr,ar]=await Promise.all([api('/api/v1/search',{query:question,top_k:8,use_graph:false}),api('/api/v1/ask',{question,top_k:8})]);
+  const sc=lib?{scenes:[lib]}:undefined;
+  const [sr,ar]=await Promise.all([api('/api/v1/search',{query:question,top_k:8,use_graph:false,scenes:sc?sc.scenes:undefined}),api('/api/v1/ask',{question,top_k:8,scene:lib||null})]);
   const total=((performance.now()-t0)/1000).toFixed(1);
   if(!ar||ar.error){$('v-ans').textContent='检索失败：'+((ar&&ar.error)||'未知错误');return}
   $('k-lat').textContent=sr.took_ms+'ms';
@@ -679,9 +699,11 @@ async function vAsk(q){
    (ar.sources||[]).slice(0,4).map((s,i)=>`<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12.5px"><span style="display:inline-flex;min-width:20px;height:20px;border-radius:5px;background:var(--blue-weak);color:var(--blue);font-weight:700;font-size:11px;align-items:center;justify-content:center;margin-right:8px">${i+1}</span><b>${esc(s.title||('#'+s.id))}</b><div class="muted" style="margin-left:28px">${esc(s.snippet||'')}</div></div>`).join('');
 }
 async function vTree(){
-  const recs=await api('/api/v1/memories?limit=400&history=0');
+  const recs=await api('/api/v1/memories?limit=1000&history=0');
   const libs={};
   (recs||[]).forEach(r=>{const k=r.scene||'公共库';(libs[k]=libs[k]||[]).push(r)});
+  const sel=$('v-ask-lib'),cur=sel.value;
+  sel.innerHTML='<option value="">全部库</option>'+Object.keys(libs).map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join('');
   $('v-tree').innerHTML=Object.entries(libs).map(([lib,items])=>
    `<details class="lib"${lib==='公共库'?' open':''}><summary>${esc(lib)}<span class="muted" style="font-weight:400">${items.length} 条</span></summary><div class="bd">${
      items.slice(0,80).map(r=>`<div class="mi" onclick="vDetail(${r.id})"><span class="tag t-${r.tier==='knowledge'?'know':r.tier==='preference'?'pref':'epi'}">${TIER_ZH[r.tier]||r.tier}</span><span class="tag k">${KIND_ZH[r.kind]||r.kind}</span><span class="t">${esc(r.title||r.content.slice(0,40))}</span><span class="muted">${ts(r.created_at)}</span></div>`).join('')||'<div class="empty">空</div>'
@@ -1114,15 +1136,25 @@ async function gLoad(){
   const cv=$('g-canvas');
   const top=$('g-top').value;
   const r=await api('/api/v1/hub/index/graph?top='+top);
-  if(!r.nodes||!r.nodes.length){$('g-msg').textContent='图数据为空：先构建全局关联索引（需要有实体与记忆）。';return}
+  const junk=n=>!n.name||n.name==='__none__'||n.name==='none';
+  if(!r.nodes||r.nodes.filter(n=>!junk(n)).length<2){$('g-msg').textContent='图数据为空：先构建全局关联索引（需要有实体与记忆）。';return}
   G.w=cv.clientWidth||900;G.h=380;
   cv.width=G.w*devicePixelRatio;cv.height=G.h*devicePixelRatio;cv.style.height=G.h+'px';
-  const R=Math.min(G.w,G.h)*0.36;
-  G.nodes=r.nodes.map((n,i)=>{const a=2*Math.PI*i/r.nodes.length;return{name:n.name,deg:n.degree||1,x:G.w/2+R*Math.cos(a),y:G.h/2+R*Math.sin(a),vx:0,vy:0}});
+  G.nodes=r.nodes.filter(n=>!junk(n)).map((n,i)=>{const a=2*Math.PI*i/r.nodes.length;return{name:n.name,deg:n.degree||1,mems:n.memories||0,x:G.w/2+R0(i,r.nodes.length,G.w,G.h),y:0,vx:0,vy:0,c:0}});
+  function R0(i,n,W,H){const a=2*Math.PI*i/n,R=Math.min(W,H)*0.36;return W/2+R*Math.cos(a)}
+  G.nodes.forEach((n,i)=>{const a=2*Math.PI*i/G.nodes.length,R=Math.min(G.w,G.h)*0.36;n.y=G.h/2+R*Math.sin(a)});
   const idx={};G.nodes.forEach((n,i)=>idx[n.name]=i);
-  G.links=(r.edges||[]).map(e=>({s:idx[e.a],t:idx[e.b],w:e.w||1})).filter(l=>l.s!==undefined&&l.t!==undefined);
+  G.links=(r.edges||[]).map(e=>({s:idx[e.a],t:idx[e.b],w:e.w||1})).filter(l=>l.s!==undefined&&l.t!==undefined&&l.s!==l.t);
+  // 连通分量=主题簇,着色
+  const pa=G.nodes.map((_,i)=>i);const find=x=>pa[x]===x?x:(pa[x]=find(pa[x]));
+  for(const l of G.links){pa[find(l.s)]=find(l.t)}
+  G.nodes.forEach((n,i)=>n.c=find(i));
+  const hues=['#2f5fe0','#0b7a4b','#b45309','#8250df','#b3261e','#0f7f8f','#9a4f2c'];
+  const cmap={};let ci=0;
+  G.nodes.forEach(n=>{if(!(n.c in cmap))cmap[n.c]=hues[ci++%hues.length];n.color=cmap[n.c]});
   G.scale=1;G.ox=0;G.oy=0;
-  $('g-msg').textContent=`${G.nodes.length} 个实体 · ${G.links.length} 条共现边 · 点击实体看关联记忆`;
+  const comps=new Set(G.nodes.map(n=>n.c)).size;
+  $('g-msg').textContent=`${G.nodes.length} 个实体 · ${G.links.length} 条共现边 · ${comps} 个主题簇`;
   gKick();
 }
 function gKick(){if(!G.raf)gStep()}
@@ -1152,12 +1184,11 @@ function gDraw(){
   const cs=getComputedStyle(document.documentElement);
   const ink=cs.getPropertyValue('--ink').trim()||'#1d2433';
   const line=cs.getPropertyValue('--faint').trim()||'#8a93a3';
-  const accent=cs.getPropertyValue('--blue').trim()||'#2f5fe0';
   const fam=getComputedStyle(document.body).fontFamily;
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.clearRect(0,0,G.w,G.h);
   ctx.save();ctx.translate(G.ox,G.oy);ctx.scale(G.scale,G.scale);
-  ctx.strokeStyle=line;ctx.globalAlpha=.45;
+  ctx.strokeStyle=line;ctx.globalAlpha=.4;
   for(const l of G.links){
     const a=G.nodes[l.s],b=G.nodes[l.t];
     ctx.lineWidth=Math.min(4,0.6+l.w*0.08);
@@ -1165,12 +1196,24 @@ function gDraw(){
   }
   ctx.globalAlpha=1;
   for(const n of G.nodes){
-    const r=6+Math.min(16,Math.sqrt(n.deg)*2.2);
-    ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=accent;ctx.fill();
+    n.r=6+Math.min(15,Math.sqrt(n.mems*3+n.deg)*2.4);
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fillStyle=n.color||accent;ctx.fill();
     ctx.fillStyle=ink;ctx.font='11px '+fam;ctx.textAlign='center';
-    ctx.fillText(n.name.slice(0,10),n.x,n.y+r+12);
+    ctx.fillText(n.name.length>16?n.name.slice(0,15)+'…':n.name,n.x,n.y+n.r+13);
   }
   ctx.restore();
+}
+let GHOV=-1;
+function gTip(p,node){
+  const tip=$('g-tip');
+  if(!node){tip.style.display='none';GHOV=-1;return}
+  if(GHOV===node.name.charCodeAt(0)+node.name.length)return;
+  GHOV=node.name.charCodeAt(0)+node.name.length;
+  tip.innerHTML=`<b>${esc(node.name)}</b><br>出现在 ${node.mems} 条记忆 · 关联度 ${Math.round(node.deg*10)/10}`;
+  tip.style.display='block';
+  const cv=$('g-canvas'),r=cv.getBoundingClientRect();
+  tip.style.left=Math.min((p.x*G.scale+G.ox)+12,r.width-270)+'px';
+  tip.style.top=(p.y*G.scale+G.oy)+14+'px';
 }
 async function gEntity(name){
   const v=await api('/api/v1/hub/index/entity?name='+encodeURIComponent(name));
@@ -1182,14 +1225,17 @@ async function gEntity(name){
 (function gCanvasEvents(){
   const cv=$('g-canvas');
   const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-G.ox)/G.scale,y:(e.clientY-r.top-G.oy)/G.scale}};
-  const hit=p=>G.nodes.findIndex(n=>{const r=6+Math.min(16,Math.sqrt(n.deg)*2.2);const dx=n.x-p.x,dy=n.y-p.y;return dx*dx+dy*dy<=r*r+25});
-  cv.addEventListener('mousedown',e=>{const p=pos(e);G.drag=hit(p);G.dragging=true;G.moved=false;G.lx=e.clientX;G.ly=e.clientY;gKick()});
+  const hit=p=>G.nodes.findIndex(n=>{const r=n.r||8;const dx=n.x-p.x,dy=n.y-p.y;return dx*dx+dy*dy<=r*r+25});
   cv.addEventListener('mousemove',e=>{
-    if(!G.dragging)return;
     const p=pos(e);
-    if(G.drag>=0){G.nodes[G.drag].x=p.x;G.nodes[G.drag].y=p.y;G.moved=true;gKick()}
-    else{G.ox+=e.clientX-G.lx;G.oy+=e.clientY-G.ly;G.lx=e.clientX;G.ly=e.clientY;gDraw()}
+    if(!G.dragging){const i=hit(p);gTip(p,i>=0?G.nodes[i]:null);cv.style.cursor=i>=0?'pointer':'grab'}
+    if(G.dragging){
+      if(G.drag>=0){const p2=pos(e);G.nodes[G.drag].x=p2.x;G.nodes[G.drag].y=p2.y;G.moved=true;gKick()}
+      else{G.ox+=e.clientX-G.lx;G.oy+=e.clientY-G.ly;G.lx=e.clientX;G.ly=e.clientY;gDraw()}
+    }
   });
+  cv.addEventListener('mousedown',e=>{const p=pos(e);G.drag=hit(p);G.dragging=true;G.moved=false;G.lx=e.clientX;G.ly=e.clientY;gKick()});
+  cv.addEventListener('mouseleave',()=>gTip(null,null));
   window.addEventListener('mouseup',()=>{
     if(G.dragging&&!G.moved&&G.drag>=0)gEntity(G.nodes[G.drag].name);
     G.dragging=false;G.drag=-1;
