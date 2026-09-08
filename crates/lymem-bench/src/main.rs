@@ -56,7 +56,7 @@ enum Cmd {
         #[arg(long)]
         tag: Option<String>,
         /// 结果输出目录
-        #[arg(long, default_value = "/home/ez/桌面/kylin-mem/benchmark/results")]
+        #[arg(long, default_value = "benchmark-results")]
         out: std::path::PathBuf,
         /// 嵌入后端：auto（麒麟）/ hash（离线快速）
         #[arg(long, default_value = "auto")]

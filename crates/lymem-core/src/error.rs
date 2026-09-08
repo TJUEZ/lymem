@@ -10,6 +10,8 @@ pub enum CoreError {
     Fts(#[from] tantivy::TantivyError),
     #[error("嵌入错误: {0}")]
     Embed(String),
+    #[error("向量索引错误: {0}")]
+    Vector(String),
     #[error("IO 错误: {0}")]
     Io(#[from] std::io::Error),
     #[error("非法输入: {0}")]

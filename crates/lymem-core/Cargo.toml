@@ -4,6 +4,11 @@ description = "麟忆尽智 lymem：OS Agent 多源融合偏好与知识记忆�
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+build = "build.rs"
+
+[features]
+default = ["kylin-vector"]
+kylin-vector = []
 
 [dependencies]
 serde.workspace = true

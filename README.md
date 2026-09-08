@@ -44,7 +44,7 @@
 │  lymem-kylin 麒麟端侧绑定       lymem-llm (OpenAI 兼容)      │
 │  DBus SDK 通道 + kytensor 直连   MiniMax 预设，未配置则规则兜底│
 ├─────────────────────────────────────────────────────────────┤
-│        SQLite (WAL) + sqlite-vec + tantivy 单机存储          │
+│ SQLite (元数据/审计) + 麒麟向量引擎 SDK（主）+ tantivy      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,7 +63,7 @@
 ## 快速开始
 
 ```bash
-# 构建（首次约数分钟）
+# 构建（银河麒麟 V11 默认编入官方向量数据库 SDK 通道）
 cargo build --release
 
 # 状态
@@ -91,12 +91,17 @@ echo '[{"type":"tool_result","data":{"tool":"libreoffice","task":"doc_edit","ok"
 LYMEM_PORT=8801 ./target/release/lymem-server
 ```
 
+银河麒麟 V11 的安装前检查、用户级/deb 部署、SDK 合规验收、备份恢复和故障排查，见
+[`docs/部署指南.md`](docs/部署指南.md)。面向比赛提交的剩余工作与优先级见
+[`docs/竞赛实施路线图.md`](docs/竞赛实施路线图.md)。
+
 ## 环境变量
 
 | 变量 | 说明 | 默认 |
 |---|---|---|
 | `LYMEM_DATA_DIR` | 数据目录 | `~/.local/share/lymem` |
 | `LYMEM_EMBEDDER` | `auto`（麒麟）/ `hash`（离线） | `auto` |
+| `LYMEM_VECTOR_BACKEND` | `kylin`（竞赛正式）/ `sqlite`（开发降级） | `sqlite` |
 | `LYMEM_KYLIN_RUNTIME_SOCK` | 麒麟 runtime DBus 地址 | 按当前 uid 推导 |
 | `LYMEM_KYLIN_KYTENSOR_URL` | kytensor Triton 基址 | `http://127.0.0.1:8000` |
 | `LYMEM_KYLIN_MODEL` | 嵌入模型 | `ensemble-embd_gte-base_uint8-text` |

@@ -1,4 +1,5 @@
-//! 存储层：SQLite（元数据/版本链/图边）+ sqlite-vec（向量 ANN）+ tantivy（BM25）。
+//! 存储层：SQLite（元数据/版本链/图边）+ 麒麟向量引擎（正式主通道）
+//! + sqlite-vec（恢复副本/开发降级）+ tantivy（BM25）。
 //!
 //! 设计原则：
 //! - 单文件数据库 + 全文目录，拷贝即备份，满足端侧轻量化要求；
@@ -15,6 +16,7 @@ use crate::embedding::{vec_to_blob, Embedder};
 use crate::error::{CoreError, Result};
 use crate::fts::FtsIndex;
 use crate::model::{MemoryKind, MemoryRecord, Sensitivity, Tier};
+use crate::vector_index::VectorIndex;
 
 /// 建库 SQL
 const SCHEMA: &str = r#"
@@ -151,6 +153,7 @@ pub struct MemoryStore {
     pub fts: Mutex<FtsIndex>,
     pub embedder: Box<dyn Embedder>,
     pub vec_dim: usize,
+    vector_index: Option<Mutex<Box<dyn VectorIndex>>>,
     fts_dir: PathBuf,
 }
 
@@ -187,37 +190,67 @@ const RECORD_COLS: &str = "id, tier, kind, title, content, source, scene, confid
 
 /// 文本分块：按段落聚合，单块不超过 max_chars（默认 480，适配嵌入模型窗口）
 pub fn chunk_text(content: &str, max_chars: usize) -> Vec<String> {
+    fn flush_chunk(chunks: &mut Vec<String>, current: &mut String) {
+        if !current.trim().is_empty() {
+            chunks.push(std::mem::take(current));
+        }
+    }
+
     let paras: Vec<&str> = content.split("\n\n").map(|p| p.trim()).filter(|p| !p.is_empty()).collect();
     let mut chunks: Vec<String> = Vec::new();
     let mut cur = String::new();
     for p in paras {
         if p.chars().count() > max_chars {
-            // 超长段落硬切
-            if !cur.is_empty() {
-                chunks.push(std::mem::take(&mut cur));
-            }
+            // 超长段落：句界感知切分——按句终符（。！？；…）断句后贪心打包，
+            // 避免一句话被劈进两个块；仅单句自身超长时才硬切
+            flush_chunk(&mut chunks, &mut cur);
             let chars: Vec<char> = p.chars().collect();
-            for seg in chars.chunks(max_chars) {
-                chunks.push(seg.iter().collect());
+            let mut i = 0;
+            while i < chars.len() {
+                // 取一句（句终符+闭引号归本句）
+                let start = i;
+                while i < chars.len() {
+                    let ch = chars[i];
+                    i += 1;
+                    if matches!(ch, '。' | '！' | '？' | '；' | '…' | '\n') {
+                        while i < chars.len() && matches!(chars[i], '”' | '’' | '"' | ')' | '」' | '』') {
+                            i += 1;
+                        }
+                        break;
+                    }
+                }
+                let sent: String = chars[start..i].iter().collect();
+                if sent.chars().count() > max_chars {
+                    // 单句超长，硬切
+                    flush_chunk(&mut chunks, &mut cur);
+                    let sc: Vec<char> = sent.chars().collect();
+                    for seg in sc.chunks(max_chars) {
+                        chunks.push(seg.iter().collect());
+                    }
+                    continue;
+                }
+                if cur.chars().count() + sent.chars().count() > max_chars {
+                    flush_chunk(&mut chunks, &mut cur);
+                }
+                cur.push_str(&sent);
             }
+            flush_chunk(&mut chunks, &mut cur);
             continue;
         }
         let add = if cur.is_empty() { p.len() } else { cur.len() + 2 + p.len() };
         if add > max_chars {
-            chunks.push(std::mem::take(&mut cur));
+            flush_chunk(&mut chunks, &mut cur);
         }
         if !cur.is_empty() {
             cur.push_str("\n\n");
         }
         cur.push_str(p);
     }
-    if !cur.is_empty() {
-        chunks.push(cur);
-    }
+    flush_chunk(&mut chunks, &mut cur);
     if chunks.is_empty() {
         chunks.push(content.trim().to_string());
     }
-    chunks
+    chunks.into_iter().filter(|c| !c.trim().is_empty()).collect()
 }
 
 impl MemoryStore {
@@ -248,13 +281,52 @@ impl MemoryStore {
         ))?;
 
         let fts = FtsIndex::open(fts_dir)?;
+        let vector_index = Self::open_external_vector_index(db_path, vec_dim)?;
         Ok(MemoryStore {
             conn: Mutex::new(conn),
             fts: Mutex::new(fts),
             embedder,
             vec_dim,
+            vector_index,
             fts_dir: fts_dir.to_path_buf(),
         })
+    }
+
+    fn open_external_vector_index(_db_path: &Path, _vec_dim: usize) -> Result<Option<Mutex<Box<dyn VectorIndex>>>> {
+        let backend = std::env::var("LYMEM_VECTOR_BACKEND").unwrap_or_else(|_| "sqlite".into());
+        match backend.as_str() {
+            "sqlite" | "sqlite-vec" => Ok(None),
+            "kylin" | "kylin-vector" => {
+                #[cfg(feature = "kylin-vector")]
+                {
+                    let canonical = _db_path.to_string_lossy();
+                    let mut hash = 0xcbf29ce484222325u64;
+                    for byte in canonical.as_bytes() {
+                        hash ^= *byte as u64;
+                        hash = hash.wrapping_mul(0x100000001b3);
+                    }
+                    let collection = std::env::var("LYMEM_KYLIN_VECTOR_COLLECTION")
+                        .unwrap_or_else(|_| format!("lymem_{hash:016x}_{_vec_dim}"));
+                    let index = crate::vector_index::KylinVectorIndex::connect(&collection, _vec_dim)?;
+                    tracing::info!(collection, vec_dim = _vec_dim, "麒麟向量数据库 SDK 主通道已连接");
+                    Ok(Some(Mutex::new(Box::new(index))))
+                }
+                #[cfg(not(feature = "kylin-vector"))]
+                {
+                    Err(CoreError::Vector(
+                        "LYMEM_VECTOR_BACKEND=kylin 需要使用 --features kylin-vector 构建".into(),
+                    ))
+                }
+            }
+            other => Err(CoreError::InvalidInput(format!("未知向量后端: {other}"))),
+        }
+    }
+
+    pub fn vector_backend_name(&self) -> &'static str {
+        self.vector_index
+            .as_ref()
+            .map(|index| index.lock().unwrap().name())
+            .unwrap_or("sqlite-vec")
     }
 
     pub fn fts_dir(&self) -> &Path {
@@ -318,6 +390,9 @@ impl MemoryStore {
                 "INSERT INTO vec_chunks(chunk_id, embedding) VALUES (?1, ?2)",
                 params![chunk_id, vec_to_blob(&vec)],
             )?;
+            if let Some(index) = &self.vector_index {
+                index.lock().unwrap().upsert(chunk_id, &vec)?;
+            }
             let _ = fts.add_chunk(mem_id, chunk_id, rec.tier.as_str(), &rec.scene, &chunk);
         }
         drop(fts);
@@ -363,6 +438,25 @@ impl MemoryStore {
     pub fn knn(&self, query_vec: &[f32], k: usize) -> Result<Vec<(i64, f64, i64)>> {
         if query_vec.len() != self.vec_dim {
             return Err(CoreError::Embed(format!("向量维度不匹配: {} != {}", query_vec.len(), self.vec_dim)));
+        }
+        if let Some(index) = &self.vector_index {
+            let hits = index.lock().unwrap().search(query_vec, k)?;
+            let conn = self.conn.lock().unwrap();
+            let mut out = Vec::with_capacity(hits.len());
+            for (chunk_id, distance) in hits {
+                let memory_id = conn
+                    .query_row(
+                        "SELECT c.memory_id FROM chunks c JOIN memories m ON m.id = c.memory_id
+                         WHERE c.chunk_id = ?1 AND m.tombstone = 0 AND m.is_current = 1",
+                        params![chunk_id],
+                        |row| row.get::<_, i64>(0),
+                    )
+                    .optional()?;
+                if let Some(memory_id) = memory_id {
+                    out.push((chunk_id, distance, memory_id));
+                }
+            }
+            return Ok(out);
         }
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
@@ -517,6 +611,9 @@ impl MemoryStore {
             params![ids_json],
         )?;
         drop(conn);
+        if let Some(index) = &self.vector_index {
+            index.lock().unwrap().delete(&chunk_ids)?;
+        }
         let mut fts = self.fts.lock().unwrap();
         for id in ids {
             let _ = fts.delete_memory(*id);

@@ -14,7 +14,7 @@
 //! | (1) 多源数据整合 | [`ingest`]：清洗/标准化/质量校验（去重、敏感分级） |
 //! | (2) 偏好动态捕捉 | [`preference`]：规则快通道 + LLM 慢通道 + 版本链 |
 //! | (3) 知识结构化整合 | [`conflict`]：检测→分类→仲裁→版本化；[`retrieval`]：三路混合检索 |
-//! | (4) 端侧部署 | [`embedding::Embedder`] + SQLite/sqlite-vec/tantivy 单机存储 |
+//! | (4) 端侧部署 | [`embedding::Embedder`] + 麒麟向量引擎 SDK + SQLite/tantivy |
 //! | (5) 敏感与遗忘 | [`sensitive`] 规则识别；[`forget`] 自然语言遗忘（墓碑/硬清除） |
 //! | (6) 短中期流转 | [`promotion`]：工作→情景→知识晋升管道 |
 //! | (7) 量化评测 | [`retrieval::SearchParams`] 通道开关即消融维度；统计接口 |
@@ -35,6 +35,7 @@ pub mod retrieval;
 pub mod sensitive;
 pub mod store;
 pub mod t2s;
+pub mod vector_index;
 
 pub use error::{CoreError, Result};
 pub use model::{MemoryKind, MemoryRecord, ScoredMemory, Sensitivity, Tier};

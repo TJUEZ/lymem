@@ -3,8 +3,8 @@
 # 产出:docx(pandoc) + pdf(HTML → Edge print-to-pdf)
 import re, subprocess, pathlib
 
-ROOT = pathlib.Path("/home/ez/桌面/kylin-mem/lymem")
-BM = pathlib.Path("/home/ez/桌面/kylin-mem/benchmark")
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+BM = ROOT.parent / "benchmark"
 OUT = ROOT / "dist" / "submit"
 OUT.mkdir(parents=True, exist_ok=True)
 

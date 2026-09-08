@@ -4,7 +4,8 @@ import subprocess, pathlib, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT = pathlib.Path("/home/ez/桌面/kylin-mem/lymem/dist/submit/video-materials")
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+OUT = ROOT / "dist" / "submit" / "video-materials"
 OUT.mkdir(parents=True, exist_ok=True)
 ASSETS = pathlib.Path(__file__).resolve().parent / "assets"
 from matplotlib import font_manager

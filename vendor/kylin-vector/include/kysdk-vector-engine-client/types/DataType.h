@@ -1,0 +1,49 @@
+// Licensed to the LF AI & Data foundation under one
+// or more contributor license agreements. See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership. The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
+namespace VectorDB {
+
+/**
+ * @brief Data type of field
+ */
+enum class DataType {
+    UNKNOWN = 0,
+
+    BOOL = 1,
+    INT8 = 2,
+    INT16 = 3,
+    INT32 = 4,
+    INT64 = 5,
+
+    FLOAT = 10,
+    DOUBLE = 11,
+
+    // STRING not available
+    STRING = 20,
+    VARCHAR = 21,
+    ARRAY = 22,
+    JSON = 23,
+
+    BINARY_VECTOR = 100,
+    FLOAT_VECTOR = 101,
+    FLOAT16_VECTOR = 102,
+    BFLOAT16_VECTOR = 103,
+    SPARSE_FLOAT_VECTOR = 104,
+};
+
+}  // namespace VectorDB

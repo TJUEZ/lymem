@@ -3,6 +3,7 @@ Version: PLACEHOLDER_VERSION
 Section: utils
 Priority: optional
 Architecture: amd64
+Depends: libkysdk-vector-engine-client (>= 1.2.0.0)
 Maintainer: lymem <dev@lymem.local>
 Description: 麟忆尽智 · Agent 端侧长期记忆管理台 (lymem)
  端侧四层记忆系统：多源接入与清洗、偏好动态捕捉、

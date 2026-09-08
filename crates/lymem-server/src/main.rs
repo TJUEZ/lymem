@@ -176,6 +176,7 @@ async fn status(State(st): State<Arc<AppState>>) -> impl IntoResponse {
         "service": "lymem",
         "embedder": st.embedder_name,
         "embed_dim": st.store.vec_dim,
+        "vector_backend": st.store.vector_backend_name(),
         "llm": st.llm_name.lock().unwrap().clone(),
         "tiers": counts,
         "preferences": prefs,
