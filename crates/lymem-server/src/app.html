@@ -10,7 +10,6 @@
   --ink:#232019;--sub:#6b665c;--faint:#98938a;
   --accent:#c96442;--accent-weak:#f6ebe5;--ring:#c9644226;
   --ok:#3e7a52;--err:#b3503c;
-  --side:#f1efe9;--side-ink:#5f584d;
   --radius:12px;--ease:cubic-bezier(.16,1,.3,1);
 }
 html[data-dark="1"]{
@@ -18,14 +17,13 @@ html[data-dark="1"]{
   --ink:#e8e6e1;--sub:#a8a49b;--faint:#7a766d;
   --accent:#e08a68;--accent-weak:#33271f;--ring:#e08a6833;
   --ok:#7fb894;--err:#d98a7a;
-  --side:#1f1f1d;--side-ink:#a8a49b;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font:14.5px/1.7 -apple-system,"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
 ::selection{background:var(--ring)}
 a{color:var(--accent);text-decoration:none}
 header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--hairline)}
-.hwrap{max-width:1000px;margin:0 auto;padding:12px 24px;display:flex;gap:18px;align-items:center}
+.hwrap{max-width:960px;margin:0 auto;padding:12px 24px;display:flex;gap:18px;align-items:center}
 .brand{font-weight:700;font-size:15px;white-space:nowrap}
 .brand small{display:block;font-size:10.5px;color:var(--faint);font-weight:400}
 nav{display:flex;gap:2px;margin-left:8px;flex:1}
@@ -35,45 +33,46 @@ nav button.on{background:var(--accent-weak);color:var(--accent);font-weight:600}
 .hact{display:flex;gap:10px;align-items:center;font-size:12.5px}
 .hact a,.hact button{color:var(--sub);background:none;border:0;cursor:pointer;font-size:12.5px}
 .hact a:hover,.hact button:hover{color:var(--accent)}
-main{max-width:1000px;margin:0 auto;padding:28px 24px 60px}
+main{max-width:960px;margin:0 auto;padding:26px 24px 60px}
 section[data-page]{display:none}
 section[data-page].on{display:block;animation:pin .22s var(--ease)}
 @keyframes pin{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
-h2{font-size:17px;margin-bottom:4px}
-.desc{font-size:12.5px;color:var(--faint);margin-bottom:18px}
-.srch{display:flex;gap:10px;margin:6px 0 10px}
-.srch input{flex:1;border:1px solid var(--line);border-radius:var(--radius);padding:13px 18px;font-size:15.5px;background:var(--panel);color:var(--ink)}
-.srch input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+h2{font-size:16px;margin-bottom:2px}
+.desc{font-size:12.5px;color:var(--faint);margin-bottom:16px}
+.addbar{display:flex;gap:10px;margin-bottom:14px}
+.addbar input{flex:1;border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;font-size:14.5px;background:var(--panel);color:var(--ink)}
+.addbar input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
 button.act{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:10px;padding:9px 18px;font-size:14px;cursor:pointer}
 button.act:hover{filter:brightness(1.06)}
 button.act.ghost{background:var(--panel);color:var(--accent)}
 button.act.mini{padding:3px 12px;font-size:12px;border-radius:8px}
 input[type=text],textarea,select{font:inherit;color:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--panel)}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-.chip{border:1px solid var(--line);background:var(--panel);color:var(--sub);border-radius:16px;padding:4px 14px;font-size:13px;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--sub);border-radius:16px;padding:3px 13px;font-size:13px;cursor:pointer}
 .chip.on{background:var(--accent-weak);border-color:transparent;color:var(--accent);font-weight:600}
 .list{display:flex;flex-direction:column}
-.item{padding:12px 6px;border-bottom:1px solid var(--hairline);cursor:pointer}
+.item{position:relative;padding:12px 6px;border-bottom:1px solid var(--hairline);cursor:pointer}
 .item:hover{background:var(--accent-weak)}
-.item .t{font-size:14.5px;font-weight:600}
-.item .s{font-size:12.5px;color:var(--faint);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .t{font-size:14.5px;font-weight:600;padding-right:64px}
+.item .s{font-size:13px;color:var(--sub);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:64px}
+.item .del{position:absolute;right:4px;top:12px;opacity:0;border:0;background:none;color:var(--faint);font-size:12px;cursor:pointer;padding:4px 8px;border-radius:7px}
+.item:hover .del{opacity:1}
+.item .del:hover{color:var(--err);background:var(--panel)}
 .meta{font-size:12px;color:var(--faint)}
+.meta b{color:var(--accent);font-weight:600}
 .empty{color:var(--faint);text-align:center;padding:34px 0;font-size:13.5px}
 #drawer{position:fixed;right:0;top:0;bottom:0;width:440px;max-width:94vw;background:var(--panel);border-left:1px solid var(--line);box-shadow:-16px 0 44px -22px #23201933;transform:translateX(105%);transition:.26s var(--ease);z-index:40;display:flex;flex-direction:column}
 #drawer.open{transform:none}
 #drawer .dh{padding:15px 20px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:8px}
 #drawer .db{padding:18px 20px;overflow:auto;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
-.stat{display:flex;gap:0;background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);margin:18px 0;overflow:hidden}
-.stat div{flex:1;padding:12px 18px;border-right:1px solid var(--hairline);font-size:12.5px;color:var(--sub)}
-.stat div:last-child{border-right:0}
-.stat b{display:block;font-size:21px;color:var(--ink)}
 .pbar{height:6px;background:var(--hairline);border-radius:4px;overflow:hidden;margin:10px 0}
 .pbar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s var(--ease)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .card{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
 .tag{display:inline-block;font-size:11px;border-radius:6px;padding:1px 8px;background:var(--accent-weak);color:var(--accent);font-weight:600;margin-right:6px}
 .mut{color:var(--faint);font-size:12.5px}
+.ans{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;white-space:pre-wrap;font-size:14px;line-height:1.85}
 @media(max-width:760px){nav button{padding:7px 8px;font-size:13px}.hwrap{padding:10px 14px;flex-wrap:wrap}main{padding:20px 14px 50px}}
 </style>
 </head>
@@ -81,8 +80,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 <header><div class="hwrap">
   <div class="brand">麟忆尽智<small>lymem · 端侧记忆</small></div>
   <nav id="nav">
-    <button data-page="home" class="on">首页</button>
-    <button data-page="mem">记忆</button>
+    <button data-page="mem" class="on">记忆</button>
     <button data-page="prefs">偏好</button>
     <button data-page="files">文件</button>
     <button data-page="set">设置</button>
@@ -94,65 +92,46 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 </div></header>
 <main>
 
-<!-- 首页 -->
-<section data-page="home" class="on">
-  <h2>找任何记住的东西</h2>
-  <div class="desc">记忆、偏好、文件内容，一句话检索</div>
-  <div class="srch">
-    <input id="h-q" placeholder="比如：讲打印服务器配置的那份文档" onkeydown="if(event.key==='Enter')hSearch()">
-    <button class="act" onclick="hSearch()">搜索</button>
+<!-- 记忆(唯一主界面:添加/搜索/浏览/删除,对齐 OpenMemory/mem0 控制台范式) -->
+<section data-page="mem" class="on">
+  <div class="addbar">
+    <input id="m-text" placeholder="记一条新内容,回车保存(如:项目部署在 192.168.1.100)" onkeydown="if(event.key==='Enter')mAdd()">
+    <button class="act" onclick="mAdd()">记住</button>
+  </div>
+  <div class="pbar" id="m-prog" style="display:none"><i></i></div>
+  <div class="srch addbar">
+    <input id="h-q" placeholder="搜索记忆,或点右侧让 AI 依据记忆回答" onkeydown="if(event.key==='Enter')hSearch()">
+    <button class="act ghost" onclick="hSearch()">搜索</button>
     <button class="act ghost" onclick="hAsk()">AI 问答</button>
   </div>
   <div id="h-ans"></div>
-  <div id="h-hits"></div>
-  <div class="stat" id="h-stat"></div>
-  <h2 style="margin-top:8px">最近记住的</h2>
-  <div class="list" id="h-recent"><div class="empty">加载中…</div></div>
-</section>
-
-<!-- 记忆 -->
-<section data-page="mem">
-  <h2>记忆</h2>
-  <div class="desc">按库浏览你让系统记住的内容；点开可查看或删除</div>
   <div class="chips" id="m-chips"></div>
-  <div class="row" style="margin-bottom:12px">
-    <button class="act mini" onclick="mToggleAdd()">灌入新内容</button>
-    <span class="mut" id="m-msg"></span>
-  </div>
-  <div class="card" id="m-add" style="display:none">
-    <textarea id="m-text" rows="4" placeholder="粘贴要记住的内容：笔记、知识、流程…" style="width:100%"></textarea>
-    <div class="row" style="margin-top:10px">
-      <input type="text" id="m-lib" placeholder="保存到哪个库（如：工作笔记）" value="我的库" style="max-width:220px">
-      <button class="act" onclick="mAdd()">记住它</button>
-      <div class="pbar" id="m-prog" style="display:none;flex:1"><i></i></div>
-    </div>
-  </div>
   <div class="list" id="m-list"><div class="empty">加载中…</div></div>
 </section>
 
 <!-- 偏好 -->
 <section data-page="prefs">
   <h2>偏好</h2>
-  <div class="desc">系统替你记住的使用习惯，可以随时改</div>
+  <div class="desc">系统替你记住的使用习惯,点击可看版本历史或修改</div>
   <div class="list" id="p-list"><div class="empty">加载中…</div></div>
 </section>
 
 <!-- 文件 -->
 <section data-page="files">
   <h2>文件</h2>
-  <div class="desc">授权文件夹后，可以按内容（而不只是文件名）找文件</div>
+  <div class="desc">授权文件夹后,可以按内容(而不只是文件名)找文件</div>
   <div class="card">
     <div class="row">
-      <input type="text" id="f-dir" placeholder="文件夹绝对路径，如 /home/you/文档" style="flex:1;min-width:220px">
+      <input type="text" id="f-dir" placeholder="文件夹绝对路径,如 /home/you/文档" style="flex:1;min-width:220px">
       <button class="act" onclick="fAdd()">授权文件夹</button>
       <button class="act ghost" onclick="fScan()">扫描更新</button>
       <span class="mut" id="f-scanmsg"></span>
     </div>
-    <div class="mut" style="margin-top:8px">隐私：含密码/密钥/身份证/银行卡的文件不会入库；可随时删除授权并清除索引。</div>
+    <div class="mut" style="margin-top:8px">隐私:含密码/密钥/身份证/银行卡的文件不会入库;可随时删除授权并清除索引。</div>
     <div class="list" id="f-dirs" style="margin-top:6px"></div>
   </div>
-  <div class="srch">
-    <input id="f-q" placeholder="描述文件内容，如：讲打印服务器配置的文档" onkeydown="if(event.key==='Enter')fSearch()">
+  <div class="srch addbar">
+    <input id="f-q" placeholder="描述文件内容,如:讲打印服务器配置的文档" onkeydown="if(event.key==='Enter')fSearch()">
     <button class="act" onclick="fSearch()">找文件</button>
   </div>
   <div class="list" id="f-hits"></div>
@@ -170,9 +149,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
   <div class="card">
     <b>更多</b>
     <div class="mut" style="margin-top:8px;line-height:2">
-      · 演示版（完整功能与评测）：<a href="/viewer">/viewer</a><br>
-      · 本机 Agent 可通过 MCP 接入记忆（说明见源码 integrations/）<br>
-      · 数据都在本机 <code>~/.local/share/lymem</code>，备份整个文件夹即可迁移
+      · 演示版(完整功能与评测)：<a href="/viewer">/viewer</a><br>
+      · 本机 Agent 可通过 MCP 接入记忆(说明见源码 integrations/)<br>
+      · 数据都在本机 <code>~/.local/share/lymem</code>,备份整个文件夹即可迁移
     </div>
   </div>
 </section>
@@ -195,59 +174,26 @@ async function api(p,body,method){
 try{if(localStorage.getItem('lymem-dark')==='1')document.documentElement.dataset.dark='1'}catch(e){}
 function toggleDark(){const d=document.documentElement.dataset.dark==='1'?'0':'1';document.documentElement.dataset.dark=d;try{localStorage.setItem('lymem-dark',d)}catch(e){}}
 
-let CUR={id:0};
+let CUR={id:0},MLIB='';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
-  ({home:homeInit,mem:memInit,prefs:prefsInit,files:filesInit,set:setInit})[b.dataset.page]?.();
+  ({mem:memInit,prefs:prefsInit,files:filesInit,set:setInit})[b.dataset.page]?.();
 });
 
-/* ---- 首页 ---- */
-async function homeInit(){
-  api('/api/v1/status').then(s=>{
-    $('h-stat').innerHTML=`<div><b>${(s.tiers?.episodic??0)+(s.tiers?.knowledge??0)+(s.tiers?.preference??0)}</b>条记忆</div>
-      <div><b>${s.preferences??0}</b>条偏好</div>
-      <div><b>${(s.tiers?.knowledge??0)}</b>条知识</div>
-      <div><b>${s.embed_dim??'-'}</b>维端侧嵌入</div>`;
-  }).catch(()=>{});
-  api('/api/v1/memories?limit=8').then(recs=>{
-    $('h-recent').innerHTML=(recs||[]).filter(r=>r.scene!=='file').map(r=>item(r)).join('')||'<div class="empty">还没有记忆。去「记忆」页灌入第一条。</div>';
-  });
-}
+/* ---- 记忆流 ---- */
 function item(r){
   const body=String(r.content||'').replace(/^\[[^\]]{1,24}\]\s*/,'');
-  const t=(r.title&&!/^(会话|工具调用|用户行为|配置 )/.test(r.title))?r.title:body.slice(0,32);
-  return `<div class="item" onclick="detail(${r.id})"><div class="t">${esc(t)}</div>
+  return `<div class="item" onclick="detail(${r.id})"><div class="t">${esc(body.slice(0,32))}</div>
     <div class="s">${esc(body.length>36?body.slice(0,150):'')}</div>
-    <div class="meta">${esc(r.scene||'')}${r.source==='radar'?' · 文件':''} · ${ts(r.created_at)}</div></div>`;
+    <div class="meta"><b>${esc(r.scene||'我的库')}</b>${r.source==='radar'?' · 文件':''} · ${ts(r.created_at)}</div>
+    <button class="del" onclick="event.stopPropagation();delMem(${r.id})">删除</button></div>`;
 }
-async function hSearch(){
-  const q=$('h-q').value.trim();if(!q)return;
-  $('h-ans').innerHTML='';$('h-hits').innerHTML='<div class="empty">搜索中…</div>';
-  const r=await api('/api/v1/search',{query:q,top_k:12});
-  const hits=r.hits||[];
-  const files=hits.filter(h=>h.record.scene==='file'),mems=hits.filter(h=>h.record.scene!=='file');
-  let html='';
-  if(files.length)html+=`<h2 style="font-size:14px;margin:6px 0">文件</h2>`+files.map(h=>item(h.record)).join('');
-  if(mems.length)html+=`<h2 style="font-size:14px;margin:12px 0 6px">记忆</h2>`+mems.map(h=>item(h.record)).join('');
-  $('h-hits').innerHTML=html||'<div class="empty">没有找到相关内容。换个说法，或先灌入/授权更多内容。</div>';
-}
-async function hAsk(){
-  const q=$('h-q').value.trim();if(!q)return;
-  $('h-hits').innerHTML='';$('h-ans').innerHTML='<div class="empty">AI 正在回忆…（首次可能要几秒）</div>';
-  const r=await api('/api/v1/ask',{question:q,top_k:10});
-  if(r.error){$('h-ans').innerHTML='<div class="empty">'+esc(r.error)+'</div>';return}
-  $('h-ans').innerHTML=`<div class="card" style="white-space:pre-wrap">${esc(r.answer||'（无答案）')}</div>
-    <div class="mut" style="margin:4px 0 10px">依据 ${(r.sources||[]).length} 条记忆生成${r.answer?'':''}</div>`;
-}
-
-/* ---- 记忆 ---- */
-let MLIB='';
 async function memInit(){
-  const recs=await api('/api/v1/memories?limit=500');
+  const recs=await api('/api/v1/memories?limit=1000');
   window._mems=(recs||[]).filter(r=>r.scene!=='file');
   const libs=[...new Set(window._mems.map(r=>r.scene||'我的库'))];
-  if(MLIB&&libs.includes(MLIB))MLIB=MLIB;else MLIB='';
+  if(MLIB&&!libs.includes(MLIB))MLIB='';
   $('m-chips').innerHTML=`<span class="chip${MLIB===''?' on':''}" onclick="mFilter('')">全部 (${window._mems.length})</span>`+
     libs.map(l=>`<span class="chip${MLIB===l?' on':''}" onclick="mFilter('${encodeURIComponent(l)}')">${esc(l)} (${window._mems.filter(r=>(r.scene||'我的库')===l).length})</span>`).join('');
   mRender();
@@ -255,25 +201,43 @@ async function memInit(){
 function mFilter(enc){MLIB=decodeURIComponent(enc);memInit()}
 function mRender(){
   const rows=window._mems.filter(r=>!MLIB||(r.scene||'我的库')===MLIB);
-  $('m-list').innerHTML=rows.length?rows.map(r=>item(r)).join(''):'<div class="empty">这个库还是空的。</div>';
+  $('m-list').innerHTML=rows.length?rows.slice(0,200).map(r=>item(r)).join(''):'<div class="empty">这个库还是空的。在上方输入第一条内容。</div>';
 }
-function mToggleAdd(){const a=$('m-add');a.style.display=a.style.display==='none'?'block':'none'}
 async function mAdd(){
-  const text=$('m-text').value.trim();if(!text){toast?'':'';$('m-msg').textContent='先粘贴内容';return}
-  const lib=$('m-lib').value.trim()||'我的库';
+  const text=$('m-text').value.trim();if(!text)return;
+  const lib=MLIB||'我的库';
   const chunk=(t,n=800)=>{const o=[];for(let i=0;i<t.length;i+=n)o.push(t.slice(i,i+n));return o};
   const evs=chunk(text).map((c,i)=>({type:'conversation',data:{role:'assistant',text:c,scene:lib,source:'app#'+(i+1)}}));
   const bar=$('m-prog'),inner=bar.querySelector('i');bar.style.display='block';
   for(let i=0;i<evs.length;i+=8){
     const r=await api('/api/v1/memories',{events:evs.slice(i,i+8)});
-    if(!r.ok){bar.style.display='none';$('m-msg').textContent='失败：'+(r.error||'');return}
-    const done=Math.min(i+8,evs.length);
-    $('m-msg').textContent=`记住中 ${done}/${evs.length} 块…`;
-    inner.style.width=(done/evs.length*100)+'%';
+    if(!r.ok){bar.style.display='none';toastMsg('失败：'+(r.error||''));return}
+    inner.style.width=(Math.min(i+8,evs.length)/evs.length*100)+'%';
   }
-  bar.style.display='none';$('m-msg').textContent='已记住 ✓';$('m-text').value='';
-  setTimeout(()=>$('m-msg').textContent='',2000);
-  memInit();
+  bar.style.display='none';$('m-text').value='';
+  toastMsg('已记住');memInit();
+}
+async function hSearch(){
+  const q=$('h-q').value.trim();
+  $('h-ans').innerHTML='';
+  if(!q){memInit();return}
+  $('m-list').innerHTML='<div class="empty">搜索中…</div>';
+  const r=await api('/api/v1/search',{query:q,top_k:15});
+  const hits=r.hits||[];
+  $('m-list').innerHTML=hits.length?hits.map(h=>item(h.record)).join(''):'<div class="empty">没有找到。换个说法试试。</div>';
+}
+async function hAsk(){
+  const q=$('h-q').value.trim();if(!q)return;
+  $('h-ans').innerHTML='<div class="empty">AI 正在回忆…(首次可能要几秒)</div>';
+  const r=await api('/api/v1/ask',{question:q,top_k:10});
+  $('h-ans').innerHTML=r.error?`<div class="empty">${esc(r.error)}</div>`
+    :`<div class="ans">${esc(r.answer||'(无答案)')}</div><div class="mut" style="margin:-6px 0 10px">依据 ${(r.sources||[]).length} 条记忆生成 · 点击下方条目看原文</div>`;
+  const hits=r.sources||[];
+  $('m-list').innerHTML=hits.length?hits.map(s=>`<div class="item" onclick="detail(${s.id})"><div class="t">${esc(s.title||'记忆 #'+s.id)}</div><div class="s">${esc((s.snippet||'').slice(0,140))}</div></div>`).join(''):'';
+}
+async function delMem(id){
+  const r=await api('/api/v1/memories/'+id,undefined,'DELETE');
+  if(r.ok){toastMsg('已忘掉这条内容');memInit()}else toastMsg(r.error||'删除失败');
 }
 async function detail(id){
   const r=await api('/api/v1/memories/'+id);const rec=r.record||r;CUR.id=id;
@@ -285,7 +249,7 @@ async function detail(id){
 async function dForget(){
   if(!CUR.id)return;
   const r=await api('/api/v1/memories/'+CUR.id,undefined,'DELETE');
-  if(r.ok){$('drawer').classList.remove('open');toastMsg('已忘掉这条内容');homeInit();memInit()}
+  if(r.ok){$('drawer').classList.remove('open');toastMsg('已忘掉这条内容');memInit()}
   else toastMsg(r.error||'删除失败');
 }
 function toastMsg(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:9px;font-size:13px;z-index:99';document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
@@ -298,7 +262,7 @@ async function prefsInit(){
       <div class="t">${esc(p.key)} <span class="mut">= ${esc(JSON.stringify(p.value))}</span></div>
       <div class="meta">v${p.version} · ${p.source==='manual'?'手动':p.source==='rule'?'自动挖掘':'会话提取'} · 场景 ${esc((p.scenes||[]).join(','))||'*'} · 点击看历史/修改</div>
       <div class="ph" style="display:none"></div></div>`).join('')
-    :'<div class="empty">还没有偏好。正常使用一段时间后，系统会自动总结你的习惯。</div>';
+    :'<div class="empty">还没有偏好。正常使用一段时间后,系统会自动总结你的习惯。</div>';
 }
 async function pHist(enc,el){
   const box=el.querySelector('.ph');
@@ -306,7 +270,7 @@ async function pHist(enc,el){
   const key=decodeURIComponent(enc);
   const h=await api('/api/v1/preferences/'+encodeURIComponent(key)+'/history');
   box.innerHTML=`<div style="margin-top:8px">${(h||[]).map(v=>`<div class="meta">v${v.version} = ${esc(JSON.stringify(v.value))} · ${ts(v.valid_from)}</div>`).join('')}
-    <div class="row" style="margin-top:8px"><input type="text" id="pv-new" placeholder='新值，如 "PDF"' style="max-width:220px"><button class="act mini" onclick="pSet('${encodeURIComponent(key)}')">更新偏好</button></div></div>`;
+    <div class="row" style="margin-top:8px"><input type="text" id="pv-new" placeholder='新值,如 "PDF"' style="max-width:220px"><button class="act mini" onclick="pSet('${encodeURIComponent(key)}')">更新偏好</button></div></div>`;
   box.style.display='block';
 }
 async function pSet(enc){
@@ -335,7 +299,7 @@ async function fRemove(enc){
 async function fScan(){
   $('f-scanmsg').textContent='扫描中…';
   const r=await api('/api/v1/radar/scan',{});
-  $('f-scanmsg').textContent=r.ok?`完成：新索引 ${r.indexed} · 更新 ${r.updated} · 拦截 ${r.blocked}`:(r.error||'失败');
+  $('f-scanmsg').textContent=r.ok?`完成:新索引 ${r.indexed} · 更新 ${r.updated} · 拦截 ${r.blocked}`:(r.error||'失败');
 }
 async function fSearch(){
   const q=$('f-q').value.trim();if(!q)return;
@@ -353,14 +317,14 @@ async function setInit(){
   const embed=(s.embedder||'').includes('kylin')?'麒麟端侧嵌入':(s.embedder||'-');
   $('s-status').innerHTML=`<b>系统状态</b>
     <div class="mut" style="margin-top:8px;line-height:2">
-    · 嵌入：${esc(embed)}（${s.embed_dim??'?'} 维）<br>
-    · AI 生成：${s.llm==='llm-ready'?'已连接（配置了模型 Key）':'未配置 Key —— 检索/记忆/文件功能不受影响，仅 AI 问答与自动总结走规则兜底'}<br>
-    · 数据目录：~/.local/share/lymem（备份整目录即可迁移）<br>
-    · 服务地址：127.0.0.1:8801（仅本机可访问）
+    · 嵌入:${esc(embed)}(${s.embed_dim??'?'} 维)<br>
+    · AI 生成:${s.llm==='llm-ready'?'已连接(配置了模型 Key)':'未配置 Key —— 检索/记忆/文件功能不受影响,仅 AI 问答与自动总结走规则兜底'}<br>
+    · 数据目录:~/.local/share/lymem(备份整目录即可迁移)<br>
+    · 服务地址:127.0.0.1:8801(仅本机可访问)
     </div>`;
 }
 
-homeInit();
+memInit();
 </script>
 </body>
 </html>
