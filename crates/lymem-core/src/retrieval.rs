@@ -67,6 +67,46 @@ fn tier_ok(rec_tier: &str, tiers: &Option<Vec<Tier>>) -> bool {
     }
 }
 
+/// Return per-query channel multipliers without changing the default behavior.
+/// The classifier is deliberately small and deterministic so it can be audited
+/// and evaluated with the LoCoMo question type breakdown.
+fn adaptive_channel_weights(query: &str) -> (&'static str, f64, f64, f64) {
+    let q = query.to_lowercase();
+    let temporal = [
+        "when", "date", "year", "before", "after", "recent", "last", "时间", "日期", "哪年", "什么时候",
+    ]
+    .iter()
+    .any(|term| q.contains(term));
+    let relational = [
+        "who", "whose", "between", "relationship", "relation", "谁", "哪个人", "关系", "之间",
+    ]
+    .iter()
+    .any(|term| q.contains(term));
+    let semantic = [
+        "why", "how", "similar", "related", "explain", "为什么", "如何", "类似", "相关", "解释",
+    ]
+    .iter()
+    .any(|term| q.contains(term));
+    let exactish = q.split_whitespace().count() <= 4
+        && (q.chars().any(|c| c.is_ascii_digit())
+            || q.contains('@')
+            || q.contains('.')
+            || q.contains('_')
+            || q.contains('-'));
+
+    if temporal {
+        ("temporal", 0.85, 1.30, 0.75)
+    } else if relational {
+        ("relational", 0.90, 1.00, 1.25)
+    } else if semantic {
+        ("semantic", 1.25, 0.90, 0.90)
+    } else if exactish {
+        ("exactish", 0.75, 1.35, 0.85)
+    } else {
+        ("default", 1.0, 1.0, 1.0)
+    }
+}
+
 impl MemoryStore {
     /// 三路混合检索主入口。
     /// 流程：嵌入查询 → 向量 KNN / BM25 / 图扩展 → 过滤 → RRF 融合 → 偏好重排 → 触摸计数。
@@ -173,7 +213,15 @@ impl MemoryStore {
 
         // RRF 权重：读一次环境（原为每候选 3 次 env::var）
         let env_w = |name: &str| std::env::var(name).ok().and_then(|v| v.parse::<f64>().ok()).unwrap_or(1.0);
-        let (w_vec, w_bm25, w_graph) = (env_w("LYMEM_W_VEC"), env_w("LYMEM_W_BM25"), env_w("LYMEM_W_GRAPH"));
+        let (mut w_vec, mut w_bm25, mut w_graph) =
+            (env_w("LYMEM_W_VEC"), env_w("LYMEM_W_BM25"), env_w("LYMEM_W_GRAPH"));
+        if std::env::var("LYMEM_ADAPTIVE_RETRIEVAL").as_deref() == Ok("1") {
+            let (profile, vec_mul, bm25_mul, graph_mul) = adaptive_channel_weights(&query);
+            w_vec *= vec_mul;
+            w_bm25 *= bm25_mul;
+            w_graph *= graph_mul;
+            tracing::debug!(profile, w_vec, w_bm25, w_graph, "自适应检索权重");
+        }
         let first_seen: std::collections::HashMap<i64, usize> =
             all_ids.iter().enumerate().map(|(i, id)| (*id, i)).collect();
 
@@ -243,6 +291,15 @@ mod tests {
     use super::*;
     use crate::embedding::HashEmbedder;
     use crate::model::MemoryKind;
+
+    #[test]
+    fn adaptive_weights_follow_query_intent() {
+        assert_eq!(adaptive_channel_weights("when did Alice move") .0, "temporal");
+        assert_eq!(adaptive_channel_weights("who is related to Alice").0, "relational");
+        assert_eq!(adaptive_channel_weights("why did this happen").0, "semantic");
+        assert_eq!(adaptive_channel_weights("alice@example.com").0, "exactish");
+        assert_eq!(adaptive_channel_weights("tell me about Alice").0, "default");
+    }
 
     #[test]
     fn test_hybrid_search() {
