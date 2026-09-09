@@ -89,7 +89,7 @@ function srcNote(s, txt, y = 6.72) {
   s.addShape(p.shapes.RECTANGLE, { x: M, y: 6.15, w: 12.33, h: 0.72, fill: { color: TINT } });
   s.addText([
     { text: "方案定位  ", options: { bold: true, color: ACCENT } },
-    { text: "纯 Rust 实现的端侧长期记忆系统:多源融合灌入、四层流转、冲突仲裁、经验复用 —— 全部数据留在本机,检索延迟预算的 3%。", options: { color: TEXT } },
+    { text: "纯 Rust 实现的端侧长期记忆系统:多源融合灌入、四层流转、冲突仲裁、经验复用。全部数据留在本机,检索延迟是 500ms 预算的 3%。", options: { color: TEXT } },
   ], { x: M + 0.2, y: 6.15, w: 12.0, h: 0.72, fontSize: 14.5, fontFace: F, valign: "middle", margin: 0 });
 }
 
@@ -102,7 +102,7 @@ function srcNote(s, txt, y = 6.72) {
     ["接入层", "REST API(/api/v1/*)  ·  MCP 8 个记忆工具  ·  /v1/embeddings OpenAI 兼容代理  ·  Web 管理台(中文 7 页)", PRIMARY],
     ["记忆核心 lymem-core", "四层记忆(工作/情景/知识/偏好)  ｜  管道:清洗·敏感分级·冲突四步·蒸馏·遗忘  ｜  RRF 三路混合检索", ACCENT],
     ["端侧适配", "lymem-kylin:麒麟嵌入 SDK(DBus→kytensor→hash 三级自愈)  ｜  lymem-llm:MiniMax 兼容网关(无 Key 规则兜底)", PRIMARY],
-    ["存储", "SQLite(WAL) + sqlite-vec(向量) + tantivy(全文) —— 单文件库,备份即拷贝", PRIMARY],
+    ["存储", "SQLite(WAL) + sqlite-vec(向量) + tantivy(全文),单文件库,备份就是拷贝", PRIMARY],
   ];
   layers.forEach((L, i) => {
     const y = 1.55 + i * 1.18;
@@ -158,7 +158,7 @@ function srcNote(s, txt, y = 6.72) {
   const s = p.addSlide();
   pageChrome(s, 5, "多源整合(条款 1)");
   slideTitle(s, "条款 1 · 多源数据整合", "四类数据源,一条清洗管道");
-  const srcs = [["工具执行结果", "tool / task / ok / output —— 赛题核心数据源"], ["用户行为数据", "跨场景行为事件(应用使用/操作习惯)"], ["手动配置信息", "键值配置,直接成偏好(置信度 1.0)"], ["会话轮次", "对话陈述,供 LLM 偏好提取通道"]];
+  const srcs = [["工具执行结果", "tool / task / ok / output,赛题要求的核心数据源"], ["用户行为数据", "跨场景行为事件(应用使用/操作习惯)"], ["手动配置信息", "键值配置,直接成偏好(置信度 1.0)"], ["会话轮次", "对话陈述,供 LLM 偏好提取通道"]];
   srcs.forEach((c, i) => {
     const y = 1.5 + i * 1.18;
     card(s, M, y, 5.4, 1.0);
@@ -298,7 +298,7 @@ function srcNote(s, txt, y = 6.72) {
   const s = p.addSlide();
   pageChrome(s, 10, "创新点 ①");
   slideTitle(s, "创新点 ① 借鉴 WikiSkill", "经验复用层:让 Agent 把踩过的坑变成能力");
-  const steps = [["轨迹", "带成败标注的工具调用轨迹(真实执行,harness 金标核验)"], ["编译", "LLM 提炼「做法 / 避坑」经验卡(规则统计兜底)"], ["注入", "检索提权 + Agent 中枢分发置顶(已验证优先)"], ["门控", "复用 ≥2 次且零失败 → 自动转「已验证」;有败 → 回草稿"], ["演化", "经验卡写入即走冲突管道 —— 环境变了,经验自己更新,永不误删"]];
+  const steps = [["轨迹", "带成败标注的工具调用轨迹(真实执行,harness 金标核验)"], ["编译", "LLM 提炼「做法 / 避坑」经验卡(规则统计兜底)"], ["注入", "检索提权 + Agent 中枢分发置顶(已验证优先)"], ["门控", "复用 ≥2 次且零失败 → 自动转「已验证」;有败 → 回草稿"], ["演化", "经验卡写入即走冲突管道。环境变了经验自己更新,不会误删"]];
   steps.forEach((st, i) => {
     const y = 1.5 + i * 0.98;
     s.addShape(p.shapes.ROUNDED_RECTANGLE, { x: M, y: y + 0.04, w: 1.15, h: 0.6, fill: { color: i === 4 ? ACCENT : PRIMARY }, rectRadius: 0.08 });
@@ -309,7 +309,7 @@ function srcNote(s, txt, y = 6.72) {
   s.addShape(p.shapes.RECTANGLE, { x: 7.2, y: 5.55, w: 5.6, h: 0.95, fill: { color: TINT } });
   s.addText([
     { text: "对照实验:Agent EM 90.0% → 96.7%(+6.7pts,零回退)", options: { bold: true, color: ACCENT, fontSize: 14, breakLine: true } },
-    { text: "而未编译的原始记忆检索为 86.7%(-3.3pts)——先编译、再注入是记忆→能力的关键路径", options: { color: TEXT, fontSize: 11.5 } },
+    { text: "而未编译的原始记忆检索只有 86.7%(-3.3pts)。先编译、再注入,记忆才能变成能力", options: { color: TEXT, fontSize: 11.5 } },
   ], { x: 7.4, y: 5.62, w: 5.2, h: 0.85, fontFace: F, margin: 0 });
   srcNote(s, "来源:WikiSkill(arXiv 2608.27454)经验编译思想的三层落地;三臂对照 DSH headless + MiniMax-M3,n=30,详见 AGENT_EVAL.md。");
 }
@@ -478,7 +478,7 @@ function srcNote(s, txt, y = 6.72) {
   const s = p.addSlide();
   s.background = { color: DARK };
   s.addText("总结", { x: M, y: 0.55, w: 4, h: 0.5, fontSize: 16, fontFace: F, color: LIGHT, margin: 0 });
-  s.addText("端侧 · 离线 · 可验证的记忆底座", { x: M, y: 1.0, w: W - 2 * M, h: 0.75, fontSize: 34, fontFace: F, color: "FFFFFF", bold: true, margin: 0 });
+  s.addText("记忆存在本机,离线也能用,每个指标都可复核", { x: M, y: 1.0, w: W - 2 * M, h: 0.75, fontSize: 34, fontFace: F, color: "FFFFFF", bold: true, margin: 0 });
   const left = [
     ["全需求覆盖", "七项条款逐条实现,五项硬指标全部达成"],
     ["两大创新", "经验复用层(Agent +6.7pts)· RRF 三路自适应检索"],
