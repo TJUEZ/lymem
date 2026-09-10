@@ -503,6 +503,23 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:68.8%"></i></div></div>
     <div class="muted" style="margin-top:6px">同后端同生成器同判分同题。条长按 lymem 归一;逐题明细见 benchmark/results/matrix/。</div>
   </div>
+  <div class="card">
+    <h3>记忆竞技场<span class="hint">同一问题,不同检索模块并排出结果 —— 亲手对比向量/BM25/图各通道的贡献</span></h3>
+    <div class="row">
+      <input type="text" id="ac-q" placeholder="输入问题,各模块同时检索…" style="max-width:360px" onkeydown="if(event.key==='Enter')acRun()">
+      <select id="ac-scene" style="max-width:140px"><option value="">全部库</option></select>
+      <button class="act" onclick="acRun()">开赛</button>
+      <span class="muted" id="ac-msg"></span>
+    </div>
+    <div class="row" style="margin-top:8px" id="ac-mods">
+      <label style="cursor:pointer"><input type="checkbox" checked data-m="全通道"> 全通道</label>
+      <label style="cursor:pointer"><input type="checkbox" checked data-m="向量+BM25"> 向量+BM25</label>
+      <label style="cursor:pointer"><input type="checkbox" data-m="纯 BM25"> 纯 BM25</label>
+      <label style="cursor:pointer"><input type="checkbox" data-m="纯向量"> 纯向量</label>
+      <label style="cursor:pointer"><input type="checkbox" data-m="BM25+图"> BM25+图扩展</label>
+    </div>
+    <div id="ac-out" style="margin-top:10px"><div class="empty">输入问题开赛,各模块并排出结果。</div></div>
+  </div>
   <div id="arena-groups"></div>
   <details style="margin-top:2px">
     <summary style="cursor:pointer;color:var(--faint);font-size:12.5px;padding:4px 0">评测口径说明</summary>
@@ -607,7 +624,7 @@ function auditZh(a){
   return `${ACT_ZH[a.action]||a.action}${s}`;
 }
 /* ---- 导航 ---- */
-const PAGES={dash:refreshDash,vault:vTree,prefs:()=>{loadPrefs(false);tmInit()},know:()=>{loadKnow();xList();medLoad()},forget:()=>{},radar:radarRefresh,arena:loadArena,hub:loadHub};
+const PAGES={dash:refreshDash,vault:vTree,prefs:()=>{loadPrefs(false);tmInit()},know:()=>{loadKnow();xList();medLoad()},forget:()=>{},radar:radarRefresh,arena:()=>{loadArena();acInit()},hub:loadHub};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
@@ -1291,6 +1308,38 @@ async function gEntity(name){
     G.ox=mx-(mx-G.ox)*f;G.oy=my-(my-G.oy)*f;G.scale*=f;gDraw();
   },{passive:false});
 })();
+
+/* ---- 记忆竞技场 ---- */
+async function acInit(){
+  try{
+    const recs=await api('/api/v1/memories?limit=1000');
+    const libs=[...new Set((recs||[]).map(r=>r.scene||'公共库'))];
+    const sel=$('ac-scene');const cur=sel.value;
+    sel.innerHTML='<option value="">全部库</option>'+libs.map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join('');
+  }catch(e){}
+}
+async function acRun(){
+  const q=$('ac-q').value.trim();if(!q){toast('输入问题');return}
+  const mods=[...document.querySelectorAll('#ac-mods input:checked')].map(i=>i.dataset.m);
+  if(!mods.length){toast('至少勾选一个模块');return}
+  const scene=$('ac-scene').value||null;
+  const flags={'全通道':[1,1,1],'向量+BM25':[1,1,0],'纯 BM25':[0,1,0],'纯向量':[1,0,0],'BM25+图':[0,1,1]};
+  $('ac-msg').textContent='各模块检索中…';
+  const modules=mods.map(m=>({name:m,use_vec:flags[m][0]===1,use_bm25:flags[m][1]===1,use_graph:flags[m][2]===1}));
+  const r=await api('/api/v1/arena/compare',{query:q,top_k:5,scene,modules});
+  $('ac-msg').textContent='';
+  const maxT=Math.max(1,...(r.results||[]).map(x=>x.took_ms));
+  $('ac-out').innerHTML=(r.results||[]).map(blk=>{
+    const w=Math.min(100,blk.took_ms/maxT*100);
+    const hits=(blk.hits||[]).map(h=>`<div class="fi"><b>${esc(h.title||'#'+h.id)}</b> <span class="muted">${esc(h.scene||'')}</span><div class="muted" style="margin-left:6px">${esc((h.snippet||'').slice(0,110))}</div></div>`).join('')||'<div class="empty">无结果</div>';
+    return `<div class="card" style="margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><b style="font-size:14.5px">${esc(blk.module)}</b><span class="muted">${blk.took_ms}ms · ${blk.hits.length} 条</span><div class="pbar" style="flex:1;margin:0"><i style="width:${w}%"></i></div></div><div class="feed" style="max-height:200px;margin-top:8px">${hits}</div></div>`;
+  }).join('');
+  function blk(m){
+    const w=Math.min(100,m.took_ms/maxT*100);
+    const hits=(m.hits||[]).map(h=>`<div class="fi"><b>${esc(h.title||'#'+h.id)}</b> <span class="muted">${esc(h.scene||'')}</span><div class="muted" style="margin-left:6px">${esc((h.snippet||'').slice(0,110))}</div></div>`).join('')||'<div class="empty">无结果</div>';
+    return `<div class="card" style="margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><b style="font-size:14.5px">${esc(m.module)}</b><span class="muted">${m.took_ms}ms · ${(m.hits||[]).length} 条</span><div class="pbar" style="flex:1;margin:0"><i style="width:${w}%"></i></div></div><div class="feed" style="max-height:200px;margin-top:8px">${hits}</div></div>`;
+  }
+}
 
 /* ---- 演示模式(答辩动线) ---- */
 const TOUR=[

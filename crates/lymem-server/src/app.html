@@ -83,6 +83,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
     <button data-page="mem" class="on">记忆</button>
     <button data-page="prefs">偏好</button>
     <button data-page="files">文件</button>
+    <button data-page="arena">竞技场</button>
     <button data-page="set">设置</button>
   </nav>
   <div class="hact">
@@ -135,6 +136,24 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
     <button class="act" onclick="fSearch()">找文件</button>
   </div>
   <div class="list" id="f-hits"></div>
+</section>
+
+<!-- 竞技场 -->
+<section data-page="arena">
+  <h2>竞技场</h2>
+  <div class="desc">同一个问题,用不同方式各查一遍,并排看结果 —— 自己体会每个模块的价值</div>
+  <div class="srch">
+    <input id="a-q" placeholder="输入问题…" onkeydown="if(event.key==='Enter')aRun()">
+    <button class="act" onclick="aRun()">同时开查</button>
+  </div>
+  <div class="mut" style="margin:4px 0 10px">勾选要对比的检索方式:</div>
+  <div class="row" style="margin-bottom:10px">
+    <label style="cursor:pointer"><input type="checkbox" checked data-m="全通道"> 全通道</label>
+    <label style="cursor:pointer"><input type="checkbox" data-m="仅语义"> 仅语义</label>
+    <label style="cursor:pointer"><input type="checkbox" data-m="仅关键词"> 仅关键词</label>
+    <label style="cursor:pointer"><input type="checkbox" data-m="向量+图"> 向量+图扩展</label>
+  </div>
+  <div id="a-out"><div class="empty">输入问题,各模块并排出结果。</div></div>
 </section>
 
 <!-- 设置 -->
@@ -324,6 +343,21 @@ async function setInit(){
     </div>`;
 }
 
+/* ---- 竞技场 ---- */
+const A_FLAGS={"全通道":[1,1,1],"仅语义":[1,0,0],"仅关键词":[0,1,0],"向量+图":[1,0,1]};
+async function aRun(){
+  const q=$('a-q').value.trim();if(!q)return;
+  const mods=[...document.querySelectorAll('#a-mods input:checked')].map(i=>i.dataset.m);
+  if(!mods.length){toastMsg('至少选一种方式');return}
+  $('a-out').innerHTML='<div class="empty">各模块同时检索中…</div>';
+  const r=await api('/api/v1/arena/compare',{query:q,top_k:5,modules:mods.map(m=>({name:m,use_vec:A_FLAGS[m][0],use_bm25:A_FLAGS[m][1],use_graph:A_FLAGS[m][2]}))});
+  const maxT=Math.max(1,...(r.results||[]).map(x=>x.took_ms));
+  $('a-out').innerHTML=(r.results||[]).map(b=>{
+    const w=Math.min(100,b.took_ms/maxT*100);
+    const hits=(b.hits||[]).map(h=>`<div class="item" onclick="detail(${h.record.id})"><div class="t">${esc(h.record.title||'')}</div><div class="s">${esc((h.snippet||'').slice(0,120))}</div></div>`).join('')||'<div class="empty">无结果</div>';
+    return `<div class="card"><div style="display:flex;gap:10px;align-items:center"><b style="font-size:15px">${esc(b.module)}</b><span class="mut">${b.took_ms}ms · ${(b.hits||[]).length} 条</span><div class="pbar" style="flex:1;margin:0"><i style="width:${w}%"></i></div></div><div class="list" style="margin-top:6px">${hits}</div></div>`;
+  }).join('');
+}
 memInit();
 </script>
 </body>

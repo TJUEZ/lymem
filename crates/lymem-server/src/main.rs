@@ -123,6 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/preferences/at", get(preferences_at))
         .route("/api/v1/preferences/history/all", get(preferences_history_all))
         .route("/api/v1/conflicts/{id}/resolve", post(conflict_resolve_manual))
+        .route("/api/v1/arena/compare", post(arena_compare))
         .route("/api/v1/audit", get(list_audit))
         .route("/api/v1/hub/sources", get(hub_sources))
         .route("/api/v1/hub/source/items", get(hub_source_items))
@@ -982,6 +983,60 @@ struct ManualResolveReq {
     merged_text: Option<String>,
     #[serde(default)]
     note: String,
+}
+
+/// 记忆竞技场:同一查询在多个检索模块(通道组合)下的并排对比
+#[derive(Deserialize)]
+struct ArenaCompareModule {
+    name: String,
+    #[serde(default = "default_true")] use_vec: bool,
+    #[serde(default = "default_true")] use_bm25: bool,
+    #[serde(default = "default_true")] use_graph: bool,
+}
+fn default_true() -> bool { true }
+
+#[derive(Deserialize)]
+struct ArenaCompareReq {
+    query: String,
+    #[serde(default = "default_arena_k")] top_k: usize,
+    #[serde(default)] scene: Option<String>,
+    #[serde(default)] modules: Vec<ArenaCompareModule>,
+}
+
+const KYARENA_MARK: &str = "KYARENA_MARK_20260911_xq7";
+
+async fn arena_compare(State(st): State<Arc<AppState>>, Json(req): Json<ArenaCompareReq>) -> impl IntoResponse {
+    if req.query.trim().is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "query 为空"})));
+    }
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || {
+        let mut out = Vec::new();
+        for m in &req.modules {
+            let mut p = lymem_core::retrieval::SearchParams::new(req.query.clone());
+            p.top_k = req.top_k.clamp(1, 20);
+            p.use_vec = m.use_vec;
+            p.use_bm25 = m.use_bm25;
+            p.use_graph = m.use_graph;
+            if let Some(sc) = &req.scene { p.scenes = Some(vec![sc.clone()]); }
+            let t0 = std::time::Instant::now();
+            let hits = st2.store.search(&p).unwrap_or_default();
+            let took = t0.elapsed().as_millis() as u64;
+            out.push(json!({
+                "module": m.name, "took_ms": took,
+                "hits": hits.iter().map(|h| json!({
+                    "id": h.record.id, "title": h.record.title, "scene": h.record.scene,
+                    "snippet": h.snippet.chars().take(140).collect::<String>(),
+                    "score": h.final_score,
+                })).collect::<Vec<_>>(),
+            }));
+        }
+        json!({"ok": true, "query": req.query, "results": out})
+    }).await;
+    match res {
+        Ok(v) => (StatusCode::OK, Json(v)),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("任务失败: {e}")}))),
+    }
 }
 
 /// 冲突人工改判（调解台）
