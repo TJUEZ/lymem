@@ -168,6 +168,34 @@ details.lib .bd{padding:2px 14px 10px;border-top:1px dashed var(--hairline)}
 .sq-step .no{flex:none;width:23px;height:23px;border-radius:50%;background:var(--blue-weak);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 pre.log{background:#101a33;color:#c7d4f2;border-radius:9px;padding:14px;font:12px/1.7 ui-monospace,Consolas,monospace;overflow:auto;max-height:340px;white-space:pre-wrap}
 pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d}pre.log .dim{color:#7d8db0}
+/* 演示模式 */
+.tour-cut{position:fixed;z-index:200;border-radius:10px;box-shadow:0 0 0 9999px rgba(10,14,25,.62);pointer-events:none}
+.tour-card{position:fixed;z-index:201;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:16px 18px;max-width:430px;box-shadow:0 18px 50px -18px rgba(0,0,0,.5)}
+.tour-card h4{font-size:15.5px;margin-bottom:6px}
+.tour-card p{font-size:13px;color:var(--sub);line-height:1.7}
+.tour-card .trow{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.tour-card .stepno{font-size:11px;color:var(--faint);margin-right:auto}
+/* 问答引用徽章 */
+.cite{display:inline-block;background:var(--blue-weak);color:var(--blue);border-radius:6px;padding:0 6px;font-size:12px;cursor:pointer;font-weight:700}
+.cite:hover{background:var(--blue-weak2)}
+.src-flash{animation:srcFlash 1.6s var(--ease)}
+@keyframes srcFlash{0%{background:var(--ok-bg)}100%{background:transparent}}
+/* 记忆热力图 */
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,13px);gap:3px;width:max-content}
+.heat i{width:13px;height:13px;border-radius:3px;background:var(--blue);opacity:.12;cursor:pointer}
+.heat i.l1{opacity:.35}.heat i.l2{opacity:.6}.heat i.l3{opacity:.85}.heat i.l4{opacity:1}
+/* 延迟示波器 */
+.lat-spark{margin-top:6px}
+.lat-spark svg{display:block;width:100%;height:34px}
+.lat-spark .budget{stroke:var(--err);stroke-dasharray:4 4;fill:none}
+.lat-spark polyline{fill:none;stroke:var(--blue);stroke-width:1.6}
+/* mem0 同后端对照条 */
+.vsbar{margin:8px 0}
+.vsbar .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+.vsbar .tr{height:14px;background:var(--hairline);border-radius:7px;overflow:hidden;margin-top:3px}
+.vsbar .tr i{display:block;height:100%;border-radius:7px}
+.vsbar .tr.ly i{background:var(--blue)}
+.vsbar .tr.m0 i{background:var(--bar-mut)}
 @media(max-width:1080px){.g2,.g2-1,.g4,.kpi,.cmp{grid-template-columns:1fr 1fr}.kpi>div:nth-child(2n){border-right:0}}
 @media(max-width:720px){.g2,.g2-1,.kpi,.cmp{grid-template-columns:1fr}aside{width:64px}.brand small,nav button span.txt,aside .foot{display:none}nav button{text-align:center;padding:10px 4px}.kpi>div{border-right:0;border-bottom:1px solid var(--hairline)}.kpi>div:last-child{border-bottom:0}}
 </style>
@@ -195,6 +223,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <option value="claude">暖纸衬线(Claude 风)</option>
       <option value="night">夜间</option>
     </select></div>
+    <div class="st"><button class="act ghost" style="width:100%;padding:5px 0;font-size:12px;margin-bottom:6px" onclick="tourStart()">演示模式</button></div>
     <div class="st"><a href="/app" style="color:var(--side-ok)">→ 简洁版(日常使用)</a></div>
     <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
     <div class="st"><span>维度</span><b id="foot-dim">-</b></div>
@@ -210,12 +239,17 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <div><div class="l">记忆总数</div><div class="n" id="k-total">-</div><div class="s">情景 + 知识 + 偏好</div></div>
     <div><div class="l">知识条目</div><div class="n" id="k-know">-</div><div class="s">长期沉淀 · 版本化</div></div>
     <div><div class="l">偏好 · 当前生效</div><div class="n" id="k-pref">-</div><div class="s">双通道自动提取</div></div>
-    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">发起检索后显示 · 目标 ≤500ms</div></div>
+    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">发起检索后显示 · 目标 ≤500ms</div><div class="lat-spark" id="lat-spark"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h3>记忆活跃热力图<span class="hint">近 12 周每日操作次数 · 点击某天查看当日明细</span></h3>
+    <div class="heat" id="heat"><div class="empty" style="grid-column:1/-1">加载中…</div></div>
+    <div class="feed" id="heat-day" style="max-height:170px;margin-top:10px"><div class="empty">点击热力图某一天,查看当日全部操作。</div></div>
   </div>
   <div class="card" style="margin-bottom:12px">
     <h3>快速体验<span class="hint">一键灌入一组演示数据（工具轨迹 / 会话 / 配置 / 行为 / 知识与冲突），隔离在「演示」场景，随时一键清除</span></h3>
     <div class="row">
-      <button class="act" onclick="demoSeed()">灌入演示数据</button>
+      <button class="act" id="btn-demo-seed" onclick="demoSeed()">灌入演示数据</button>
       <button class="act ghost" onclick="demoClear()">清除演示数据</button>
       <span class="muted" id="demo-msg">首次使用建议先灌入，再逐页体验各项功能</span>
     </div>
@@ -461,6 +495,14 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       </table>
     </div>
   </div>
+  <div class="card">
+    <h3>同后端对照<span class="hint">麒麟嵌入 + 麒麟向量引擎 · 同 100 题 · 生成 MiniMax-M3 · 判分 deepseek-v4-flash</span></h3>
+    <div class="vsbar"><div class="lbl"><span>LoCoMo 检索 hit@5(conv-26,199 问)</span><span>lymem 41.7% vs mem0 35.7%</span></div>
+      <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:85.6%"></i></div></div>
+    <div class="vsbar"><div class="lbl"><span>答案 DeepSeek 判分(100 题)</span><span>lymem 33.7% vs mem0 23.2%</span></div>
+      <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:68.8%"></i></div></div>
+    <div class="muted" style="margin-top:6px">同后端同生成器同判分同题。条长按 lymem 归一;逐题明细见 benchmark/results/matrix/。</div>
+  </div>
   <div id="arena-groups"></div>
   <details style="margin-top:2px">
     <summary style="cursor:pointer;color:var(--faint);font-size:12.5px;padding:4px 0">评测口径说明</summary>
@@ -520,6 +562,7 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   <div class="db" id="dr-body"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div id="tour-layer" style="display:none"></div>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -609,6 +652,9 @@ async function refreshDash(){
   }catch(e){}
   api('/api/v1/health').then(h=>{const v=$('foot-ver');if(v&&h&&h.version)v.textContent='v'+h.version}).catch(()=>{});
   loadAudit('dash-audit');
+  renderLat();
+  const now=Date.now();
+  if(!window._heatAt||now-window._heatAt>60000){window._heatAt=now;heatLoad()}
 }
 async function loadAudit(el){
   const a=await api('/api/v1/audit?limit=60');
@@ -693,10 +739,13 @@ async function vAsk(q){
   const total=((performance.now()-t0)/1000).toFixed(1);
   if(!ar||ar.error){$('v-ans').textContent='检索失败：'+((ar&&ar.error)||'未知错误');return}
   $('k-lat').textContent=sr.took_ms+'ms';
+  pushLat(sr.took_ms);
   const ok=sr.took_ms<=500;
-  $('v-ans').innerHTML=`<div style="font-size:15px;line-height:1.8;background:#fff;border:1px solid var(--line);border-radius:9px;padding:13px 15px">${esc(ar.answer||'（无答案）')}</div>
-   <div class="muted" style="margin-top:6px">纯检索 <b style="color:${ok?'var(--ok)':'var(--err)'}">${sr.took_ms}ms</b>（≤500ms${ok?' ✓':' ✗'}） · 含生成 ${total}s · 命中 ${(sr.hits||[]).length} 条</div>`+
-   (ar.sources||[]).slice(0,4).map((s,i)=>`<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12.5px"><span style="display:inline-flex;min-width:20px;height:20px;border-radius:5px;background:var(--blue-weak);color:var(--blue);font-weight:700;font-size:11px;align-items:center;justify-content:center;margin-right:8px">${i+1}</span><b>${esc(s.title||('#'+s.id))}</b><div class="muted" style="margin-left:28px">${esc(s.snippet||'')}</div></div>`).join('');
+  const srcs=(ar.sources||[]).slice(0,6);
+  const ans=citeify(ar.answer||'(无答案)',srcs);
+  $('v-ans').innerHTML=`<div style="font-size:15px;line-height:1.8;background:#fff;border:1px solid var(--line);border-radius:9px;padding:13px 15px">${ans}</div>
+   <div class="muted" style="margin-top:6px">纯检索 <b style="color:${ok?'var(--ok)':'var(--err)'}">${sr.took_ms}ms</b>（≤500ms${ok?' ✓':' ✗'}） · 含生成 ${total}s · 命中 ${(sr.hits||[]).length} 条 · 点击引用编号可溯源</div>`+
+   srcs.map((s,i)=>`<div id="src-${i}" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12.5px;cursor:pointer" onclick="vDetail(${s.id})"><span style="display:inline-flex;min-width:20px;height:20px;border-radius:5px;background:var(--blue-weak);color:var(--blue);font-weight:700;font-size:11px;align-items:center;justify-content:center;margin-right:8px">${i+1}</span><b>${esc(s.title||('#'+s.id))}</b><div class="muted" style="margin-left:28px">${esc(s.snippet||'')}</div></div>`).join('');
 }
 async function vTree(){
   const recs=await api('/api/v1/memories?limit=1000&history=0');
@@ -1001,12 +1050,6 @@ async function hubDispatchRemove(){
   $('hub-disp').textContent=r.ok?`已从 ${t} 撤回受管区块`:'失败';
 }
 
-refreshDash();
-goHash();
-
-refreshDash();
-goHash();
-
 /* ---- 文件雷达 ---- */
 async function radarRefresh(){radarDirs();radarStatus()}
 async function radarDirs(){
@@ -1040,6 +1083,7 @@ async function radarSearch(){
   const q=$('rd-q').value.trim();if(!q)return;
   const m=$('rd-msg');m.textContent='检索中…';
   const r=await api('/api/v1/search',{query:q,scenes:['file'],top_k:10});
+  if(r.took_ms)pushLat(r.took_ms);
   const hits=r.hits||[];
   m.textContent=`${hits.length} 条命中 · ${r.took_ms}ms`;
   $('rd-hits').innerHTML=hits.map(h=>`<div class="mi" onclick="vDetail(${h.record.id})"><span class="tag k">文件</span><span class="t">${esc(h.record.title)}</span><span class="muted" style="flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((h.snippet||'').slice(0,90))}</span></div>`).join('')||'<div class="empty">没有命中。换个描述试试，或先「扫描全部目录」。</div>';
@@ -1247,6 +1291,108 @@ async function gEntity(name){
     G.ox=mx-(mx-G.ox)*f;G.oy=my-(my-G.oy)*f;G.scale*=f;gDraw();
   },{passive:false});
 })();
+
+/* ---- 演示模式(答辩动线) ---- */
+const TOUR=[
+ {page:'dash',sel:'#btn-demo-seed',t:'一键灌入演示数据',d:'工具轨迹、会话、手动配置、行为、知识五类数据一次入库,隔离在「演示」场景,随时可清。',act:()=>demoSeed()},
+ {page:'vault',sel:'#v-q',t:'库内检索问答',d:'答案带记忆引用编号(可点击跳转)与端侧延迟。现场建议亲手提一个问题。'},
+ {page:'prefs',sel:'#p-list',t:'偏好双通道 + 版本链',d:'规则挖掘与会话提取自动捕捉偏好;点击任一条查看版本历史,支持手动改值。'},
+ {page:'know',sel:'#k-ledger',t:'冲突四步管道',d:'新旧知识碰撞自动检测、分类、仲裁、版本化;下方调解台可人工改判。'},
+ {page:'know',sel:'#x-list',t:'经验复用卡',d:'成功轨迹编译为「做法」,失败轨迹编译为「避坑」;复用达标自动转已验证。',act:()=>xCompile()},
+ {page:'forget',sel:'section[data-page=forget] .card',t:'精准遗忘四步',d:'遗忘前后同题对比,直观看到记忆消失;软删除可恢复。'},
+ {page:'arena',sel:'section[data-page=arena] .card',t:'一键在线评测',d:'内置数据集即点即测,hit@5 与延迟分位数当场出分。'},
+ {page:'hub',sel:'#g-canvas',t:'记忆关系图谱',d:'实体共现网络。点「加载图谱」后可拖拽、缩放,点击实体看关联记忆。'},
+];
+let TOUR_I=-1,TOUR_AUTO=null;
+function tourStart(){TOUR_I=-1;$('tour-layer').style.display='block';tourGoto(0)}
+function tourStop(){TOUR_I=-1;clearInterval(TOUR_AUTO);TOUR_AUTO=null;$('tour-layer').style.display='none';$('tour-layer').innerHTML=''}
+function tourGoto(i){
+  if(i<0||i>=TOUR.length){tourStop();return}
+  TOUR_I=i;const st=TOUR[i];
+  document.querySelectorAll('#nav button').forEach(x=>{if(x.dataset.page===st.page)x.click()});
+  setTimeout(()=>{
+    const el=document.querySelector(st.sel);
+    if(!el){tourGoto(i+(i<TOUR.length-1?1:-1));return}
+    el.scrollIntoView({block:'center'});
+    const r=el.getBoundingClientRect();
+    const l=$('tour-layer');l.style.display='block';
+    l.innerHTML=`<div class="tour-cut" style="left:${Math.max(0,r.left-6)}px;top:${Math.max(0,r.top-6)}px;width:${r.width+12}px;height:${r.height+12}px"></div>
+      <div class="tour-card" style="left:${Math.min(Math.max(12,r.left-10),window.innerWidth-455)}px;top:${Math.min(r.bottom+12,window.innerHeight-200)}px">
+      <h4>${esc(st.t)}</h4><p>${st.d}</p>
+      <div class="trow"><span class="stepno">${i+1} / ${TOUR.length}</span>
+      <button class="act ghost mini" onclick="tourGoto(${i-1})">上一步</button>
+      <button class="act mini" onclick="tourGoto(${i+1})">下一步</button>
+      <button class="act ghost mini" onclick="tourAuto()">${TOUR_AUTO?'暂停':'自动播放'}</button>
+      <button class="act ghost mini" onclick="tourStop()">退出</button></div></div>`;
+    try{if(st.act)st.act()}catch(e){}
+  },380);
+}
+function tourAuto(){
+  if(TOUR_AUTO){clearInterval(TOUR_AUTO);TOUR_AUTO=null;return}
+  TOUR_AUTO=setInterval(()=>tourGoto(TOUR_I+1),8000);tourGoto(TOUR_I+1);
+}
+document.addEventListener('keydown',e=>{
+  const l=$('tour-layer');if(!l||l.style.display!=='block')return;
+  if(e.key==='Escape')tourStop();
+  if(e.key==='ArrowRight')tourGoto(TOUR_I+1);
+  if(e.key==='ArrowLeft')tourGoto(TOUR_I-1);
+});
+
+/* ---- 记忆活跃热力图 ---- */
+async function heatLoad(){
+  try{
+    const a=await api('/api/v1/audit?limit=1000');
+    const per={};
+    (a||[]).forEach(x=>{const k=new Date((x.at||0)*1000).toLocaleDateString('zh-CN');(per[k]=per[k]||[]).push(x)});
+    const now=new Date();now.setHours(0,0,0,0);
+    let cells='';
+    for(let i=83;i>=0;i--){
+      const d=new Date(now.getTime()-i*864e5);
+      const k=d.toLocaleDateString('zh-CN');
+      const c=(per[k]||[]).length;
+      const lv=c===0?0:c<=2?1:c<=5?2:c<=10?3:4;
+      cells+=`<i class="${lv?'l'+lv:''}" title="${k} · ${c} 次操作" onclick="heatDay('${k}')"></i>`;
+    }
+    $('heat').innerHTML=cells;
+    window._heatper=per;
+  }catch(e){$('heat').innerHTML='<div class="empty">加载失败</div>'}
+}
+function heatDay(k){
+  const items=(window._heatper&&window._heatper[k])||[];
+  $('heat-day').innerHTML=items.length?items.map(a=>`<div class="fi"><span class="muted">${ts(a.at)}</span> ${esc(auditZh(a))}</div>`).join(''):`<div class="empty">${esc(k)} 无操作记录</div>`;
+}
+
+/* ---- 检索延迟示波器 ---- */
+function pushLat(ms){
+  try{const a=JSON.parse(localStorage.getItem('lymem-lat')||'[]');a.push(Math.round(ms));while(a.length>40)a.shift();localStorage.setItem('lymem-lat',JSON.stringify(a))}catch(e){}
+  renderLat();
+}
+function renderLat(){
+  const box=$('lat-spark');if(!box)return;
+  let a=[];try{a=JSON.parse(localStorage.getItem('lymem-lat')||'[]')}catch(e){}
+  if(!a.length){box.innerHTML='';return}
+  const W=180,H=34,max=Math.max(500,...a);
+  const pts=a.map((v,i)=>`${(i/(a.length-1||1)*W).toFixed(1)},${(H-2-v/max*(H-6)).toFixed(1)}`).join(' ');
+  const by=(H-2-500/max*(H-6)).toFixed(1);
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line class="budget" x1="0" y1="${by}" x2="${W}" y2="${by}"/><polyline points="${pts}"/></svg><div class="muted" style="font-size:10.5px;margin-top:1px">近 ${a.length} 次 · 虚线=500ms 预算</div>`;
+}
+
+/* ---- 问答引用可点击 ---- */
+function citeify(text,sources){
+  return esc(text).replace(/\[(\d{1,2})\]/g,(m,n)=>{
+    const i=Number(n)-1;
+    return sources&&sources[i]?`<span class="cite" onclick="citeGo(${i})">[${n}]</span>`:m;
+  });
+}
+function citeGo(i){
+  const el=document.getElementById('src-'+i);
+  if(!el)return;
+  el.scrollIntoView({block:'center'});
+  el.classList.remove('src-flash');void el.offsetWidth;el.classList.add('src-flash');
+}
+
+refreshDash();
+goHash();
 </script>
 </body>
 </html>
