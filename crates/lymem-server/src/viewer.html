@@ -501,7 +501,15 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:85.6%"></i></div></div>
     <div class="vsbar"><div class="lbl"><span>答案 DeepSeek 判分(100 题)</span><span>lymem 33.7% vs mem0 23.2%</span></div>
       <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:68.8%"></i></div></div>
-    <div class="muted" style="margin-top:6px">同后端同生成器同判分同题。条长按 lymem 归一;逐题明细见 benchmark/results/matrix/。</div>
+    <div class="vsbar"><div class="lbl"><span>MemBench MCQ(100 题)</span><span>lymem 91.0% vs mem0 88.0%</span></div>
+      <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:96.7%"></i></div></div>
+    <div class="vsbar"><div class="lbl"><span>PrefEval 偏好 MCQ(100 题)</span><span>lymem 99.0% vs mem0 99.0%</span></div>
+      <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:100%"></i></div></div>
+    <div class="vsbar"><div class="lbl"><span>LongMemEval 语义判分(100 题,mem0 领先)</span><span>lymem 54.3% vs mem0 64.9%</span></div>
+      <div class="tr ly"><i style="width:83.7%"></i></div><div class="tr m0"><i style="width:100%"></i></div></div>
+    <div class="vsbar"><div class="lbl"><span>MAB 冲突整合 EM(100 题)</span><span>lymem 22.0% vs mem0 2.0%</span></div>
+      <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:9.1%"></i></div></div>
+    <div class="muted" style="margin-top:6px">同后端同生成器同判分同题(四站复测 2026-09-12)。条长按双方强者归一;LongMemEval 为 mem0 领先项(事实级抽取在单事实检索题占优),其余 lymem 领先;逐题明细见 benchmark/results/matrix/。</div>
   </div>
   <div class="card">
     <h3>记忆竞技场<span class="hint">同一问题,不同检索模块并排出结果 —— 亲手对比向量/BM25/图各通道的贡献</span></h3>
