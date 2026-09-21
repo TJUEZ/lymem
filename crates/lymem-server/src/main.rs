@@ -3,7 +3,7 @@
 //! - REST API：记忆/检索/偏好/冲突/遗忘/审计；
 //! - `/v1/embeddings`：OpenAI 兼容嵌入代理（后端为麒麟端侧嵌入），
 //!   供 mem0 / Letta / memmy 等 Python 基线复用同一嵌入模型，保证横向对比公平；
-//! - `/viewer`：中文管理界面（总览/记忆库/偏好/知识与冲突/遗忘/评测/Agent 中枢）。
+//! - `/viewer`：中文管理界面（我的记忆/搜索与导入/Agent 记忆/偏好/隐私与遗忘）。
 
 mod caching_embedder;
 mod demo;
@@ -50,9 +50,16 @@ fn default_data_dir() -> PathBuf {
 
 fn build_store() -> Result<MemoryStore, Box<dyn std::error::Error>> {
     let dir = default_data_dir();
+    let embedder_mode = std::env::var("LYMEM_EMBEDDER").unwrap_or_else(|_| "auto".into());
+    let vector_mode = std::env::var("LYMEM_VECTOR_BACKEND").unwrap_or_else(|_| "sqlite".into());
+    if embedder_mode == "hash" && matches!(vector_mode.as_str(), "kylin" | "kylin-vector") {
+        return Err("配置冲突：LYMEM_EMBEDDER=hash 只能配 sqlite 向量后端；正式麒麟环境请使用 L Y M E M_EMBEDDER=auto 和 L Y M E M_VECTOR_BACKEND=kylin".replace("L Y M E M", "LYMEM").into());
+    }
     let embedder: Box<dyn lymem_core::embedding::Embedder> =
-        match std::env::var("LYMEM_EMBEDDER").ok().as_deref() {
-            Some("hash") => Box::new(lymem_core::embedding::HashEmbedder::new(64)),
+        match embedder_mode.as_str() {
+            // 开发降级也使用 768 维，确保可打开正式环境生成的 768 维 SQLite 库，
+            // 避免“能启动、点保存才报维度错误”的延迟失败。
+            "hash" => Box::new(lymem_core::embedding::HashEmbedder::new(768)),
             _ => Box::new(lymem_kylin::KylinEmbedder::connect_auto()?),
         };
     // 查询向量 LRU 缓存：消除重复嵌入（检索热路径 ~30ms/次）
@@ -92,12 +99,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/health", get(health))
         .route("/api/v1/status", get(status))
         .route("/api/v1/memories", post(add_memories).get(list_memories))
-        .route("/api/v1/search", post(search))
+        .route("/api/v1/search", post(search).get(search_get))
         .route("/api/v1/preferences", get(list_preferences).post(set_preference))
         .route("/api/v1/preferences/{key}", get(get_preference))
         .route("/api/v1/preferences/{key}/history", get(preference_history))
         .route("/api/v1/conflicts", get(list_conflicts))
-        .route("/api/v1/memories/{id}", get(get_memory).delete(forget_memory))
+        .route("/api/v1/memories/{id}", get(get_memory).put(update_memory).delete(forget_memory))
         .route("/app", get(app_html))
         .route("/api/v1/knowledge", post(add_knowledge))
         .route("/api/v1/ingest/report", post(ingest_report))
@@ -112,9 +119,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/forget/parse", post(forget_parse))
         .route("/api/v1/forget/preview", post(forget_preview))
         .route("/api/v1/forget/exec", post(forget_exec))
-        .route("/api/v1/experiences", get(list_experiences))
+        .route("/api/v1/experiences", get(list_experiences).post(create_experience))
         .route("/api/v1/experiences/compile", post(experience_compile))
         .route("/api/v1/experiences/{id}/feedback", post(experience_feedback))
+        .route("/api/v1/skills/targets", get(skill_targets))
+        .route("/api/v1/skills/preview", get(skill_preview))
+        .route("/api/v1/skills/publish", post(skill_publish))
+        .route("/api/v1/skills/rollback", post(skill_rollback))
+        .route("/api/v1/skills/remove", post(skill_remove))
         .route("/api/v1/demo/seed", post(demo_seed))
         .route("/api/v1/demo/clear", post(demo_clear))
         .route("/api/v1/radar/dirs", get(radar_dirs).post(radar_dirs_add).delete(radar_dirs_remove))
@@ -128,6 +140,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/v1/hub/sources", get(hub_sources))
         .route("/api/v1/hub/source/items", get(hub_source_items))
         .route("/api/v1/hub/import", post(hub_import))
+        .route("/api/v1/hub/enrich", post(hub_enrich))
         .route("/api/v1/hub/targets", get(hub_targets))
         .route("/api/v1/hub/dispatch", post(hub_dispatch))
         .route("/api/v1/hub/dispatches", get(hub_dispatches))
@@ -347,6 +360,31 @@ async fn search(State(st): State<Arc<AppState>>, Json(mut p): Json<SearchParams>
     }
 }
 
+#[derive(Deserialize)]
+struct SearchGetQuery {
+    query: String,
+    top_k: Option<usize>,
+    scenes: Option<String>,
+    use_vec: Option<bool>,
+    use_bm25: Option<bool>,
+    use_graph: Option<bool>,
+    preference_rerank: Option<bool>,
+}
+
+/// GET 兼容入口，方便 shell、文档和旧版 Agent 直接调用。
+async fn search_get(State(st): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<SearchGetQuery>) -> impl IntoResponse {
+    let mut p = SearchParams::new(q.query);
+    p.top_k = q.top_k.unwrap_or(8).clamp(1, 50);
+    p.use_vec = q.use_vec.unwrap_or(true);
+    p.use_bm25 = q.use_bm25.unwrap_or(true);
+    p.use_graph = q.use_graph.unwrap_or(true);
+    p.preference_rerank = q.preference_rerank.unwrap_or(true);
+    if let Some(scenes) = q.scenes.as_deref().filter(|s| !s.trim().is_empty()) {
+        p.scenes = Some(scenes.split(',').map(str::trim).filter(|s| !s.is_empty()).map(String::from).collect());
+    }
+    search(State(st), Json(p)).await
+}
+
 /// 经验卡检索提权（verified ×1.25 / draft ×1.1）并按新得分重排。core 检索语义不变。
 fn experience_boost(mut hits: Vec<lymem_core::model::ScoredMemory>) -> Vec<lymem_core::model::ScoredMemory> {
     for h in hits.iter_mut() {
@@ -384,6 +422,32 @@ async fn list_experiences(State(st): State<Arc<AppState>>) -> impl IntoResponse 
     }
 }
 
+/// 手动提炼请求体：用户依据自身偏好直接沉淀经验卡
+#[derive(Deserialize)]
+struct CreateExperienceReq {
+    /// practice=做法 | pitfall=避坑
+    #[serde(rename = "type")]
+    exp_type: String,
+    task: String,
+    trigger: String,
+    steps: Vec<String>,
+    #[serde(default)]
+    scene: Option<String>,
+}
+
+async fn create_experience(
+    State(st): State<Arc<AppState>>,
+    Json(req): Json<CreateExperienceReq>,
+) -> impl IntoResponse {
+    match st
+        .store
+        .create_manual_experience(&req.exp_type, &req.task, &req.trigger, req.steps, req.scene.as_deref())
+    {
+        Ok(card) => (StatusCode::OK, Json(json!({ "ok": true, "card": card }))),
+        Err(e) => (StatusCode::BAD_REQUEST, Json(json!({ "ok": false, "error": e.to_string() }))),
+    }
+}
+
 #[derive(Deserialize)]
 struct FeedbackReq {
     ok: bool,
@@ -396,6 +460,80 @@ async fn experience_feedback(State(st): State<Arc<AppState>>, axum::extract::Pat
         Ok(None) => (StatusCode::NOT_FOUND, Json(json!({"error": "不是经验卡或记忆不存在"}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
+}
+
+// ---------------- 技能编译：经验卡/偏好 → 标准 SKILL.md ----------------
+
+async fn skill_targets() -> impl IntoResponse {
+    Json(json!({"targets": lymem_core::skill_export::targets()}))
+}
+
+async fn skill_preview(
+    axum::extract::Query(q): axum::extract::Query<BTreeMap<String, String>>,
+) -> impl IntoResponse {
+    let Some(id) = q.get("target") else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "缺少 target"}))).into_response();
+    };
+    let Some(target) = skill_target(id) else {
+        return (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "未知技能目标"}))).into_response();
+    };
+    let root = std::path::Path::new(&target.path);
+    let skill = std::fs::read_to_string(root.join("SKILL.md")).ok();
+    let manifest = std::fs::read_to_string(root.join("resources/manifest.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str::<Value>(&s).ok());
+    Json(json!({
+        "ok": true,
+        "target": target,
+        "installed": skill.is_some(),
+        "manifest": manifest,
+        "content": skill.unwrap_or_default(),
+    })).into_response()
+}
+
+#[derive(Deserialize)]
+struct SkillReq { target: String }
+
+fn skill_target(id: &str) -> Option<lymem_core::skill_export::SkillTarget> {
+    lymem_core::skill_export::targets().into_iter().find(|t| t.id == id)
+}
+
+async fn skill_publish(State(st): State<Arc<AppState>>, Json(req): Json<SkillReq>) -> impl IntoResponse {
+    let Some(target) = skill_target(&req.target) else { return (StatusCode::NOT_FOUND, Json(json!({"ok":false,"error":"未知技能目标"}))) };
+    // 发布是完整的“经验 → 技能”编译动作，不要求用户先手动点击经验编译。
+    let st2 = Arc::clone(&st);
+    let judge = st.judge.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        let compile = st2.store.compile_experiences(
+            Some(judge.as_ref()),
+            &lymem_core::experience::CompileOpts::default(),
+        )?;
+        let mut cards = st2.store.list_experiences()?;
+        cards.sort_by(|a, b| (b.status == "verified").cmp(&(a.status == "verified")));
+        let prefs = st2.store.effective_preferences(None)?;
+        let release = lymem_core::skill_export::publish(&target, &cards, &prefs)?;
+        Ok::<_, lymem_core::CoreError>((compile, release))
+    }).await;
+    match res {
+        Ok(Ok((compile, report))) => {
+            let _=st.store.audit("skill_publish", &json!({"compile":compile,"release":report}));
+            (StatusCode::OK, Json(json!({"ok":true,"compile":compile,"report":report})))
+        },
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok":false,"error":e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok":false,"error":e.to_string()}))),
+    }
+}
+
+async fn skill_rollback(State(st): State<Arc<AppState>>, Json(req): Json<SkillReq>) -> impl IntoResponse {
+    let Some(target) = skill_target(&req.target) else { return (StatusCode::NOT_FOUND, Json(json!({"ok":false,"error":"未知技能目标"}))) };
+    let res = tokio::task::spawn_blocking(move || lymem_core::skill_export::rollback(&target)).await;
+    match res { Ok(Ok(ok)) => { let _=st.store.audit("skill_rollback", &json!({"target":req.target,"ok":ok})); (StatusCode::OK,Json(json!({"ok":ok}))) }, Ok(Err(e)) => (StatusCode::BAD_REQUEST,Json(json!({"ok":false,"error":e.to_string()}))), Err(e)=>(StatusCode::INTERNAL_SERVER_ERROR,Json(json!({"ok":false,"error":e.to_string()}))) }
+}
+
+async fn skill_remove(State(st): State<Arc<AppState>>, Json(req): Json<SkillReq>) -> impl IntoResponse {
+    let Some(target) = skill_target(&req.target) else { return (StatusCode::NOT_FOUND, Json(json!({"ok":false,"error":"未知技能目标"}))) };
+    let res = tokio::task::spawn_blocking(move || lymem_core::skill_export::remove(&target)).await;
+    match res { Ok(Ok(ok)) => { let _=st.store.audit("skill_remove", &json!({"target":req.target,"ok":ok})); (StatusCode::OK,Json(json!({"ok":ok}))) }, Ok(Err(e)) => (StatusCode::BAD_REQUEST,Json(json!({"ok":false,"error":e.to_string()}))), Err(e)=>(StatusCode::INTERNAL_SERVER_ERROR,Json(json!({"ok":false,"error":e.to_string()}))) }
 }
 
 // ---------------- 偏好 ----------------
@@ -536,6 +674,77 @@ async fn get_memory(State(st): State<Arc<AppState>>, Path(id): Path<i64>) -> imp
     match st.store.get(id) {
         Ok(Some(r)) => (StatusCode::OK, Json(serde_json::to_value(r).unwrap_or_default())),
         _ => (StatusCode::NOT_FOUND, Json(json!({"error": "不存在"}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct UpdateMemoryReq {
+    #[serde(default)]
+    title: Option<String>,
+    content: String,
+}
+
+/// 更新单条记忆：追加新版本，旧版本保留并退出当前检索。
+async fn update_memory(
+    State(st): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(req): Json<UpdateMemoryReq>,
+) -> impl IntoResponse {
+    let st2 = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || {
+        let old = st2
+            .store
+            .get(id)?
+            .ok_or_else(|| lymem_core::CoreError::InvalidInput("记忆不存在".into()))?;
+        if old.tombstone || !old.is_current {
+            return Err(lymem_core::CoreError::InvalidInput("只能修改当前有效记忆".into()));
+        }
+        let content = lymem_core::ingest::clean_text(&req.content);
+        if content.is_empty() {
+            return Err(lymem_core::CoreError::InvalidInput("内容不能为空".into()));
+        }
+        let sensitivity = lymem_core::sensitive::level_of(&lymem_core::sensitive::scan(&content));
+        if sensitivity == lymem_core::model::Sensitivity::Blocked {
+            st2.store.audit("update_blocked", &json!({"id": id}))?;
+            return Err(lymem_core::CoreError::InvalidInput("内容包含密钥、口令或证件信息，已拒绝保存".into()));
+        }
+        let title = req
+            .title
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(&old.title)
+            .to_string();
+        let mut rec = lymem_core::model::MemoryRecord::new(old.tier, old.kind, title, content.clone());
+        rec.source = old.source.clone();
+        rec.scene = old.scene.clone();
+        rec.confidence = old.confidence;
+        rec.sensitivity = sensitivity;
+        rec.meta = old.meta.clone();
+        rec.entities = lymem_core::ingest::extract_entities(&content);
+        let new_id = st2.store.put(rec)?;
+        {
+            let conn = st2.store.conn.lock().unwrap();
+            conn.execute(
+                "UPDATE memories SET version_of = ?2 WHERE id = ?1",
+                params![new_id, id],
+            )?;
+            conn.execute(
+                "UPDATE memories SET is_current = 0 WHERE id = ?1",
+                params![id],
+            )?;
+        }
+        st2.store.audit("memory_update", &json!({"id": id, "new_id": new_id}))?;
+        Ok::<(i64, i64), lymem_core::CoreError>((id, new_id))
+    })
+    .await;
+    match res {
+        Ok(Ok((old_id, new_id))) => (
+            StatusCode::OK,
+            Json(json!({"ok": true, "old_id": old_id, "id": new_id, "versioned": true})),
+        ),
+        Ok(Err(e)) => (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": e.to_string()}))),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
     }
 }
 
@@ -790,9 +999,17 @@ async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) ->
         )
     })
     .await;
-    let answer = match gen {
-        Ok(Some(a)) => a,
-        _ => String::new(),
+    // 没有配置生成模型时也要给出可核对的结果，不能让前端只显示
+    // “请查看来源”。直接返回最高相关记忆，保留原文，避免编造答案。
+    let (answer, answer_mode) = match gen {
+        Ok(Some(a)) if !a.trim().is_empty() => (a, "generated"),
+        _ => {
+            let direct = hits
+                .first()
+                .map(|h| h.record.content.clone())
+                .unwrap_or_else(|| "根据现有记忆无法确定。".to_string());
+            (direct, "direct")
+        }
     };
     (
         StatusCode::OK,
@@ -800,6 +1017,7 @@ async fn ask_memory(State(st): State<Arc<AppState>>, Json(req): Json<AskReq>) ->
             "question": req.question,
             "retrieve_ms": retrieve_ms,
             "answer": answer,
+            "answer_mode": answer_mode,
             "sources": hits.iter().map(|h| json!({
                 "id": h.record.id, "title": h.record.title, "score": h.final_score,
                 "snippet": h.snippet.chars().take(120).collect::<String>(),
@@ -958,13 +1176,19 @@ async fn preferences_at(
     State(st): State<Arc<AppState>>,
     axum::extract::Query(q): axum::extract::Query<Value>,
 ) -> impl IntoResponse {
-    let Some(ts) = q.get("ts").and_then(|v| v.as_str()).and_then(|s| s.parse::<i64>().ok()) else {
-        return (StatusCode::BAD_REQUEST, Json(json!({"error": "缺少 ts（unix 秒）"})));
+    let ts = q.get("ts").and_then(|v| v.as_str()).and_then(|s| s.parse::<i64>().ok())
+        .or_else(|| q.get("at").and_then(|v| v.as_str()).and_then(parse_timestamp));
+    let Some(ts) = ts else {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "缺少 ts（unix 秒）或 at（RFC3339 时间）"})));
     };
     match st.store.effective_preferences_at(ts) {
         Ok(p) => (StatusCode::OK, Json(json!({"ts": ts, "preferences": p}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
+}
+
+fn parse_timestamp(value: &str) -> Option<i64> {
+    chrono::DateTime::parse_from_rfc3339(value).ok().map(|dt| dt.timestamp())
 }
 
 /// 全部键的全部偏好版本（时间机器滑块域）
@@ -1105,11 +1329,20 @@ async fn hub_source_items(
     };
     let res = tokio::task::spawn_blocking(move || lymem_core::hub::parse_source(src.kind, std::path::Path::new(&src.path))).await;
     match res {
-        Ok(Ok(items)) => (
-            StatusCode::OK,
-            Json(json!({"source": id, "items": items.iter().take(50).collect::<Vec<_>>(), "total": items.len()})),
-        )
-            .into_response(),
+        Ok(Ok(items)) => {
+            // 预览发生在正式导入之前，也必须执行敏感信息遮盖。否则被导入管线
+            // 正确拦截的密钥仍可能先出现在管理界面中。
+            let preview: Vec<_> = items
+                .iter()
+                .take(50)
+                .map(|item| {
+                    let content = lymem_core::sensitive::redact(&item.content);
+                    let title: String = content.lines().next().unwrap_or(&item.title).chars().take(60).collect();
+                    json!({"title": title, "content": content})
+                })
+                .collect();
+            (StatusCode::OK, Json(json!({"source": id, "items": preview, "total": items.len()}))).into_response()
+        }
         Ok(Err(e)) => (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"error": e}))).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     }
@@ -1134,6 +1367,54 @@ async fn hub_import(State(st): State<Arc<AppState>>, Json(req): Json<HubImportRe
         Ok(Ok(rep)) => (StatusCode::OK, Json(json!({"ok": true, "report": rep}))),
         Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": format!("任务失败: {e}")}))),
+    }
+}
+
+#[derive(Deserialize)]
+struct HubEnrichReq {
+    #[serde(default)]
+    memory_ids: Vec<i64>,
+}
+
+/// 用用户配置的模型把已导入原文补成实体和语义关系；没有模型时明确返回提示。
+async fn hub_enrich(State(st): State<Arc<AppState>>, Json(req): Json<HubEnrichReq>) -> impl IntoResponse {
+    if req.memory_ids.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"ok": false, "error": "没有待处理记忆"}))).into_response();
+    }
+    let judge = st.judge.clone();
+    let state = Arc::clone(&st);
+    let res = tokio::task::spawn_blocking(move || {
+        let store = &state.store;
+        let mut relations = 0usize;
+        for id in req.memory_ids.iter().take(30) {
+            let Some(rec) = store.get(*id)? else { continue };
+            let prompt = format!("记忆标题：{}\n记忆内容：{}", rec.title, rec.content.chars().take(2400).collect::<String>());
+            let Some(raw) = judge.complete(
+                "从记忆中抽取实体和事实关系。只输出 JSON：{\"entities\":[{\"name\":\"实体\",\"kind\":\"person|project|tool|host|org|thing\"}],\"relations\":[{\"src\":\"主体\",\"relation\":\"关系\",\"dst\":\"客体\"}]}。不要解释。",
+                &prompt,
+            ) else { return Ok::<_, lymem_core::CoreError>(None) };
+            let text = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+            let Ok(v) = serde_json::from_str::<Value>(text) else { continue };
+            for e in v.get("entities").and_then(Value::as_array).into_iter().flatten() {
+                let name = e.get("name").and_then(Value::as_str).unwrap_or("").trim();
+                if !name.is_empty() { store.upsert_entity(name, e.get("kind").and_then(Value::as_str).unwrap_or("thing"))?; }
+            }
+            for r in v.get("relations").and_then(Value::as_array).into_iter().flatten() {
+                let a = r.get("src").and_then(Value::as_str).unwrap_or("").trim();
+                let b = r.get("dst").and_then(Value::as_str).unwrap_or("").trim();
+                let rel = r.get("relation").and_then(Value::as_str).unwrap_or("相关").trim();
+                if a.is_empty() || b.is_empty() { continue; }
+                let sa = store.upsert_entity(a, "thing")?; let sb = store.upsert_entity(b, "thing")?;
+                store.upsert_edge(sa, sb, rel, Some(*id))?; relations += 1;
+            }
+        }
+        Ok(Some(relations))
+    }).await;
+    match res {
+        Ok(Ok(Some(n))) => (StatusCode::OK, Json(json!({"ok": true, "relations": n}))).into_response(),
+        Ok(Ok(None)) => (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"ok": false, "error": "未配置可用模型，请先配置 LLM API"}))).into_response(),
+        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"ok": false, "error": e.to_string()}))).into_response(),
     }
 }
 
@@ -1674,12 +1955,10 @@ async fn viewer() -> impl IntoResponse {
 }
 
 const VIEWER_HTML: &str = include_str!("viewer.html");
-const APP_HTML: &str = include_str!("app.html");
-
-/// 用户版简洁界面（日常使用）；/viewer 为完整演示版
+/// 用户版与演示版使用同一套界面；普通入口只展示记忆增删改查，演示路线再展开高级能力。
 async fn app_html() -> impl IntoResponse {
     (
         [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
-        APP_HTML,
+        VIEWER_HTML,
     )
 }

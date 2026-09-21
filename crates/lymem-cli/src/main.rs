@@ -75,6 +75,16 @@ enum Cmd {
     },
     /// 蒸馏：情景 → 知识
     Consolidate,
+    /// 经验卡管理：情景轨迹 → 可复用做法/避坑
+    Experience {
+        #[command(subcommand)]
+        cmd: ExperienceCmd,
+    },
+    /// 技能目录管理：经验卡/偏好 → SKILL.md
+    Skill {
+        #[command(subcommand)]
+        cmd: SkillCmd,
+    },
     /// 启动 HTTP 服务
     Serve {
         #[arg(long, default_value = "8801")]
@@ -100,6 +110,28 @@ enum PrefCmd {
     },
     /// 触发规则快通道（从近期工具调用提取偏好）
     MineRules,
+}
+
+#[derive(Subcommand)]
+enum ExperienceCmd {
+    /// 从情景层编译经验卡
+    Compile,
+    /// 列出经验卡
+    List,
+    /// 回报一次经验复用结果
+    Feedback { id: i64, #[arg(long)] ok: bool },
+}
+
+#[derive(Subcommand)]
+enum SkillCmd {
+    /// 列出 Codex/Claude/OpenCode/DSH 技能目标
+    Targets,
+    /// 编译并发布技能（自动保留上一版）
+    Publish { target: String },
+    /// 回滚目标技能上一版
+    Rollback { target: String },
+    /// 移除目标技能目录
+    Remove { target: String },
 }
 
 fn open_store(cli: &Cli) -> Result<MemoryStore, Box<dyn std::error::Error>> {
@@ -252,6 +284,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
+        Cmd::Experience { cmd } => match cmd {
+            ExperienceCmd::Compile => {
+                let rep = store.compile_experiences(Some(judge.as_ref()), &lymem_core::experience::CompileOpts::default())?;
+                println!("{}", serde_json::to_string_pretty(&rep)?);
+            }
+            ExperienceCmd::List => println!("{}", serde_json::to_string_pretty(&store.list_experiences()?)?),
+            ExperienceCmd::Feedback { id, ok } => {
+                println!("{}", serde_json::to_string_pretty(&store.experience_feedback(*id, *ok)?)?);
+            }
+        },
+        Cmd::Skill { cmd } => match cmd {
+            SkillCmd::Targets => println!("{}", serde_json::to_string_pretty(&lymem_core::skill_export::targets())?),
+            SkillCmd::Publish { target } => {
+                let target_def = lymem_core::skill_export::targets().into_iter().find(|t| t.id == *target)
+                    .ok_or_else(|| format!("未知技能目标: {target}"))?;
+                let rep = store.compile_experiences(Some(judge.as_ref()), &lymem_core::experience::CompileOpts::default())?;
+                let cards = store.list_experiences()?;
+                let prefs = store.effective_preferences(None)?;
+                let release = lymem_core::skill_export::publish(&target_def, &cards, &prefs)?;
+                println!("{}", serde_json::json!({"ok": true, "compile": rep, "release": release}));
+            }
+            SkillCmd::Rollback { target } => {
+                let target_def = lymem_core::skill_export::targets().into_iter().find(|t| t.id == *target)
+                    .ok_or_else(|| format!("未知技能目标: {target}"))?;
+                println!("{}", serde_json::json!({"ok": lymem_core::skill_export::rollback(&target_def)?}));
+            }
+            SkillCmd::Remove { target } => {
+                let target_def = lymem_core::skill_export::targets().into_iter().find(|t| t.id == *target)
+                    .ok_or_else(|| format!("未知技能目标: {target}"))?;
+                println!("{}", serde_json::json!({"ok": lymem_core::skill_export::remove(&target_def)?}));
+            }
+        },
         Cmd::Serve { .. } => unreachable!(),
     }
     Ok(())

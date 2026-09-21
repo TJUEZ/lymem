@@ -107,6 +107,26 @@ fn adaptive_channel_weights(query: &str) -> (&'static str, f64, f64, f64) {
     }
 }
 
+/// 轻量词面证据：中文查询按二字片段计分，避免低质量/降级向量把
+/// 完全不含查询词的长文本排到明确命中的记忆之前。
+fn lexical_evidence(query: &str, title: &str, content: &str) -> f64 {
+    let q: Vec<char> = query.chars().filter(|c| !c.is_whitespace()).collect();
+    if q.is_empty() { return 0.0; }
+    let hay = format!("{} {}", title, content).to_lowercase();
+    let mut hits = 0usize;
+    let mut total = 0usize;
+    for w in q.windows(2) {
+        total += 1;
+        if hay.contains(&w.iter().collect::<String>().to_lowercase()) { hits += 1; }
+    }
+    if total == 0 {
+        return if hay.contains(&query.to_lowercase()) { 1.0 } else { 0.0 };
+    }
+    let phrase = query.split_whitespace().collect::<String>().to_lowercase();
+    let phrase_bonus = if !phrase.is_empty() && hay.contains(&phrase) { 0.35 } else { 0.0 };
+    (hits as f64 / total as f64 + phrase_bonus).min(1.0)
+}
+
 impl MemoryStore {
     /// 三路混合检索主入口。
     /// 流程：嵌入查询 → 向量 KNN / BM25 / 图扩展 → 过滤 → RRF 融合 → 偏好重排 → 触摸计数。
@@ -246,6 +266,13 @@ impl MemoryStore {
             if let Some(rank) = graph_best.get(&id) {
                 rg = Some(*rank);
                 score += w_graph / (p.rrf_k + *rank as f64);
+            }
+            let lexical = lexical_evidence(&query, &rec.title, &rec.content);
+            // 词面证据是硬信号：命中查询词的记忆获得明显提升；完全没有
+            // 词面证据且只靠向量命中的长文本轻微降权。
+            score += lexical * 0.055;
+            if lexical == 0.0 && rb.is_none() && rg.is_none() {
+                score *= 0.55;
             }
             if snippet.is_empty() {
                 snippet = rec.content.chars().take(120).collect();

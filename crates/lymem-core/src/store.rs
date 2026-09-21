@@ -824,9 +824,9 @@ impl MemoryStore {
         let mut stmt = conn.prepare(
             "SELECT e.id, e.name, d.deg FROM entities e JOIN (
                SELECT entity_id, SUM(w) AS deg FROM (
-                 SELECT src AS entity_id, SUM(weight) AS w FROM edges WHERE relation = 'co' GROUP BY src
+                 SELECT src AS entity_id, SUM(weight) AS w FROM edges WHERE relation != 'co' GROUP BY src
                  UNION ALL
-                 SELECT dst AS entity_id, SUM(weight) AS w FROM edges WHERE relation = 'co' GROUP BY dst
+                 SELECT dst AS entity_id, SUM(weight) AS w FROM edges WHERE relation != 'co' GROUP BY dst
                ) GROUP BY entity_id ORDER BY deg DESC LIMIT ?1
              ) d ON d.entity_id = e.id",
         )?;
@@ -848,13 +848,13 @@ impl MemoryStore {
         if !ids.is_empty() {
             let list = ids.join(",");
             let mut stmt = conn.prepare(&format!(
-                "SELECT e1.name, e2.name, SUM(ed.weight) FROM edges ed
+                "SELECT e1.name, e2.name, ed.relation, SUM(ed.weight) FROM edges ed
                  JOIN entities e1 ON e1.id = ed.src JOIN entities e2 ON e2.id = ed.dst
-                 WHERE ed.relation = 'co' AND ed.src IN ({list}) AND ed.dst IN ({list})
-                 GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 400"
+                 WHERE ed.relation != 'co' AND ed.src IN ({list}) AND ed.dst IN ({list})
+                 GROUP BY 1, 2, 3 ORDER BY 4 DESC LIMIT 400"
             ))?;
             let rows = stmt.query_map([], |r| {
-                Ok(serde_json::json!({"a": r.get::<_, String>(0)?, "b": r.get::<_, String>(1)?, "w": r.get::<_, f64>(2)?}))
+                Ok(serde_json::json!({"a": r.get::<_, String>(0)?, "b": r.get::<_, String>(1)?, "relation": r.get::<_, String>(2)?, "w": r.get::<_, f64>(3)?}))
             })?;
             out_edges = rows.filter_map(|r| r.ok()).collect();
         }

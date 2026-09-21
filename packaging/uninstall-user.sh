@@ -3,6 +3,7 @@
 set -u
 "$HOME/.local/lib/lymem/lymem-ctl" stop 2>/dev/null || pkill -u "$USER" -f lymem-server 2>/dev/null || true
 rm -f "$HOME/.local/lib/lymem/lymem-server" \
+      "$HOME/.local/lib/lymem/lymem-cli" \
       "$HOME/.local/lib/lymem/lymem-ctl" \
       "$HOME/.local/bin/lymem" \
       "$HOME/.local/share/applications/lymem.desktop" \

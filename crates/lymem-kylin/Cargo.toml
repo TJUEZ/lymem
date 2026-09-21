@@ -1,6 +1,6 @@
 [package]
 name = "lymem-kylin"
-description = "银河麒麟 AI 端侧能力绑定：文本嵌入（DBus SDK 通道 + kytensor 直连通道）"
+description = "银河麒麟 AI 端侧能力绑定：Embedding SDK 的 D-Bus 接入 + kytensor 直连降级"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -17,6 +17,7 @@ AUTOSTART=1
 mkdir -p "$LIB_DIR" "$BIN_DIR" "$ICON_DIR" "$APP_DIR" "$CONF_DIR" "$AUTOSTART_DIR"
 
 install -m 0755 "$SRC/lymem-server" "$LIB_DIR/lymem-server"
+install -m 0755 "$SRC/lymem-cli"    "$LIB_DIR/lymem-cli"
 install -m 0755 "$SRC/lymem-ctl"    "$LIB_DIR/lymem-ctl"
 install -m 0644 "$SRC/icon.svg"     "$ICON_DIR/lymem.svg"
 [ -f "$SRC/env.example" ] && [ ! -f "$CONF_DIR/env" ] && install -m 0644 "$SRC/env.example" "$CONF_DIR/env"

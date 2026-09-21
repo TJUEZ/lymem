@@ -34,6 +34,8 @@ pub enum SourceKind {
     RulesMd,
     /// Codex CLI 记忆 SQLite（stage1_outputs 表）
     CodexSqlite,
+    /// Agent 会话历史 JSONL（每行一个带 text/session_id/ts 的对象）
+    SessionJsonl,
     /// JSON 存储（如 dsh workspace.json，按键切条）
     JsonStore,
 }
@@ -44,6 +46,7 @@ impl SourceKind {
             SourceKind::MemoryMd => "memory_md",
             SourceKind::RulesMd => "rules_md",
             SourceKind::CodexSqlite => "codex_sqlite",
+            SourceKind::SessionJsonl => "session_jsonl",
             SourceKind::JsonStore => "json",
         }
     }
@@ -137,6 +140,7 @@ fn extra_sources() -> Vec<AgentSource> {
         "memory_md" => Some(SourceKind::MemoryMd),
         "rules_md" => Some(SourceKind::RulesMd),
         "codex_sqlite" => Some(SourceKind::CodexSqlite),
+        "session_jsonl" => Some(SourceKind::SessionJsonl),
         "json" => Some(SourceKind::JsonStore),
         _ => None,
     };
@@ -172,8 +176,13 @@ pub fn discover_sources() -> Vec<AgentSource> {
     out.push(probe(SourceKind::RulesMd, "claude-code", &h.join(".claude/CLAUDE.md"), true, "CLAUDE.md"));
     out.push(probe(SourceKind::MemoryMd, "claude-code", &h.join(".claude/memory"), false, "memory"));
 
-    // codex CLI：AGENTS.md 规则文件 + 记忆 SQLite（分发落 AGENTS.md）
+    // Codex 可能同时产出 SQLite 中间记忆和 ~/.codex/memories 汇总文件；
+    // 两者都读取，避免后台汇总尚未完成时漏掉已经可用的结果。
     out.push(probe(SourceKind::RulesMd, "codex", &h.join(".codex/AGENTS.md"), true, "AGENTS.md"));
+    out.push(probe(SourceKind::MemoryMd, "codex", &h.join(".codex/memories"), false, "memories"));
+    // Codex 的后台摘要库可能尚未产出 stage1_outputs；会话历史作为可选兜底源，
+    // 仍由 lymem 的敏感扫描、去重和审计管线处理，不直接视为长期知识。
+    out.push(probe(SourceKind::SessionJsonl, "codex", &h.join(".codex/history.jsonl"), false, "history.jsonl"));
     if let Ok(rd) = std::fs::read_dir(h.join(".codex")) {
         for e in rd.flatten() {
             let name = e.file_name().to_string_lossy().to_string();
@@ -191,6 +200,19 @@ pub fn discover_sources() -> Vec<AgentSource> {
     // 通用规则文件
     out.push(probe(SourceKind::RulesMd, "generic", &h.join("AGENTS.md"), true, "AGENTS.md"));
     out.push(probe(SourceKind::RulesMd, "generic", &h.join("CLAUDE.md"), true, "CLAUDE.md"));
+
+    // 服务从项目目录启动时，把项目级 Agent 规则也纳入发现。项目文件仅导入，
+    // 分发仍写用户级受管文件，避免无意修改仓库中的团队规则。
+    if let Ok(cwd) = std::env::current_dir() {
+        let agents = cwd.join("AGENTS.md");
+        if agents.is_file() {
+            out.push(probe(SourceKind::RulesMd, "codex", &agents, false, "project-AGENTS.md"));
+        }
+        let claude = cwd.join("CLAUDE.md");
+        if claude.is_file() {
+            out.push(probe(SourceKind::RulesMd, "claude-code", &claude, false, "project-CLAUDE.md"));
+        }
+    }
 
     // lymem 自身共享记忆文件（纯分发目标）
     out.push(probe(SourceKind::RulesMd, "lymem", &data_dir().join("dispatch/lymem-share.md"), true, "lymem-share.md"));
@@ -243,6 +265,7 @@ pub fn parse_source(kind: SourceKind, path: &Path) -> std::result::Result<Vec<So
         SourceKind::MemoryMd => parse_memory_dir(path),
         SourceKind::RulesMd => parse_rules_md(path),
         SourceKind::CodexSqlite => parse_codex_sqlite(path),
+        SourceKind::SessionJsonl => parse_session_jsonl(path),
         SourceKind::JsonStore => parse_json_store(path),
     }
 }
@@ -350,6 +373,34 @@ fn parse_codex_sqlite(path: &Path) -> std::result::Result<Vec<SourceItem>, Strin
     Ok(out)
 }
 
+/// 会话历史只提取用户可读文本，不导入内部工具参数或运行时元数据。
+fn parse_session_jsonl(path: &Path) -> std::result::Result<Vec<SourceItem>, String> {
+    let body = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    for (line_no, line) in body.lines().enumerate() {
+        let value: serde_json::Value = match serde_json::from_str(line) {
+            Ok(value) => value,
+            Err(_) => continue,
+        };
+        let Some(text) = value.get("text").and_then(|v| v.as_str()) else { continue };
+        let text = clean_text(text);
+        if text.chars().count() < 2 {
+            continue;
+        }
+        let session = value.get("session_id").and_then(|v| v.as_str()).unwrap_or("unknown");
+        let title_text: String = text.lines().next().unwrap_or("").chars().take(42).collect();
+        out.push(SourceItem {
+            title: format!("会话 {} · {}", &session[..session.len().min(8)], title_text),
+            content: text,
+        });
+        // 防止异常超大历史文件一次扫描占用过多内存；较新内容由后续增量扫描补入。
+        if line_no >= 4_999 {
+            break;
+        }
+    }
+    Ok(out)
+}
+
 /// JSON 存储：顶层键值各一条
 fn parse_json_store(path: &Path) -> std::result::Result<Vec<SourceItem>, String> {
     let body = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
@@ -389,6 +440,7 @@ fn tier_kind_of(kind: SourceKind) -> (Tier, MemoryKind) {
         SourceKind::MemoryMd => (Tier::Knowledge, MemoryKind::Fact),
         SourceKind::RulesMd => (Tier::Knowledge, MemoryKind::Workflow),
         SourceKind::CodexSqlite => (Tier::Knowledge, MemoryKind::Case),
+        SourceKind::SessionJsonl => (Tier::Episodic, MemoryKind::Conversation),
         SourceKind::JsonStore => (Tier::Knowledge, MemoryKind::ManualConfig),
     }
 }
@@ -398,7 +450,8 @@ pub fn import_source(store: &MemoryStore, src: &AgentSource) -> Result<ImportRep
     let items = parse_source(src.kind, Path::new(&src.path)).map_err(CoreError::InvalidInput)?;
     let mut rep = ImportReport { source: src.id.clone(), items: items.len(), imported: 0, skipped_known: 0, skipped_dup: 0, blocked: 0, ids: Vec::new() };
     let (tier, kind) = tier_kind_of(src.kind);
-    // 库内既有指纹（含 hub 导入历史），双保险去重
+    // 第一层判断“该来源的条目是否导过”；第二层比较规范化后的标题与正文，
+    // 防止多个 Agent 复制了同一份规则后重复占用记忆库。
     let known: std::collections::HashSet<String> = {
         let conn = store.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT item_hash FROM hub_imports WHERE source = ?1")?;
@@ -408,6 +461,11 @@ pub fn import_source(store: &MemoryStore, src: &AgentSource) -> Result<ImportRep
         drop(conn);
         s
     };
+    let mut existing: std::collections::HashSet<String> = store
+        .list(None, None, false, 10_000)?
+        .into_iter()
+        .map(|r| fingerprint(&format!("{}|{}", r.title, r.content)))
+        .collect();
     for item in &items {
         let hash = fingerprint(&format!("{}|{}", src.id, item.content));
         if known.contains(&hash) {
@@ -416,6 +474,11 @@ pub fn import_source(store: &MemoryStore, src: &AgentSource) -> Result<ImportRep
         }
         let content = clean_text(&item.content);
         if content.is_empty() {
+            continue;
+        }
+        let content_hash = fingerprint(&format!("{}|{}", clean_text(&item.title), content));
+        if existing.contains(&content_hash) {
+            rep.skipped_dup += 1;
             continue;
         }
         let findings = crate::sensitive::scan(&content);
@@ -443,6 +506,7 @@ pub fn import_source(store: &MemoryStore, src: &AgentSource) -> Result<ImportRep
         }
         rep.ids.push(id);
         rep.imported += 1;
+        existing.insert(content_hash);
     }
     store.audit("hub_import", &serde_json::json!({"source": src.id, "imported": rep.imported, "known": rep.skipped_known}))?;
     Ok(rep)
@@ -1045,6 +1109,21 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_session_jsonl_skips_invalid_rows() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("history.jsonl");
+        std::fs::write(
+            &path,
+            "{\"session_id\":\"abcdefgh-1\",\"ts\":1,\"text\":\"以后报告使用中文\"}\nnot-json\n{\"text\":\"部署端口是 8801\"}\n",
+        )
+        .unwrap();
+        let items = parse_session_jsonl(&path).unwrap();
+        assert_eq!(items.len(), 2);
+        assert!(items[0].title.contains("abcdefgh"));
+        assert_eq!(items[1].content, "部署端口是 8801");
+    }
+
+    #[test]
     fn test_managed_block_roundtrip() {
         let block = managed_block("lymem 记忆分发", &["- **[偏好]** 语言=中文".into(), "- **[知识]** 部署在 /opt/apps".into()]);
         let dir = tempfile::tempdir().unwrap();
@@ -1079,6 +1158,12 @@ mod tests {
         let rep2 = import_source(&s, &src).unwrap();
         assert_eq!(rep2.imported, 0);
         assert_eq!(rep2.skipped_known, 2);
+
+        // 相同规则来自另一个 Agent 时按库内内容去重，但仍与来源内增量去重分开计数。
+        let copied = probe(SourceKind::RulesMd, "copied-agent", &src_path, true, "AGENTS.md");
+        let copied_rep = import_source(&s, &copied).unwrap();
+        assert_eq!(copied_rep.imported, 0);
+        assert_eq!(copied_rep.skipped_dup, 2);
 
         // 另一 agent 写入矛盾的端口
         let src2_path = dir.path().join("B.md");

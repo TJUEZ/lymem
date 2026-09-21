@@ -192,6 +192,57 @@ impl MemoryStore {
         Ok(recs.iter().filter_map(card_of).collect())
     }
 
+    /// 手动提炼：用户依据自身偏好直接沉淀一张经验卡（对齐"自动门控 + 手动配置"双通道）。
+    /// 手动卡与自动卡走同一条治理路径：默认 draft，仍可经 experience_feedback 门控验证。
+    pub fn create_manual_experience(
+        &self,
+        exp_type: &str,
+        task: &str,
+        trigger: &str,
+        steps: Vec<String>,
+        scene: Option<&str>,
+    ) -> Result<ExperienceCard> {
+        if !matches!(exp_type, "practice" | "pitfall") {
+            return Err(crate::error::CoreError::InvalidInput(
+                "exp_type 只支持 practice 或 pitfall".into(),
+            ));
+        }
+        if task.trim().is_empty() || trigger.trim().is_empty() || steps.is_empty() {
+            return Err(crate::error::CoreError::InvalidInput(
+                "task、trigger、steps 均不能为空".into(),
+            ));
+        }
+        let (title, kind) = match exp_type {
+            "practice" => (format!("经验·做法:{task}"), MemoryKind::Workflow),
+            _ => (format!("经验·避坑:{task}"), MemoryKind::Case),
+        };
+        let body = match exp_type {
+            "practice" => format!("【做法】任务「{task}」的可复用做法。\n适用:{trigger}\n要点:\n{}", 
+                steps.iter().enumerate().map(|(i, s)| format!("{}. {}", i + 1, s)).collect::<Vec<_>>().join("\n")),
+            _ => format!("【避坑】任务「{task}」的失败教训。\n适用:{trigger}\n规避:\n{}", 
+                steps.iter().enumerate().map(|(i, s)| format!("{}. {}", i + 1, s)).collect::<Vec<_>>().join("\n")),
+        };
+        let mut rec = MemoryRecord::new(Tier::Knowledge, kind, title, body);
+        rec.scene = scene.unwrap_or("general").to_string();
+        rec.entities = vec![task.to_string()];
+        rec.meta = serde_json::json!({ "experience": ExperienceMeta {
+            v: EXPERIENCE_VERSION,
+            exp_type: exp_type.into(),
+            task: task.into(),
+            trigger: trigger.into(),
+            steps,
+            outcome: Outcome::default(),
+            source_ids: vec![],
+            status: "draft".into(),
+        }});
+        rec.confidence = 0.7;
+        let id = self.put(rec)?;
+        self.audit("experience_manual", &serde_json::json!({
+            "id": id, "type": exp_type, "task": task,
+        }))?;
+        Ok(card_of(&self.get(id)?.ok_or(crate::error::CoreError::InvalidInput("写入后读取失败".into()))?).unwrap())
+    }
+
     /// 采纳反馈：`adopted_ok` = Some(true) 用过成功 / Some(false) 用过失败。
     /// 门控：wins≥2 且 fails==0 → verified；出现任何失败 → 回退 draft。
     pub fn experience_feedback(&self, id: i64, adopted_ok: bool) -> Result<Option<ExperienceCard>> {

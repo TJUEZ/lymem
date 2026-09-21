@@ -10,6 +10,9 @@
 #   mcp__lymem__memory_forget      自然语言遗忘（预览/软删/硬清除）
 #   mcp__lymem__conflict_list      知识冲突与仲裁记录
 #   mcp__lymem__memory_status      记忆库概况
+#   mcp__lymem__experience_compile  编译经验卡
+#   mcp__lymem__skill_targets       列出技能目标
+#   mcp__lymem__skill_publish       编译并发布 SKILL.md
 - insert:
     - id: memory-lymem
       name: '@deepseek-ai/dsh-mcp-client'

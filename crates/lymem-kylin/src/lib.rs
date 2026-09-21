@@ -2,7 +2,7 @@
 //!
 //! 提供符合 `lymem_core::embedding::Embedder` 的麒麟端侧文本嵌入客户端，双通道：
 //!
-//! 1. **DBus 通道**（`KylinDbusEmbedder`）：走 `kylin-ai-runtime` 的官方 SDK 协议
+//! 1. **D-Bus 通道**（`KylinDbusEmbedder`）：连接 `kylin-ai-runtime` 的 Embedding 服务
 //!    （`/tmp/.kylin-ai-runtime-unix/<uid>/core-textembedding.sock` 上的
 //!    `com.kylin.AiRuntime.CoreTextEmbeddingService`，方法 `init` / `embedding_text`）；
 //! 2. **kytensor 直连通道**（`KylinTritonEmbedder`）：当 runtime 引擎不可用时，
@@ -70,7 +70,7 @@ impl Default for KylinConfig {
 
 // ---------------- DBus 通道 ----------------
 
-/// 官方 SDK DBus 协议客户端
+/// 银河麒麟 AI Runtime 的 Embedding D-Bus 协议客户端。
 pub struct KylinDbusEmbedder {
     proxy: zbus::blocking::Proxy<'static>,
     session_id: i32,
@@ -269,7 +269,7 @@ impl KylinEmbedder {
             }
             Some("dbus") => {
                 let d = KylinDbusEmbedder::connect(&cfg)?;
-                tracing::info!("麒麟嵌入：按环境变量强制 DBus SDK 通道");
+                tracing::info!("麒麟嵌入：按环境变量强制 Embedding D-Bus 通道");
                 return Ok(KylinEmbedder::from_channel(KylinChannel::Dbus(d, None)));
             }
             _ => {}
@@ -285,7 +285,7 @@ impl KylinEmbedder {
         });
         match rx.recv_timeout(Duration::from_secs(8)) {
             Ok(Ok(d)) => {
-                tracing::info!("麒麟嵌入：DBus SDK 通道就绪");
+                tracing::info!("麒麟嵌入：Embedding D-Bus 通道就绪");
                 Ok(KylinEmbedder::from_channel(KylinChannel::Dbus(d, None)))
             }
             Ok(Err(e)) => {

@@ -61,15 +61,28 @@ pub async fn mcp_post(
             Json(json!({ "jsonrpc": "2.0", "id": id, "result": r })),
         )
             .into_response(),
-        Err(e) => (
-            StatusCode::OK,
-            [(axum::http::header::CONTENT_TYPE, "application/json")],
-            Json(json!({
-                "jsonrpc": "2.0", "id": id,
-                "error": { "code": -32601, "message": e }
-            })),
-        )
-            .into_response(),
+        Err(e) => {
+            // JSON-RPC 错误码按语义区分：未知方法/未知工具=Method not found(-32601)，
+            // 参数缺失/非法=Invalid params(-32602)，其余按内部错误(-32603)。
+            // 客户端 Agent 依赖错误码区分"工具不存在"与"参数传错"，
+            // 此前统一报 -32601 会让 Agent 误判工具未注册。
+            let code = if e.starts_with("未知方法") || e.starts_with("未知工具") {
+                -32601
+            } else if e.starts_with("缺少") {
+                -32602
+            } else {
+                -32603
+            };
+            (
+                StatusCode::OK,
+                [(axum::http::header::CONTENT_TYPE, "application/json")],
+                Json(json!({
+                    "jsonrpc": "2.0", "id": id,
+                    "error": { "code": code, "message": e }
+                })),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -141,6 +154,23 @@ fn tools_spec() -> Value {
             "name": "memory_status",
             "description": "记忆库概况：各层条目数、偏好数、嵌入通道。",
             "inputSchema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "experience_compile",
+            "description": "把情景层成功/失败轨迹编译为带证据链的经验卡（做法/避坑）。幂等执行，可离线运行。",
+            "inputSchema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "skill_targets",
+            "description": "列出可发布技能的本机 Agent 目标目录及当前安装状态。",
+            "inputSchema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "skill_publish",
+            "description": "触发经验编译，并将经验卡与当前偏好原子发布为目标 Agent 可直接加载的 SKILL.md；自动保留上一版。",
+            "inputSchema": { "type": "object", "properties": {
+                "target": { "type": "string", "enum": ["codex", "claude", "opencode", "dsh"] }
+            }, "required": ["target"] }
         }
     ])
 }
@@ -252,7 +282,10 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
                     window_context: None,
                 },
             };
-            lymem_core::ingest::ingest_events(&st.store, &[event])
+            let st2 = Arc::clone(st);
+            tokio::task::spawn_blocking(move || lymem_core::ingest::ingest_events(&st2.store, &[event]))
+                .await
+                .map_err(|e| format!("任务失败: {e}"))?
                 .map(|ids| json!({ "ok": true, "ids": ids }))
                 .map_err(|e| e.to_string())
         }
@@ -350,6 +383,44 @@ async fn dispatch(st: &Arc<AppState>, name: &str, args: &Value) -> Result<Value,
                 "embedder": st.embedder_name, "embed_dim": st.store.vec_dim,
                 "llm": st.llm_name.lock().unwrap().clone(),
             }))
+        }
+        "experience_compile" => {
+            let st2 = Arc::clone(st);
+            let judge = st.judge.clone();
+            tokio::task::spawn_blocking(move || {
+                st2.store.compile_experiences(
+                    Some(judge.as_ref()),
+                    &lymem_core::experience::CompileOpts::default(),
+                )
+            })
+            .await
+            .map_err(|e| format!("任务失败: {e}"))?
+            .map(|report| json!(report))
+            .map_err(|e| e.to_string())
+        }
+        "skill_targets" => Ok(json!({ "targets": lymem_core::skill_export::targets() })),
+        "skill_publish" => {
+            let target_id = args.get("target").and_then(|v| v.as_str()).ok_or("缺少 target")?;
+            let target = lymem_core::skill_export::targets()
+                .into_iter()
+                .find(|t| t.id == target_id)
+                .ok_or_else(|| format!("未知技能目标: {target_id}"))?;
+            let st2 = Arc::clone(st);
+            let judge = st.judge.clone();
+            tokio::task::spawn_blocking(move || {
+                let compile = st2.store.compile_experiences(
+                    Some(judge.as_ref()),
+                    &lymem_core::experience::CompileOpts::default(),
+                )?;
+                let cards = st2.store.list_experiences()?;
+                let prefs = st2.store.effective_preferences(None)?;
+                let release = lymem_core::skill_export::publish(&target, &cards, &prefs)?;
+                st2.store.audit("mcp_skill_publish", &json!({"target": release.target, "version": release.version}))?;
+                Ok::<_, lymem_core::CoreError>(json!({"ok": true, "compile": compile, "release": release}))
+            })
+            .await
+            .map_err(|e| format!("任务失败: {e}"))?
+            .map_err(|e| e.to_string())
         }
         other => Err(format!("未知工具: {other}")),
     }

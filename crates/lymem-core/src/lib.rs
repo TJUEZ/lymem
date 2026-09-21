@@ -33,6 +33,7 @@ pub mod preference;
 pub mod promotion;
 pub mod retrieval;
 pub mod sensitive;
+pub mod skill_export;
 pub mod store;
 pub mod t2s;
 pub mod vector_index;

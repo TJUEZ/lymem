@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 麟忆尽智 lymem 本地服务控制脚本（deb 安装与用户安装通用）
 # 用法: lymem-ctl {start|stop|restart|status|open|logs}
+# lymem 命令还会把记忆/技能子命令转交给同目录 lymem-cli。
 set -u
 
 SELF_DIR=$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")" && pwd)
@@ -68,6 +69,13 @@ cmd_open() {
 
 cmd_logs() { touch "$LOG_FILE"; tail -n "${1:-40}" -f "$LOG_FILE"; }
 
+cmd_cli() {
+  local cli="$SELF_DIR/lymem-cli"
+  [ -x "$cli" ] || cli=/opt/lymem/lymem-cli
+  [ -x "$cli" ] || { echo "错误: 找不到 lymem-cli 可执行文件"; exit 1; }
+  exec "$cli" "$@"
+}
+
 case "${1:-}" in
   start)   cmd_start ;;
   stop)    cmd_stop ;;
@@ -75,5 +83,7 @@ case "${1:-}" in
   status)  cmd_status ;;
   open)    cmd_open ;;
   logs)    shift; cmd_logs "${1:-40}" ;;
-  *) echo "用法: $(basename "$0") {start|stop|restart|status|open|logs}"; exit 1 ;;
+  ingest|search|pref|conflicts|forget|consolidate|experience|skill)
+    cmd_cli "$@" ;;
+  *) echo "用法: $(basename "$0") {start|stop|restart|status|open|logs|ingest|search|pref|conflicts|forget|consolidate|experience|skill}"; exit 1 ;;
 esac

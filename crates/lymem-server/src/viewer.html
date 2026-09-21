@@ -85,6 +85,7 @@ main{flex:1;min-width:0;padding:var(--main-pad);overflow:auto}
 .topbar{margin-bottom:20px}
 .topbar h2{font-size:20px;letter-spacing:.01em;font-family:var(--font-disp)}
 .topbar .desc{font-size:12.5px;color:var(--faint);margin-top:3px}
+.page-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 .sq-chip{display:inline-block;font-size:12px;color:var(--blue);background:var(--blue-weak);border-radius:14px;padding:3px 12px;cursor:pointer;transition:background .16s var(--ease)}
 .sq-chip:hover{background:var(--blue-weak2)}
@@ -94,11 +95,35 @@ section[data-page].on{display:block;animation:pgIn .25s var(--ease)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
 .card>h3{font-size:14.5px;margin-bottom:4px;font-family:var(--font-disp)}
 .hint{font-size:11.5px;color:var(--faint);font-weight:400;margin-left:6px}
+.section-title{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.section-title h3{font-size:14.5px;font-family:var(--font-disp)}
+.section-title .muted{margin-left:auto}
+.status-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--field);border-radius:16px;padding:3px 10px;font-size:12px;color:var(--sub)}
+.status-pill:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.quick-action{border:1px solid var(--line);background:var(--field);border-radius:var(--radius-s);padding:12px 14px;text-align:left;cursor:pointer;color:var(--ink)}
+.quick-action:hover{border-color:var(--blue);background:var(--blue-weak)}
+.quick-action b{display:block;font-size:13.5px}
+.quick-action span{display:block;color:var(--faint);font-size:11.5px;margin-top:2px}
+.field-label{display:block;color:var(--sub);font-size:12px;font-weight:600;margin:8px 0 4px}
+.advanced{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+.advanced>summary{list-style:none;cursor:pointer;padding:12px 16px;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.advanced>summary::-webkit-details-marker{display:none}
+.advanced>summary:before{content:"›";font-size:18px;color:var(--faint);line-height:1;transition:transform .15s}
+.advanced[open]>summary:before{transform:rotate(90deg)}
+.advanced>.advanced-body{border-top:1px solid var(--hairline);padding:14px 16px}
+.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:var(--radius-s);overflow:hidden;background:var(--field)}
+.metric-strip>div{padding:11px 12px;border-right:1px solid var(--hairline)}
+.metric-strip>div:last-child{border-right:0}
+.metric-strip b{display:block;color:var(--ok);font-size:20px;line-height:1.25}
+.metric-strip span{font-size:11.5px;color:var(--sub)}
+.record-only{display:none!important}
 .grid{display:grid;gap:14px}
 .g2{grid-template-columns:1fr 1fr}
 .g2-1{grid-template-columns:2fr 1fr}
 .g4{grid-template-columns:repeat(4,1fr)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>input[type=text]{flex:1;width:auto;min-width:220px}
 input[type=text],textarea,select{border:1px solid var(--line);border-radius:var(--radius-s);padding:8px 11px;background:var(--field);width:100%}
 input[type=text]:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring);outline:none}
 button.act{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:var(--radius-s);padding:7.5px 16px;font-size:13px;cursor:pointer;transition:filter .16s var(--ease),background .16s var(--ease)}
@@ -117,6 +142,20 @@ button.act.danger{background:var(--err);border-color:var(--err)}
 .tag.k{background:var(--tint-k-bg);color:var(--tint-k-ink);font-weight:500}
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--toast-bg);color:var(--toast-ink);padding:9px 18px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.25s var(--ease);z-index:99;max-width:70vw}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast[data-kind=ok]{background:var(--ok);}.toast[data-kind=error]{background:var(--err);}.toast[data-kind=warn]{background:var(--warn);}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .72s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+button.act.busy{pointer-events:none;opacity:.75}
+button.act.busy .spin{margin-right:7px}
+.op-center{position:fixed;right:24px;bottom:24px;width:350px;max-width:calc(100vw - 32px);display:none;align-items:flex-start;gap:11px;padding:13px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 16px 42px -20px rgba(15,30,71,.45);z-index:120}
+.op-center.show{display:flex;animation:opIn .2s var(--ease)}
+.op-center.ok{border-color:var(--ok)}.op-center.error{border-color:var(--err)}
+.op-icon{color:var(--blue);padding-top:2px}.op-center.ok .op-icon{color:var(--ok)}.op-center.error .op-icon{color:var(--err)}
+.op-copy{min-width:0;flex:1}.op-copy b{display:block;font-size:13px}.op-copy span{display:block;color:var(--sub);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-progress{height:5px;background:var(--hairline);border-radius:5px;overflow:hidden;margin-top:9px}.op-progress i{display:block;width:8%;height:100%;background:var(--blue);transition:width .25s var(--ease)}.op-center.ok .op-progress i{background:var(--ok)}.op-center.error .op-progress i{background:var(--err)}
+.op-close{border:0;background:none;color:var(--faint);font-size:18px;line-height:1;cursor:pointer;padding:0 2px}.op-close:hover{color:var(--ink)}
+.loading{display:flex;align-items:center;gap:7px;color:var(--sub);padding:12px 4px}.loading .spin{color:var(--blue);margin-right:0}
+@keyframes opIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #drawer{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-pop);transform:translateX(105%);transition:.28s var(--ease);z-index:50;display:flex;flex-direction:column}
 #drawer.open{transform:none}
 #drawer .dh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center}
@@ -196,25 +235,92 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
 .vsbar .tr i{display:block;height:100%;border-radius:7px}
 .vsbar .tr.ly i{background:var(--blue)}
 .vsbar .tr.m0 i{background:var(--bar-mut)}
-@media(max-width:1080px){.g2,.g2-1,.g4,.kpi,.cmp{grid-template-columns:1fr 1fr}.kpi>div:nth-child(2n){border-right:0}}
-@media(max-width:720px){.g2,.g2-1,.kpi,.cmp{grid-template-columns:1fr}aside{width:64px}.brand small,nav button span.txt,aside .foot{display:none}nav button{text-align:center;padding:10px 4px}.kpi>div{border-right:0;border-bottom:1px solid var(--hairline)}.kpi>div:last-child{border-bottom:0}}
+.demo-nav{display:none!important}
+.core-nav{display:block!important}
+.demo-sec{display:none!important}
+.daily-workspace{max-width:920px}
+.daily-workspace .topbar{margin-bottom:18px}
+.daily-workspace .topbar h2{font-size:24px}
+.daily-search{display:flex;gap:8px;margin-bottom:12px}
+.daily-search input{flex:1;min-width:0;font-size:15px;padding:11px 13px}
+.daily-add{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:18px}
+.daily-add textarea{min-height:78px;resize:vertical}
+.daily-add button{height:40px;white-space:nowrap}
+.daily-toolbar{display:flex;align-items:center;gap:8px;margin:12px 0 6px}
+.daily-toolbar h3{font-size:14px}
+.daily-toolbar .muted{margin-left:auto}
+.daily-list{border-top:1px solid var(--line)}
+.daily-memory{display:flex;gap:12px;align-items:flex-start;padding:14px 4px;border-bottom:1px solid var(--hairline);cursor:pointer}
+.daily-memory:hover{background:var(--hover)}
+.daily-memory-main{min-width:0;flex:1}
+.daily-memory-title{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.daily-memory-snippet{color:var(--sub);font-size:13px;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.daily-memory-meta{color:var(--faint);font-size:11.5px;margin-top:5px}
+.daily-memory-actions{display:flex;gap:4px;opacity:.35;transition:opacity .15s}
+.daily-memory:hover .daily-memory-actions{opacity:1}
+.daily-memory-actions button{border:0;background:none;color:var(--sub);cursor:pointer;padding:4px 6px;border-radius:5px}
+.daily-memory-actions button:hover{background:var(--blue-weak);color:var(--blue)}
+.daily-memory-actions button:last-child:hover{background:var(--err-bg);color:var(--err)}
+.daily-empty{padding:42px 16px;text-align:center;color:var(--faint);border-top:1px solid var(--line)}
+.daily-hint{font-size:12px;color:var(--faint);margin-top:7px}
+.demo-dashboard{display:none}
+html[data-record="1"] .demo-nav{display:block!important}
+html[data-record="1"] .demo-sec{display:block!important}
+html[data-record="1"] .demo-dashboard{display:block}
+@media(max-width:720px){.daily-add{grid-template-columns:1fr}.daily-add button{width:100%}.daily-memory-actions{opacity:1}}
+/* 1920x1080 录制模式：保留功能，不让次要长列表挤占首屏。 */
+html[data-record="1"]{--main-pad:16px 24px}
+html[data-record="1"] aside{width:205px}
+html[data-record="1"] .brand{padding:14px 16px 10px}
+html[data-record="1"] nav{padding-top:0}
+html[data-record="1"] nav .sec{padding-top:8px}
+html[data-record="1"] nav button{padding:7px 11px}
+html[data-record="1"] aside .foot{padding:9px 14px;line-height:1.65}
+html[data-record="1"] .topbar{margin-bottom:11px}
+html[data-record="1"] .topbar h2{font-size:21px}
+html[data-record="1"] .card{padding:12px 15px;margin-bottom:10px}
+html[data-record="1"] .grid{gap:10px}
+html[data-record="1"] .kpi{margin-bottom:10px}
+html[data-record="1"] .kpi>div{padding:9px 14px}
+html[data-record="1"] .kpi .n{font-size:27px;margin-top:2px}
+html[data-record="1"] .feed{max-height:230px!important}
+html[data-record="1"] .record-optional{display:none!important}
+html[data-record="1"] .record-only{display:block!important}
+html[data-record="1"] .tour-card{max-width:390px;padding:13px 16px}
+.source-list{display:flex;flex-direction:column;border-top:1px solid var(--hairline)}
+.source-row{display:grid;grid-template-columns:minmax(170px,1fr) minmax(120px,.7fr) auto;gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--hairline)}
+.source-main{min-width:0}.source-main b{display:block}.source-main .muted{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-state{font-size:12px;color:var(--sub)}.source-state b{color:var(--ink2)}
+.source-actions{display:flex;gap:6px;justify-content:flex-end}.source-actions .act{padding:5px 10px}
+.search-summary{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:9px 11px;background:var(--blue-weak);color:var(--ink2);border-radius:var(--radius-s);margin-bottom:8px}
+.search-hit{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 2px;border-bottom:1px solid var(--hairline);cursor:pointer}
+.search-hit:hover{background:var(--hover)}.search-rank{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--blue-weak);color:var(--blue);font-weight:700;font-size:11px}
+.search-hit b{display:block;font-size:13px}.search-hit p{color:var(--sub);font-size:12.5px;margin-top:2px;line-height:1.55}.search-score{color:var(--faint);font-size:11px;font-variant-numeric:tabular-nums}
+@media(max-width:1080px){.g2,.g2-1,.g4,.kpi,.cmp{grid-template-columns:1fr 1fr}.kpi>div:nth-child(2n){border-right:0}.metric-strip{grid-template-columns:repeat(3,1fr)}.metric-strip>div{border-bottom:1px solid var(--hairline)}}
+@media(max-width:720px){
+  body{display:block}.g2,.g2-1,.kpi,.cmp,.quick-actions,.metric-strip{grid-template-columns:1fr}
+  aside{width:100%;height:auto;position:sticky;top:0;z-index:40;display:block}.brand{padding:9px 14px 5px}.brand b{display:inline}.brand small{display:inline;margin-left:7px}
+  nav{display:flex;gap:4px;padding:4px 8px 8px;overflow-x:auto}.demo-sec,nav .sec{display:none!important}nav button{width:auto;flex:none;text-align:left;padding:7px 11px}nav button span.txt{display:inline}aside .foot{display:none}
+  main{padding:15px 14px;overflow:visible}.topbar{margin-bottom:12px}.topbar h2{font-size:20px}.daily-search{flex-wrap:wrap}.daily-search input{flex-basis:100%}.daily-add{grid-template-columns:1fr}.daily-add button{width:100%}
+  .kpi>div,.metric-strip>div{border-right:0;border-bottom:1px solid var(--hairline)}.kpi>div:last-child,.metric-strip>div:last-child{border-bottom:0}.source-row{grid-template-columns:1fr}.source-actions{justify-content:flex-start}.search-hit{grid-template-columns:30px minmax(0,1fr)}.search-score{display:none}.op-center{right:12px;bottom:12px}
+}
 </style>
-<script>try{var m=location.search.match(/[?&]theme=(\w+)/);var t=m?m[1]:localStorage.getItem('lymem-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{var q=new URLSearchParams(location.search);var rec=q.get('record')==='1';var t=rec?'github':(q.get('theme')||localStorage.getItem('lymem-theme'));if(t)document.documentElement.dataset.theme=t;if(rec)document.documentElement.dataset.record='1'}catch(e){}</script>
 </head>
 <body>
 <aside>
   <div class="brand"><b>麟忆尽智</b><small>lymem · 记忆管理台 <span id="foot-ver"></span></small></div>
   <nav id="nav">
-    <div class="sec">记忆</div>
-    <button data-page="dash" class="on"><span class="txt">总览</span></button>
-    <button data-page="vault"><span class="txt">记忆库</span></button>
-    <button data-page="prefs"><span class="txt">偏好中心</span></button>
-    <button data-page="know"><span class="txt">知识与冲突</span></button>
-    <button data-page="forget"><span class="txt">遗忘与安全</span></button>
-    <button data-page="radar"><span class="txt">文件雷达</span></button>
-    <div class="sec">评测与集成</div>
-    <button data-page="arena"><span class="txt">评测对比</span></button>
-    <button data-page="hub"><span class="txt">Agent 中枢</span></button>
+    <div class="sec">使用</div>
+    <button data-page="dash" class="on"><span class="txt">我的记忆</span></button>
+    <button class="demo-nav core-nav" data-page="vault"><span class="txt">搜索与导入</span></button>
+    <button class="demo-nav core-nav" data-page="hub"><span class="txt">Agent 记忆</span></button>
+    <button class="demo-nav core-nav" data-page="prefs"><span class="txt">偏好</span></button>
+    <button class="demo-nav core-nav" data-page="know"><span class="txt">知识与技能</span></button>
+    <button class="demo-nav core-nav" data-page="forget"><span class="txt">隐私与遗忘</span></button>
+    <button class="demo-nav" data-page="radar"><span class="txt">文件搜索</span></button>
+    <div class="sec demo-sec">管理</div>
+    <button class="demo-nav" data-page="arena"><span class="txt">评测对比</span></button>
   </nav>
   <div class="foot">
     <div class="themer"><span>主题</span><select id="theme-sel" aria-label="选择界面主题" onchange="setTheme(this.value)">
@@ -223,85 +329,112 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <option value="claude">暖纸衬线(Claude 风)</option>
       <option value="night">夜间</option>
     </select></div>
-    <div class="st"><button class="act ghost" style="width:100%;padding:5px 0;font-size:12px;margin-bottom:6px" onclick="tourStart()">演示模式</button></div>
-    <div class="st"><a href="/app" style="color:var(--side-ok)">→ 简洁版(日常使用)</a></div>
-    <div class="st"><span>嵌入</span><b id="foot-embed">-</b></div>
-    <div class="st"><span>维度</span><b id="foot-dim">-</b></div>
-    <div class="st"><span>LLM</span><b id="foot-llm">-</b></div>
+    <div class="st"><button class="act ghost" style="width:100%;padding:5px 0;font-size:12px;margin-bottom:6px" onclick="tourStart()">演示路线</button></div>
+    <div class="st"><span>服务</span><b id="foot-status">连接中</b></div>
+    <div style="display:none"><span id="foot-embed"></span><span id="foot-dim"></span><span id="foot-llm"></span></div>
   </div>
 </aside>
 <main>
 
 <!-- 总览 -->
 <section data-page="dash" class="on">
-  <div class="topbar"><h2>总览</h2><div class="desc">四层记忆体系 · 数据流转 · 全操作留痕 · 端侧实时状态</div></div>
-  <div class="kpi">
-    <div><div class="l">记忆总数</div><div class="n" id="k-total">-</div><div class="s">情景 + 知识 + 偏好</div></div>
-    <div><div class="l">知识条目</div><div class="n" id="k-know">-</div><div class="s">长期沉淀 · 版本化</div></div>
-    <div><div class="l">偏好 · 当前生效</div><div class="n" id="k-pref">-</div><div class="s">双通道自动提取</div></div>
-    <div><div class="l">最近检索延迟</div><div class="n" id="k-lat">-</div><div class="s">发起检索后显示 · 目标 ≤500ms</div><div class="lat-spark" id="lat-spark"></div></div>
+  <div class="daily-workspace">
+    <div class="topbar"><h2>我的记忆</h2><div class="desc">在这里保存、搜索、修改和删除记忆。</div></div>
+    <div class="daily-search">
+      <input type="text" id="u-q" placeholder="搜索你的记忆" onkeydown="if(event.key==='Enter')uSearch()">
+      <button class="act" id="u-search" onclick="uSearch()">搜索</button>
+      <button class="act ghost" onclick="uRefresh()">全部</button>
+    </div>
+    <div class="daily-add">
+      <div>
+        <textarea id="u-content" rows="2" placeholder="写下要记住的内容，例如：项目部署在内网服务器 192.168.1.100"></textarea>
+        <div class="daily-hint" id="u-msg">内容只保存在本机，敏感信息会在保存前拦截。</div>
+      </div>
+      <button class="act" id="u-add" onclick="uAdd()">保存记忆</button>
+    </div>
+    <div class="daily-toolbar"><h3>记忆列表</h3><div class="row"><select id="u-scope" style="max-width:150px" onchange="uRefresh()"><option value="all">全部来源</option><option value="mine">我的记忆</option><option value="agent">Agent 导入</option></select><span class="muted" id="u-count"></span></div></div>
+    <div class="daily-list" id="u-list"><div class="daily-empty"><span class="spin"></span>正在读取记忆…</div></div>
   </div>
-  <div class="card" style="margin-bottom:12px">
+  <div class="demo-dashboard">
+  <div class="topbar"><h2>概览</h2><div class="desc">你的本机记忆状态</div></div>
+  <div class="kpi">
+    <div><div class="l">全部记忆</div><div class="n" id="k-total">-</div><div class="s">仍可检索的内容</div></div>
+    <div><div class="l">长期知识</div><div class="n" id="k-know">-</div><div class="s">已整理的事实与流程</div></div>
+    <div><div class="l">当前偏好</div><div class="n" id="k-pref">-</div><div class="s">正在生效的习惯</div></div>
+    <div><div class="l">最近检索</div><div class="n" id="k-lat">-</div><div class="s">目标 ≤500ms</div><div class="lat-spark" id="lat-spark"></div></div>
+  </div>
+  <div class="card record-optional" style="margin-bottom:12px">
     <h3>记忆活跃热力图<span class="hint">近 12 周每日操作次数 · 点击某天查看当日明细</span></h3>
     <div class="heat" id="heat"><div class="empty" style="grid-column:1/-1">加载中…</div></div>
     <div class="feed" id="heat-day" style="max-height:170px;margin-top:10px"><div class="empty">点击热力图某一天,查看当日全部操作。</div></div>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <h3>快速体验<span class="hint">一键灌入一组演示数据（工具轨迹 / 会话 / 配置 / 行为 / 知识与冲突），隔离在「演示」场景，随时一键清除</span></h3>
+    <div class="section-title"><h3>开始使用</h3><span class="status-pill">数据仅保存在本机</span></div>
     <div class="row">
-      <button class="act" id="btn-demo-seed" onclick="demoSeed()">灌入演示数据</button>
-      <button class="act ghost" onclick="demoClear()">清除演示数据</button>
-      <span class="muted" id="demo-msg">首次使用建议先灌入，再逐页体验各项功能</span>
+      <button class="act" id="btn-demo-seed" onclick="demoSeed()">载入体验数据</button>
+      <button class="act ghost" onclick="demoClear()">重置体验数据</button>
+      <span class="muted" id="demo-msg">可先载入样例，再从检索开始体验</span>
     </div>
   </div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>记忆流转管道<span class="hint">工作(短期) → 情景(中期) → 知识/偏好(长期)</span></h3>
+      <h3>记忆如何流转</h3>
       <div class="pipe" id="d-pipe"></div>
-      <div class="row">
-        <button class="act ghost" onclick="consolidate()">蒸馏一轮（情景 → 知识）</button>
-        <button class="act ghost" onclick="minePrefs({},'d-pipe-msg')">偏好规则挖掘</button>
-        <span class="muted" id="d-pipe-msg"></span>
-      </div>
+      <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">维护操作</summary><div class="row" style="margin-top:8px">
+        <button class="act ghost" onclick="consolidate()">整理为长期知识</button>
+        <button class="act ghost" onclick="minePrefs({},'d-pipe-msg')">更新偏好</button>
+        <span class="muted" id="d-pipe-msg"></span></div></details>
     </div>
     <div class="card">
-      <h3>功能导览<span class="hint">每项能力都有对应页面可亲手操作</span></h3>
-      <table class="tb">
-        <tr><td>多源接入 · 清洗校验</td><td><a href="#vault" onclick="go('vault')">记忆库 · 灌入</a></td></tr>
-        <tr><td>偏好动态捕捉</td><td><a href="#prefs" onclick="go('prefs')">偏好中心</a></td></tr>
-        <tr><td>知识整合 · 冲突仲裁</td><td><a href="#know" onclick="go('know')">知识与冲突</a></td></tr>
-        <tr><td>敏感识别 · 精准遗忘</td><td><a href="#forget" onclick="go('forget')">遗忘与安全</a></td></tr>
-        <tr><td>短期 → 长期记忆流转</td><td>本页管道图</td></tr>
-        <tr><td>低延迟端侧检索</td><td>本页 KPI + 底栏状态</td></tr>
-        <tr><td>量化评测</td><td><a href="#arena" onclick="go('arena')">评测对比</a></td></tr>
-        <tr><td>多 Agent 记忆中枢</td><td><a href="#hub" onclick="go('hub')">Agent 中枢</a></td></tr>
-      </table>
+      <h3 style="margin-bottom:10px">常用操作</h3>
+      <div class="quick-actions" style="grid-template-columns:1fr">
+        <button class="quick-action" onclick="go('vault')"><b>搜索记忆</b><span>提问并查看来源</span></button>
+        <button class="quick-action" onclick="go('prefs')"><b>查看偏好</b><span>确认当前值与历史版本</span></button>
+        <button class="quick-action" onclick="go('forget')"><b>管理隐私</b><span>检查敏感内容或遗忘记忆</span></button>
+      </div>
     </div>
   </div>
-  <div class="card"><h3>最近活动<span class="hint">全部操作留痕（审计）</span></h3><div class="feed" id="dash-audit"><div class="empty">加载中…</div></div></div>
+  <div class="card record-optional"><h3>最近活动<span class="hint">全部操作留痕（审计）</span></h3><div class="feed" id="dash-audit"><div class="empty">加载中…</div></div></div>
+  </div>
 </section>
 
 <!-- 记忆库：多源灌入 · 质量校验 · 检索问答 -->
 <section data-page="vault">
-  <div class="topbar"><h2>记忆库</h2><div class="desc">长记忆灌入（贴标签分库）· 质量校验 · 库内检索问答</div></div>
+  <div class="topbar"><h2>检索与导入</h2><div class="desc">先搜索已有记忆，也可以加入新的资料</div></div>
+  <div class="card">
+    <div class="section-title"><h3>记住一条内容</h3><span class="muted">先保存，再决定是否遗忘</span></div>
+    <div class="daily-add" style="margin-bottom:0">
+      <textarea id="f-remember" rows="3" placeholder="输入希望长期记住的内容，例如：办公区打印服务器是 192.168.1.100"></textarea>
+      <button class="act" id="f-remember-btn" onclick="fRemember()">保存记忆</button>
+    </div>
+    <div class="muted" id="f-remember-msg" style="margin-top:7px"></div>
+  </div>
+  <div class="card">
+    <div class="section-title"><h3>搜索记忆</h3><span class="muted">答案可查看来源</span></div>
+    <div class="row"><input type="text" id="v-q" placeholder="输入问题或关键词" onkeydown="if(event.key==='Enter')vAsk()"><select id="v-ask-lib" style="max-width:150px"><option value="">全部记忆</option></select><button class="act" id="v-search" onclick="vAsk()">搜索</button></div>
+    <div class="row" style="margin-top:8px">
+      <span class="sq-chip" onclick="vAsk('周报工作流是怎样的？')">周报流程</span>
+      <span class="sq-chip" onclick="vAsk('办公区打印服务器地址是什么？')">打印服务器地址</span>
+    </div>
+    <div id="v-ans" class="muted" style="margin-top:10px"></div>
+  </div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>长记忆灌入<span class="hint">支持任意文档 / 笔记 / 知识 —— 自动清洗、分块、贴库标签</span></h3>
+      <h3>导入资料</h3>
       <div class="tabs"><button class="on" onclick="vTab(this,'paste')">粘贴文本</button><button onclick="vTab(this,'file')">上传文档</button><button onclick="vTab(this,'json')">事件 JSON</button></div>
       <div class="pbar" id="v-prog" style="display:none;margin-bottom:8px"><i></i></div>
       <div id="tab-paste">
-        <textarea id="v-text" rows="5" placeholder="粘贴任意长文本：工作流、项目笔记、小说、文档…将按语义块自动切分入库"></textarea>
+        <textarea id="v-text" rows="5" placeholder="粘贴工作笔记、流程或文档内容"></textarea>
         <div class="row" style="margin-top:8px">
-          <input type="text" id="v-lib" placeholder="库标签（如：公共库 / 办公知识 / 项目文档）" style="max-width:280px" value="公共库">
-          <button class="act" onclick="vIngestText()">灌入记忆库</button>
+          <input type="text" id="v-lib" placeholder="分类，如：项目文档" style="max-width:280px" value="公共库">
+          <button class="act" onclick="vIngestText()">导入</button>
           <span class="muted" id="v-msg"></span>
         </div>
       </div>
       <div id="tab-file" style="display:none">
         <div class="row"><input type="file" id="v-file" accept=".txt,.md,.json" onchange="$('v-lib2').focus()">
           <input type="text" id="v-lib2" placeholder="库标签" value="公共库" style="max-width:200px">
-          <button class="act" onclick="vIngestFile()">灌入所选文档</button></div>
-        <div class="muted" style="margin-top:6px">txt/md 按章节或 800 字块切分；整本小说按「第 N 回」自动分章。</div>
+          <button class="act" onclick="vIngestFile()">导入文档</button></div>
       </div>
       <div id="tab-json" style="display:none">
         <textarea id="v-json" rows="5">[
@@ -309,54 +442,33 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
  {"type":"user_behavior","data":{"event":"打开文件管理器","scene":"files"}},
  {"type":"manual_config","data":{"key":"editor.font","value":"Noto Sans CJK 12"}}
 ]</textarea>
-        <div class="row" style="margin-top:8px"><button class="act ghost" onclick="vReport()">质量报告（不入库）</button><button class="act" onclick="vCommitJson()">正式入库</button></div>
+        <div class="row" style="margin-top:8px"><button class="act ghost" onclick="vReport()">导入前检查</button><button class="act" onclick="vCommitJson()">导入</button></div>
       </div>
       <div id="v-report" style="margin-top:8px"></div>
     </div>
     <div class="card">
-      <h3>检索问答<span class="hint">混合检索 · 端侧直答</span></h3>
-      <div class="row"><input type="text" id="v-q" placeholder="问库里的任何内容…" onkeydown="if(event.key==='Enter')vAsk()"><select id="v-ask-lib" style="max-width:150px" onchange="if($('v-q').value.trim())vAsk()"><option value="">全部库</option></select><button class="act" onclick="vAsk()">提问</button></div>
-      <div class="row" style="margin-top:6px">
-        <span class="muted">试一试：</span>
-        <span class="sq-chip" onclick="vAsk('周报工作流是怎样的？')">周报工作流是怎样的？</span>
-        <span class="sq-chip" onclick="vAsk('部署路径是什么？')">部署路径是什么？</span>
-      </div>
-      <div id="v-ans" class="muted" style="margin-top:10px"></div>
+      <div class="section-title"><h3>已保存</h3><button class="act ghost" style="padding:3px 10px" onclick="vTree()">刷新</button></div>
+      <div id="v-tree"><div class="empty">加载中…</div></div>
     </div>
-  </div>
-  <div class="card">
-    <h3>库管理<span class="hint">按库标签分组 · 点击条目看详情</span></h3>
-    <div class="row" style="margin-bottom:8px"><button class="act ghost" onclick="vTree()">刷新</button><span class="muted">库 = 灌入时的标签；同库记忆可整库检索/遗忘</span></div>
-    <div id="v-tree"><div class="empty">加载中…</div></div>
   </div>
 </section>
 
 <!-- 偏好中心：自动提取 · 版本化 -->
 <section data-page="prefs">
-  <div class="topbar"><h2>偏好中心</h2><div class="desc">自动提取 · 版本化管理 · 跨场景适配 · 任意时点回溯</div></div>
-  <div class="row" style="margin-bottom:12px">
-    <button class="act ghost" onclick="minePrefs({},'p-msg')">规则通道挖掘（工具使用统计）</button>
-    <button class="act ghost" onclick="extractPrefs()">会话通道提取（LLM 陈述分析）</button>
-    <span class="muted" id="p-msg"></span>
-  </div>
+  <div class="topbar"><h2>我的偏好</h2><div class="desc">查看系统正在使用的习惯，以及它们如何变化</div></div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>偏好库<span class="hint">键已中文化，括号内为系统键名</span></h3>
+      <h3>当前偏好</h3>
       <div id="p-list" class="feed" style="max-height:420px"><div class="empty">加载中…</div></div>
     </div>
     <div class="card">
-      <h3>版本时间线</h3>
-      <div class="row" style="margin-bottom:8px"><input type="text" id="p-key" placeholder="选择左侧偏好查看…" readonly><button class="act ghost" onclick="loadPrefs(true)">刷新</button></div>
-      <div id="p-timeline"><div class="empty">点击左侧任一偏好查看版本历史。</div></div>
-      <h3 style="margin-top:14px">手动设置</h3>
-      <input type="text" id="p-new-key" placeholder="键，如 输出风格·语言" style="margin-top:6px">
-      <textarea id="p-new-val" rows="2" placeholder='值（JSON），如 "中文"' style="margin-top:6px"></textarea>
-      <button class="act" style="margin-top:6px" onclick="setPref()">写入新版本</button>
-      <div class="muted" style="margin-top:6px">同一键重复写入会追加版本并关闭旧版本；重复同值会标注。</div>
+      <h3>变化记录</h3>
+      <input type="text" id="p-key" placeholder="从左侧选择一项" readonly style="margin:6px 0 8px">
+      <div id="p-timeline"><div class="empty">选择一项偏好查看历史。</div></div>
     </div>
   </div>
   <div class="card">
-    <h3>时间机器<span class="hint">拖动时间点，看那一刻的偏好全貌；与当前差异一目了然</span></h3>
+    <h3>历史回看</h3>
     <div class="row">
       <input type="range" id="tm-range" min="0" max="1000" value="1000" style="flex:1;min-width:200px" oninput="tmSlide()">
       <span class="muted" id="tm-label" style="min-width:160px">现在</span>
@@ -365,88 +477,118 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     </div>
     <div id="tm-list" class="feed" style="max-height:260px;margin-top:8px"><div class="empty">加载中…</div></div>
   </div>
+  <details class="advanced">
+    <summary>更新偏好</summary>
+    <div class="advanced-body">
+      <div class="row">
+        <button class="act ghost" onclick="minePrefs({},'p-msg')">从使用记录更新</button>
+        <button class="act ghost" onclick="extractPrefs()">从近期会话更新</button>
+        <span class="muted" id="p-msg"></span>
+      </div>
+      <div class="grid g2" style="margin-top:12px">
+        <input type="text" id="p-new-key" placeholder="偏好名称，如 output_style.language">
+        <input type="text" id="p-new-val" placeholder='新值，如 "中文"'>
+      </div>
+      <button class="act" style="margin-top:8px" onclick="setPref()">保存新版本</button>
+    </div>
+  </details>
 </section>
 
 <!-- 知识与冲突：结构化入库 · 冲突仲裁 -->
 <section data-page="know">
-  <div class="topbar"><h2>知识与冲突</h2><div class="desc">工作流 / 案例 / 模板的结构化入库 · 新旧知识冲突检测与仲裁 · 跨源矛盾</div></div>
-  <div class="grid g2-1">
-    <div class="card">
-      <h3>知识提取入库<span class="hint">写入即走四步管道：检测 → 分类 → 仲裁 → 版本化</span></h3>
-      <input type="text" id="k-title" placeholder="标题，如：周报工作流">
-      <textarea id="k-body" rows="3" style="margin-top:6px" placeholder="粘贴工作流 / 历史案例 / 可复用模板…">每周五 16:00 前把周报发给直属领导，抄送部门秘书</textarea>
-      <div class="row" style="margin-top:8px">
-        <button class="act" onclick="kAdd()">提取入库（自动冲突检测）</button>
-        <button class="act ghost" onclick="kDemoConflict()">演示冲突：改值重提</button>
-        <span class="muted">先按上方内容入库，再把 16:00 改成 18:00 重新提交，即可看到冲突仲裁</span>
-      </div>
-      <div id="k-conf" style="margin-top:8px"></div>
-    </div>
-    <div class="card">
-      <h3>知识库<span class="hint">最近 12 条</span></h3>
-      <div id="k-list" class="feed" style="max-height:220px"><div class="empty">加载中…</div></div>
-    </div>
-  </div>
+  <div class="topbar"><h2>知识与技能</h2><div class="desc">确认变化的事实，把成功经验交给 Agent 复用</div></div>
   <div class="grid g2">
     <div class="card">
-      <h3>冲突仲裁台账<span class="hint">每次新旧知识碰撞的完整记录</span></h3>
+      <div class="section-title"><h3>事实变化</h3><span class="muted">保留新旧版本</span></div>
       <div id="k-ledger" class="feed" style="max-height:260px"><div class="empty">加载中…</div></div>
     </div>
     <div class="card">
-      <h3>跨源矛盾<span class="hint">多个终端 Agent 汇报的同一事实不一致时</span></h3>
-      <div class="row" style="margin-bottom:8px"><button class="act ghost" onclick="hubScan()">扫描跨源矛盾</button><span class="muted" id="hub-scan-msg"></span></div>
-      <div id="hub-conf-list"><div class="empty">点击扫描。需要先在 Agent 中枢导入 ≥2 个源。</div></div>
+      <div class="section-title"><h3>长期知识</h3><span class="muted">最近更新</span></div>
+      <div id="k-list" class="feed" style="max-height:260px"><div class="empty">加载中…</div></div>
     </div>
   </div>
   <div class="card">
-    <h3>经验复用<span class="hint">从近期轨迹提炼做法 / 避坑；复用反馈决定能否转正</span></h3>
+    <div class="section-title"><h3>可复用经验</h3><span class="muted">来自近期工具轨迹</span></div>
     <div class="row" style="margin-bottom:8px">
-      <button class="act" onclick="xCompile()">从近期轨迹编译经验</button>
-      <span class="muted" id="x-msg">成功轨迹→「做法」，失败轨迹→「避坑」；被复用 ≥2 次且无失败自动转为已验证</span>
+      <button class="act" onclick="xCompile()">整理近期经验</button>
+      <span class="muted" id="x-msg"></span>
     </div>
-    <div id="x-list" class="feed" style="max-height:280px"><div class="empty">还没有经验卡。灌入带任务标签的工具轨迹（或由 Agent 经 MCP 写入）后，点上方按钮编译。</div></div>
+    <div id="x-list" class="feed" style="max-height:280px"><div class="empty">暂无经验。完成带任务标签的工具操作后再整理。</div></div>
+    <div style="border-top:1px solid var(--hairline);margin-top:12px;padding-top:12px">
+      <div class="section-title"><h3>发布给 Agent</h3><span class="muted">生成可加载的 SKILL.md</span></div>
+      <div class="row">
+        <select id="skill-target" style="max-width:260px" onchange="skillPreview()"></select>
+        <button class="act" id="skill-publish" onclick="skillPublish()">发布</button>
+        <button class="act ghost" id="skill-rollback" onclick="skillRollback()">回到上一版</button>
+        <button class="act ghost" id="skill-remove" onclick="skillRemove()">撤回</button>
+        <span class="muted" id="skill-msg"></span>
+      </div>
+      <div id="skill-state" class="feed" style="max-height:150px;margin-top:8px"></div>
+      <div id="skill-preview" style="margin-top:10px"><div class="empty">选择 Agent 后可查看将生成或已安装的技能。</div></div>
+    </div>
   </div>
-  <div class="card">
-    <h3>冲突调解台<span class="hint">自动仲裁只是建议，你才是最终裁判；改判随时可再改</span></h3>
-    <div id="med-list" class="feed" style="max-height:340px"><div class="empty">加载中…</div></div>
-  </div>
+  <details class="advanced">
+    <summary>添加知识与冲突处理</summary>
+    <div class="advanced-body">
+      <div class="grid g2-1">
+        <div>
+          <label class="field-label" for="k-title">标题</label><input type="text" id="k-title" placeholder="如：周报工作流">
+          <label class="field-label" for="k-body">内容</label><textarea id="k-body" rows="3" placeholder="输入事实、流程或模板">每周五 16:00 前把周报发给直属领导，抄送部门秘书</textarea>
+          <div class="row" style="margin-top:8px"><button class="act" onclick="kAdd()">保存知识</button><button class="act ghost" onclick="kDemoConflict()">生成一条变化记录</button></div>
+          <div id="k-conf" style="margin-top:8px"></div>
+        </div>
+        <div>
+          <div class="section-title"><h3>跨 Agent 冲突</h3><button class="act ghost" style="padding:3px 10px" onclick="hubScan()">扫描</button></div>
+          <span class="muted" id="hub-scan-msg"></span>
+          <div id="hub-conf-list"><div class="empty">导入两个以上来源后可扫描。</div></div>
+        </div>
+      </div>
+    </div>
+  </details>
+  <details class="advanced">
+    <summary>人工复核冲突</summary>
+    <div class="advanced-body"><div id="med-list" class="feed" style="max-height:340px"><div class="empty">加载中…</div></div></div>
+  </details>
 </section>
 
 <!-- 遗忘与安全：敏感分级 · 精准遗忘 -->
 <section data-page="forget">
-  <div class="topbar"><h2>遗忘与安全</h2><div class="desc">自然语言遗忘 · 前后对比见效 · 敏感信息分级</div></div>
+  <div class="topbar"><h2>隐私与遗忘</h2><div class="desc">检查敏感内容，确认后再移除记忆</div></div>
   <div class="card">
-    <h3>精准遗忘（前后对比）<span class="hint">同一问题，遗忘前后各检索一次，直观看到记忆消失</span></h3>
-    <div class="sq-step"><div class="no">1</div><div style="flex:1">先问一个将被遗忘的主题：<div class="row" style="margin-top:6px"><input type="text" id="f-q" value="部署路径是什么？" style="max-width:320px"><button class="act ghost" onclick="fBefore()">遗忘前检索</button><span class="muted" id="f-before-n"></span></div></div></div>
-    <div class="sq-step"><div class="no">2</div><div style="flex:1">下达遗忘指令：<input type="text" id="f-instr" value="忘掉关于部署路径的一切" style="max-width:320px;margin-top:6px"></div></div>
-    <div class="sq-step"><div class="no">3</div><div style="flex:1;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="act ghost" onclick="fPreview()">解析并预览将遗忘的内容</button>
-      <button class="act danger" id="f-exec" onclick="fExec()" disabled>执行遗忘（软删除·可恢复）</button>
-      <span class="muted" id="f-msg"></span></div></div>
-    <div class="sq-step"><div class="no" style="background:var(--ok-bg);color:var(--ok)">4</div><div style="flex:1"><button class="act" onclick="fAfter()">遗忘后再检索</button> —— 对比结果：</div></div>
+    <div class="section-title"><h3>遗忘记忆</h3><span class="muted">执行前会显示影响范围</span></div>
+    <div class="grid g2">
+      <div><label class="field-label" for="f-q">验证问题</label><div class="row"><input type="text" id="f-q" value="办公区打印服务器地址是什么？"><button class="act ghost" onclick="fBefore()">查看当前结果</button><span class="muted" id="f-before-n"></span></div></div>
+      <div><label class="field-label" for="f-instr">要忘掉什么</label><input type="text" id="f-instr" value="忘掉关于打印服务器的记忆"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="act" onclick="fPreview()">预览影响</button>
+      <button class="act danger" id="f-exec" onclick="fExec()" disabled>确认遗忘</button>
+      <button class="act ghost" onclick="fAfter()">再次验证</button>
+      <span class="muted" id="f-msg"></span>
+    </div>
     <div class="cmp" style="margin-top:8px">
-      <div><h4 style="color:var(--warn)">遗忘前</h4><div id="f-out-before" class="muted">待检索</div></div>
-      <div><h4 style="color:var(--ok)">遗忘后</h4><div id="f-out-after" class="muted">待检索</div></div>
+      <div><h4>当前结果</h4><div id="f-out-before" class="muted">尚未验证</div></div>
+      <div><h4>影响预览 / 遗忘后</h4><div id="f-out-after" class="muted">尚未预览</div></div>
     </div>
   </div>
   <div class="card">
-    <h3>敏感信息分级<span class="hint">入库前规则识别，自动脱敏</span></h3>
+    <div class="section-title"><h3>敏感内容检查</h3><span class="muted">入库前检查</span></div>
     <textarea id="sens-in" rows="3">联系我 13812345678，密钥 sk-abcdefghijklmnopqrst，服务器 10.20.30.40</textarea>
-    <button class="act ghost" style="margin-top:8px" onclick="sensScan()">扫描</button>
+    <button class="act ghost" style="margin-top:8px" onclick="sensScan()">检查内容</button>
     <div id="sens-out" style="margin-top:8px"></div>
   </div>
 </section>
 
 <!-- 文件雷达：授权目录内容索引 · 按内容找文件 -->
 <section data-page="radar">
-  <div class="topbar"><h2>文件雷达</h2><div class="desc">授权目录内的文件内容检索：按「讲了什么」找文件，不局限于文件名</div></div>
+  <div class="topbar"><h2>文件搜索</h2><div class="desc">按文件内容搜索，不必记住文件名</div></div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>授权目录<span class="hint">默认不索引任何目录；逐目录授权，删除即彻底清除</span></h3>
+      <h3>选择文件夹</h3>
       <div class="row">
-        <input type="text" id="rd-dir" placeholder="文件夹绝对路径，如 /home/you/文档" style="max-width:380px">
-        <button class="act" onclick="radarAdd()">授权此目录</button>
-        <button class="act ghost" onclick="radarScan()">扫描全部目录</button>
+        <input type="text" id="rd-dir" placeholder="文件夹路径" style="max-width:380px">
+        <button class="act" onclick="radarAdd()">添加文件夹</button>
+        <button class="act ghost" onclick="radarScan()">更新索引</button>
         <span class="muted" id="rd-scan-msg"></span>
       </div>
       <div id="rd-dirs" class="feed" style="max-height:140px;margin-top:8px"><div class="empty">加载中…</div></div>
@@ -454,11 +596,11 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
     <div class="card">
       <h3>索引状态</h3>
       <div id="rd-status" class="muted">加载中…</div>
-      <div class="muted" style="margin-top:12px;line-height:1.9">隐私承诺：含<b>密钥/密码/身份证/银行卡</b>的文件拒绝入库；含手机号/邮箱/IP 的自动脱敏后入库；支持 txt/md/代码/CSV/JSON/HTML 与 PDF，删除授权即清除全部索引。</div>
+      <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">隐私规则</summary><div class="muted" style="margin-top:6px">密钥、密码、证件和银行卡信息不会入库；删除文件夹后同时清除索引。</div></details>
     </div>
   </div>
   <div class="card">
-    <h3>按内容找文件<span class="hint">在已授权目录的文件内容中检索（语义 + 全文）</span></h3>
+    <h3>搜索文件内容</h3>
     <div class="row">
       <input type="text" id="rd-q" placeholder="描述内容，如：讲打印服务器配置的文档" style="max-width:460px" onkeydown="if(event.key==='Enter')radarSearch()">
       <button class="act" onclick="radarSearch()">检索</button>
@@ -470,33 +612,30 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
 
 <!-- 评测对比：在线评测 · 同题对比 -->
 <section data-page="arena">
-  <div class="topbar"><h2>评测对比</h2><div class="desc">内置数据集在线评测 · 与主流记忆系统同题对比</div></div>
-  <div class="grid g2-1">
-    <div class="card">
-      <h3>在线评测<span class="hint">对当前记忆库实时跑检索评测（hit@5 + 延迟分位）</span></h3>
-      <div class="row">
-        <button class="act ghost" onclick="qArena('multiwoz')">多域预订对话 · 5 题</button>
-        <button class="act ghost" onclick="qArena('bpmn')">BPMN 流程知识 · 3 题</button>
-        <button class="act ghost" onclick="qCustomToggle()">用我自己的数据…</button>
-      </div>
-      <textarea id="q-custom" rows="3" style="display:none;margin-top:8px" placeholder='每行一条：{"query":"问题","evidence":["标准答案关键句"]}（需先在记忆库灌入你的文档）'></textarea>
-      <div class="row" style="display:none;margin-top:6px" id="q-custom-row"><button class="act" onclick="qArenaCustom()">评测我的数据</button></div>
-      <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始。样例灌入隔离场景，不影响你的库。</div>
-    </div>
-    <div class="card">
-      <h3>核心性能指标</h3>
-      <table class="tb">
-        <tr><th>指标</th><th>目标</th><th>实测</th></tr>
-        <tr><td>检索延迟</td><td>≤500ms</td><td><b style="color:var(--ok)">p50 16.5 / p95 29.4ms</b></td></tr>
-        <tr><td>冲突处理正确率</td><td>≥88%</td><td><b style="color:var(--ok)">93.3%</b></td></tr>
-        <tr><td>记忆能力 MCQ</td><td>≥85%</td><td><b style="color:var(--ok)">94.0%</b></td></tr>
-        <tr><td>偏好提取</td><td>≥85%</td><td><b style="color:var(--ok)">98.0%</b></td></tr>
-        <tr><td>检索召回（中文）</td><td>≥85%</td><td><b style="color:var(--ok)">96.1%</b></td></tr>
-      </table>
+  <div class="topbar"><h2>效果验证</h2><div class="desc">核心指标和记忆后端 A/B 结果</div></div>
+  <div class="card">
+    <div class="section-title"><h3>赛题指标</h3><span class="status-pill">全部达标</span></div>
+    <div class="metric-strip">
+      <div><b>96.6%</b><span>知识检索召回</span></div>
+      <div><b>99.0%</b><span>偏好任务准确率</span></div>
+      <div><b>91.0%</b><span>记忆能力</span></div>
+      <div><b>93.3%</b><span>冲突处理正确率</span></div>
+      <div><b>40–88ms</b><span>检索 p50</span></div>
     </div>
   </div>
-  <div class="card">
-    <h3>同后端对照<span class="hint">麒麟嵌入 + 麒麟向量引擎 · 同 100 题 · 生成 MiniMax-M3 · 判分 deepseek-v4-flash</span></h3>
+  <div class="card" id="agent-ab">
+    <div class="section-title"><h3>DeepSeek Harness A/B</h3><span class="muted">仅更换记忆后端</span></div>
+    <table class="tb">
+      <tr><th>方案</th><th>任务正确率</th><th>召回率</th><th>F1</th><th>响应 p50</th></tr>
+      <tr><td>DeepSeek</td><td>90.0%</td><td>96.1%</td><td>95.6%</td><td>7.77s</td></tr>
+      <tr><td><b>DeepSeek + lymem</b></td><td><b style="color:var(--ok)">93.3%（+3.3%）</b></td><td>98.3%</td><td>97.8%</td><td>13.13s</td></tr>
+    </table>
+    <div class="muted" style="margin-top:8px">正确率和召回提升，同时增加了检索时间。</div>
+  </div>
+  <details class="advanced">
+    <summary>查看完整对比结果</summary>
+    <div class="advanced-body">
+    <h3 style="margin-bottom:8px">同环境系统对比</h3>
     <div class="vsbar"><div class="lbl"><span>LoCoMo 检索 hit@5(conv-26,199 问)</span><span>lymem 41.7% vs mem0 35.7%</span></div>
       <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:85.6%"></i></div></div>
     <div class="vsbar"><div class="lbl"><span>答案 DeepSeek 判分(100 题)</span><span>lymem 33.7% vs mem0 23.2%</span></div>
@@ -509,14 +648,29 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <div class="tr ly"><i style="width:83.7%"></i></div><div class="tr m0"><i style="width:100%"></i></div></div>
     <div class="vsbar"><div class="lbl"><span>MAB 冲突整合 EM(100 题)</span><span>lymem 22.0% vs mem0 2.0%</span></div>
       <div class="tr ly"><i style="width:100%"></i></div><div class="tr m0"><i style="width:9.1%"></i></div></div>
-    <div class="muted" style="margin-top:6px">同后端同生成器同判分同题(四站复测 2026-09-12)。条长按双方强者归一;LongMemEval 为 mem0 领先项(事实级抽取在单事实检索题占优),其余 lymem 领先;逐题明细见 benchmark/results/matrix/。</div>
-  </div>
-  <div class="card">
-    <h3>记忆竞技场<span class="hint">同一问题,不同检索模块并排出结果 —— 亲手对比向量/BM25/图各通道的贡献</span></h3>
+    <div class="muted" style="margin-top:6px">同题、同嵌入、同生成器与判分器；LongMemEval 为 mem0 领先项。</div>
+    </div>
+  </details>
+  <details class="advanced">
+    <summary>运行在线评测</summary>
+    <div class="advanced-body">
+      <div class="row">
+        <button class="act ghost" onclick="qArena('multiwoz')">多域对话 · 5 题</button>
+        <button class="act ghost" onclick="qArena('bpmn')">流程知识 · 3 题</button>
+        <button class="act ghost" onclick="qCustomToggle()">使用我的数据</button>
+      </div>
+      <textarea id="q-custom" rows="3" style="display:none;margin-top:8px" placeholder='每行一条：{"query":"问题","evidence":["答案关键句"]}'></textarea>
+      <div class="row" style="display:none;margin-top:6px" id="q-custom-row"><button class="act" onclick="qArenaCustom()">开始评测</button></div>
+      <div id="q-arena" class="muted" style="margin-top:10px">选择数据集开始</div>
+    </div>
+  </details>
+  <details class="advanced">
+    <summary>比较检索方式</summary>
+    <div class="advanced-body">
     <div class="row">
-      <input type="text" id="ac-q" placeholder="输入问题,各模块同时检索…" style="max-width:360px" onkeydown="if(event.key==='Enter')acRun()">
-      <select id="ac-scene" style="max-width:140px"><option value="">全部库</option></select>
-      <button class="act" onclick="acRun()">开赛</button>
+      <input type="text" id="ac-q" placeholder="输入问题" style="max-width:360px" onkeydown="if(event.key==='Enter')acRun()">
+      <select id="ac-scene" style="max-width:140px"><option value="">全部记忆</option></select>
+      <button class="act" onclick="acRun()">开始比较</button>
       <span class="muted" id="ac-msg"></span>
     </div>
     <div class="row" style="margin-top:8px" id="ac-mods">
@@ -526,58 +680,65 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
       <label style="cursor:pointer"><input type="checkbox" data-m="纯向量"> 纯向量</label>
       <label style="cursor:pointer"><input type="checkbox" data-m="BM25+图"> BM25+图扩展</label>
     </div>
-    <div id="ac-out" style="margin-top:10px"><div class="empty">输入问题开赛,各模块并排出结果。</div></div>
-  </div>
-  <div id="arena-groups"></div>
-  <details style="margin-top:2px">
-    <summary style="cursor:pointer;color:var(--faint);font-size:12.5px;padding:4px 0">评测口径说明</summary>
-    <div class="muted" style="padding:8px 2px">
+    <div id="ac-out" style="margin-top:10px"><div class="empty">输入问题后查看各方式的结果。</div></div>
+    </div>
+  </details>
+  <details class="advanced">
+    <summary>数据集与评测口径</summary>
+    <div class="advanced-body">
+      <div id="arena-groups"></div>
+      <div class="muted">
       lymem 为本系统；mem0 / iwe 为可本地运行的开源记忆系统，接入同一麒麟嵌入与 MiniMax 生成网关（公平协议）。
       整本书问答（三国）为自建中文长文档评测集，BPMN 等其余七站为公开评测集（均含 dev/test 分层划分），明细见 benchmark/data/DATASETS.md；
       LoCoMo 为公开英文超长对话的免 LLM 严格协议（hit@5，1,986 问全量）；PrefEval / MemBench 为公开基准的必答 MCQ 协议（各 100 题）。
       mem0 在七站为同嵌入直插向量口径；其 PrefEval 73.0 / MemBench 55.0 为对齐必答协议后的复测值。
+      </div>
     </div>
   </details>
 </section>
 
-<!-- Agent 中枢：多源汇聚 · 记忆分发 -->
+<!-- Agent 记忆：多源发现、预览、增量导入与受管分发 -->
 <section data-page="hub">
-  <div class="topbar"><h2>Agent 中枢</h2><div class="desc">把本机各终端 Agent 的记忆汇聚为一 · 按需分发回任意 Agent</div></div>
+  <div class="topbar"><h2>Agent 记忆</h2><div class="desc">自动发现本机 Agent 的记忆，确认内容后统一导入</div></div>
   <div class="grid g2-1">
     <div class="card">
-      <h3>本机记忆源<span class="hint">自动发现 · 只列出真实存在的</span></h3>
-      <div class="row" style="margin-bottom:8px"><button class="act" onclick="hubImportAll()">一键导入全部</button><button class="act ghost" onclick="loadHub()">刷新</button></div>
+      <div class="section-title"><h3>本机来源</h3><span class="muted" id="hub-summary">等待扫描</span></div>
+      <div class="row" style="margin-bottom:8px"><button class="act ghost" id="hub-scan" onclick="loadHub(true)">重新扫描</button><button class="act" id="hub-import-all" onclick="hubImportAll()">导入可用来源</button><button class="act ghost" id="hub-enrich" onclick="hubEnrich()">模型提取关系</button></div>
       <div id="hub-sources"><div class="empty">加载中…</div></div>
     </div>
     <div class="card">
-      <h3>库健康<span class="hint">总管巡检</span></h3>
-      <div id="hub-health"><div class="empty">加载中…</div></div>
-      <h3 style="margin-top:12px">全局关联索引<span class="hint">全库实体共现自动聚类</span></h3>
-      <div id="hub-topics"><div class="empty">构建后显示主题簇。</div></div>
+      <h3>来源预览</h3>
+      <div id="hub-preview"><div class="empty">点击“预览”检查将要导入的内容。</div></div>
     </div>
   </div>
   <div class="card">
-    <h3>记忆关系图谱<span class="hint">圆点=从记忆里抽出的实体/主题 · 连线=它们共同出现在同一条记忆 · 颜色=关联紧密的主题簇</span></h3>
-    <div class="row">
-      <button class="act ghost" onclick="gLoad()">加载图谱</button>
-      <select id="g-top" style="max-width:140px" onchange="gLoad()"><option value="18">18 个实体</option><option value="30" selected>30 个实体</option><option value="50">50 个实体</option></select>
-      <span class="muted" id="g-msg">需先构建全局关联索引（上方「全局关联索引」卡）。悬停看详情,点击实体跳到它的关联记忆。</span>
-    </div>
-    <div style="position:relative">
-      <canvas id="g-canvas" height="380" style="width:100%;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);touch-action:none;cursor:grab"></canvas>
-      <div id="g-tip" style="position:absolute;display:none;pointer-events:none;background:var(--toast-bg);color:var(--toast-ink);padding:6px 10px;border-radius:7px;font-size:12px;z-index:5;max-width:260px"></div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>记忆分发<span class="hint">把 lymem 记忆写进目标 Agent 的规则文件（只写受管区块，不动用户内容）</span></h3>
+    <div class="section-title"><h3>同步给 Agent</h3><span class="muted">只更新 lymem 受管区，可随时撤回</span></div>
     <div class="row">
       <select id="hub-target" style="max-width:220px"></select>
-      <input type="text" id="hub-q" placeholder="按检索词挑选要分发的记忆（如：部署）" style="max-width:280px">
+      <input type="text" id="hub-q" placeholder="筛选要分发的记忆，如：部署" style="max-width:280px">
       <button class="act" onclick="hubDispatch()">分发</button>
-      <button class="act ghost" onclick="hubDispatchRemove()">撤回分发</button>
+      <button class="act ghost" onclick="hubDispatchRemove()">撤回</button>
     </div>
     <div id="hub-disp" style="margin-top:8px"></div>
   </div>
+  <details class="advanced">
+    <summary>查看记忆库状态</summary>
+    <div class="advanced-body grid g2">
+      <div><h3>健康检查</h3><div id="hub-health"><div class="empty">加载中…</div></div></div>
+      <div><h3>主题聚类</h3><div id="hub-topics"><div class="empty">导入后自动生成。</div></div></div>
+    </div>
+  </details>
+  <details class="advanced">
+    <summary>查看记忆关系图</summary>
+    <div class="advanced-body">
+    <div class="row">
+      <button class="act ghost" onclick="gLoad()">加载关系图</button>
+      <select id="g-top" style="max-width:140px" onchange="gLoad()"><option value="18">18 个主题</option><option value="30" selected>30 个主题</option><option value="50">50 个主题</option></select>
+      <span class="muted" id="g-msg">加载后可点击主题查看关联记忆</span>
+    </div>
+    <div style="position:relative"><canvas id="g-canvas" height="380" style="width:100%;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);touch-action:none;cursor:grab"></canvas><div id="g-tip" style="position:absolute;display:none;pointer-events:none;background:var(--toast-bg);color:var(--toast-ink);padding:6px 10px;border-radius:7px;font-size:12px;z-index:5;max-width:260px"></div></div>
+    </div>
+  </details>
 </section>
 
 
@@ -587,17 +748,42 @@ pre.log .ok{color:#7de0a8}pre.log .warn{color:#ffd479}pre.log .err{color:#ff9d9d
   <div class="db" id="dr-body"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="op-center" id="op-center" role="status" aria-live="polite" aria-atomic="true">
+  <div class="op-icon"><span class="spin"></span></div>
+  <div class="op-copy"><b id="op-title">正在处理</b><span id="op-detail">请稍候</span><div class="op-progress"><i id="op-bar"></i></div></div>
+  <button class="op-close" aria-label="关闭状态提示" onclick="opClose()">×</button>
+</div>
 <div id="tour-layer" style="display:none"></div>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>(s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const displayPath=p=>(p??'').toString().replace(/^\/home\/[^/]+/,'~');
 async function api(p,body,method){
-  const init=body!==undefined?{method:method||'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:(method?{method}:undefined);
-  const r=await fetch(p,init);
-  const t=await r.text();
-  try{return JSON.parse(t)}catch(e){throw new Error(`接口 ${p} 返回异常（${r.status}）`)}
+  // 所有页面操作经过同一请求边界：超时、网络中断和后端业务错误都转成用户可读反馈。
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+  const init=body!==undefined?{method:method||'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal}:{method:method||'GET',signal:controller.signal};
+  try{
+    const r=await fetch(p,init),t=await r.text();
+    let data=null;try{data=t?JSON.parse(t):{}}catch(e){}
+    if(!r.ok)throw new Error(data?.error||`请求失败（HTTP ${r.status}）`);
+    if(data===null)throw new Error('服务返回了无法解析的数据');
+    return data;
+  }catch(e){
+    if(e.name==='AbortError')throw new Error('操作超过 30 秒，已停止等待');
+    if(e instanceof TypeError)throw new Error('无法连接本机服务，请确认 lymem-server 已启动');
+    throw e;
+  }finally{clearTimeout(timer)}
 }
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function toast(m,kind='info'){const t=$('toast');t.textContent=m;t.dataset.kind=kind;t.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(()=>t.classList.remove('show'),3200)}
+function activeButton(){const b=document.activeElement;return b&&b.matches('button.act')?b:null}
+function buttonBusy(b,on,label){if(!b)return;if(on){b.dataset.oldHtml=b.innerHTML;b.disabled=true;b.classList.add('busy');b.innerHTML=`<span class="spin"></span>${esc(label||'处理中…')}`}else{b.disabled=false;b.classList.remove('busy');if(b.dataset.oldHtml){b.innerHTML=b.dataset.oldHtml;delete b.dataset.oldHtml}}}
+let OP_ID=0;const OPS=new Map();
+function opStart(title,detail,button,pct){const id=++OP_ID,box=$('op-center');OPS.set(id,{button});box.dataset.op=id;box.className='op-center show';$('op-title').textContent=title;$('op-detail').textContent=detail||'请稍候';$('op-bar').style.width=(pct==null?8:pct)+'%';buttonBusy(button,true);return id}
+function opUpdate(id,detail,pct){const box=$('op-center');if(Number(box.dataset.op)!==id)return;$('op-detail').textContent=detail||'';if(pct!=null)$('op-bar').style.width=Math.max(0,Math.min(100,pct))+'%'}
+function opFinish(id,title,detail,kind='ok',button){const box=$('op-center'),tracked=OPS.get(id)?.button;buttonBusy(button||tracked,false);OPS.delete(id);if(Number(box.dataset.op)!==id)return;box.className='op-center show '+kind;$('op-title').textContent=title;$('op-detail').textContent=detail||'';$('op-bar').style.width='100%';clearTimeout(box._timer);box._timer=setTimeout(()=>{if(Number(box.dataset.op)===id)box.classList.remove('show')},kind==='error'?5200:3600)}
+function opClose(){const box=$('op-center');box.classList.remove('show');box.dataset.op=''}
+function loadingHtml(text='加载中…'){return `<div class="loading"><span class="spin"></span><span>${esc(text)}</span></div>`}
+window.addEventListener('unhandledrejection',e=>{e.preventDefault();const msg=e.reason?.message||'操作失败，请检查服务状态';toast(msg,'error');const box=$('op-center');if(box?.classList.contains('show')){const id=Number(box.dataset.op);opFinish(id,'操作失败',msg,'error')}});
 function ts(x){const d=new Date((x??0)*1000);return isNaN(d)?'-':d.toLocaleString('zh-CN',{hour12:false})}
 function go(h){location.hash=h}
 /* ---- 主题(切换器在侧栏底部,选择持久化于 localStorage) ---- */
@@ -610,8 +796,8 @@ function setTheme(t){
 /* ---- 中文映射 ---- */
 const TIER_ZH={episodic:'情景·中期',knowledge:'知识·长期',preference:'偏好·长期',working:'工作·短期'};
 const KIND_ZH={tool_result:'工具结果',user_behavior:'用户行为',manual_config:'手动配置',conversation:'会话',fact:'事实',workflow:'工作流',case:'案例',template:'模板'};
-const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发',experience_compile:'经验编译',experience_feedback:'经验反馈',mcp_experience_feedback:'经验反馈(Agent)',conflict_resolve_manual:'冲突人工改判',radar_purge_dir:'文件雷达·清除目录',demo_seed:'灌入演示数据',demo_clear:'清除演示数据'};
-const CONF_ZH={numeric:'数值更新',method:'方法过时',premise:'前提失效',spurious:'表面相似',value_conflict:'取值矛盾'};
+const ACT_ZH={ingest:'写入记忆',ingest_blocked:'敏感内容拦截',pref_set:'偏好更新',forget_tombstone:'遗忘·软删除',forget_purge:'遗忘·彻底清除',forget_restore:'遗忘·恢复',promote_working_to_episodic:'晋升 工作→情景',promote_episodic_to_knowledge:'晋升 情景→知识',hub_import:'中枢导入',hub_import_blocked:'中枢导入拦截',hub_conflict_scan:'跨源矛盾扫描',hub_index_build:'全局索引构建',dispatch:'记忆分发',experience_compile:'经验编译',experience_feedback:'经验反馈',mcp_experience_feedback:'经验反馈(Agent)',skill_publish:'技能发布',skill_rollback:'技能回滚',skill_remove:'技能移除',conflict_resolve_manual:'冲突人工改判',radar_purge_dir:'文件雷达·清除目录',demo_seed:'灌入演示数据',demo_clear:'清除演示数据'};
+const CONF_ZH={numeric:'数值更新',numeric_update:'数值更新',method:'方法过时',method_obsolete:'方法更新',premise:'前提失效',premise_invalid:'前提失效',spurious:'表面相似',value_conflict:'取值矛盾',unknown:'内容冲突'};
 const RESO_ZH={supersede:'新版取代旧版',coexist:'两条共存',merge:'合并为一条',keep_new:'保留新值',keep_old:'保留旧值'};
 const CH_ZH={vec:'向量',bm25:'全文',graph:'关联'};
 const AGENT_ZH={'zcode':'ZCode','claude-code':'Claude Code','claude':'Claude Code','codex':'Codex','gemini':'Gemini','opencode':'OpenCode','dsh':'DeepSeek Harness','generic':'通用','agent':'Agent'};
@@ -632,7 +818,7 @@ function auditZh(a){
   return `${ACT_ZH[a.action]||a.action}${s}`;
 }
 /* ---- 导航 ---- */
-const PAGES={dash:refreshDash,vault:vTree,prefs:()=>{loadPrefs(false);tmInit()},know:()=>{loadKnow();xList();medLoad()},forget:()=>{},radar:radarRefresh,arena:()=>{loadArena();acInit()},hub:loadHub};
+const PAGES={dash:()=>{refreshDash();uRefresh()},vault:vTree,prefs:()=>{loadPrefs(false);tmInit()},know:()=>{loadKnow();xList();skillTargets();medLoad()},forget:()=>{},radar:radarRefresh,arena:()=>{loadArena();acInit()},hub:loadHub};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('section[data-page]').forEach(s=>s.classList.toggle('on',s.dataset.page===b.dataset.page));
@@ -643,21 +829,24 @@ window.addEventListener('hashchange',goHash);
 
 /* ---- 总览 ---- */
 async function demoSeed(){
-  const m=$('demo-msg');m.textContent='灌入中…';
+  const m=$('demo-msg'),b=activeButton(),op=opStart('载入体验数据','正在准备会话、知识、偏好和变化记录…',b,12);m.textContent='正在载入…';
   try{
     const r=await api('/api/v1/demo/seed',{});
-    if(r.already){m.textContent=`演示数据已存在（${r.memories} 条），无需重复灌入；可先清除再体验`;}
-    else{m.textContent=`已灌入 ${r.memories} 条记忆、${r.knowledge} 条知识（含 ${r.conflicts} 起冲突仲裁）— 可去「知识与冲突」页一键编译经验卡`;}
-    refreshDash();
-  }catch(e){m.textContent='灌入失败：'+e.message;}
+    opUpdate(op,'样例数据已写入，正在刷新总览…',82);
+    if(r.already){m.textContent=`体验数据已就绪，共 ${r.memories} 条记忆`;}
+    else{m.textContent=`已载入 ${r.memories} 条记忆、${r.knowledge} 条知识和 ${r.conflicts} 条变化记录`;}
+    await refreshDash();
+    opFinish(op,'体验数据已就绪',m.textContent,'ok',b);
+  }catch(e){m.textContent='载入失败：'+e.message;opFinish(op,'载入失败',e.message,'error',b);}
 }
 async function demoClear(){
-  const m=$('demo-msg');m.textContent='清除中…';
+  const m=$('demo-msg'),b=activeButton(),op=opStart('清除演示数据','正在清除演示数据并保留系统配置…',b,18);m.textContent='正在清除…';
   try{
     const r=await api('/api/v1/demo/clear',{});
-    m.textContent=`已清除 ${r.removed} 条演示数据（演示偏好同步回收，审计留痕保留）`;
-    refreshDash();
-  }catch(e){m.textContent='清除失败：'+e.message;}
+    m.textContent=`已重置 ${r.removed} 条体验数据`;
+    await refreshDash();
+    opFinish(op,'重置完成',m.textContent,'ok',b);
+  }catch(e){m.textContent='清除失败：'+e.message;opFinish(op,'重置失败',e.message,'error',b);}
 }
 async function refreshDash(){
   try{
@@ -669,12 +858,13 @@ async function refreshDash(){
     $('foot-llm').textContent=s.llm==='llm-ready'?'已连接':'规则兜底';
     $('foot-llm').style.color=s.llm==='llm-ready'?'#8fe3bd':'#ffd479';
     $('foot-dim').textContent=s.embed_dim;
+    $('foot-status').textContent='本机运行';
     $('d-pipe').innerHTML=`
-      <div><b>工作 · 短期</b><span class="muted">会话内自动</span></div><div class="arr">→ flush</div>
-      <div><b>情景 · 中期 <span class="num">${s.tiers.episodic??0}</span></b><span class="muted">会话/工具轨迹</span></div><div class="arr">→ 蒸馏</div>
-      <div><b>知识 · 长期 <span class="num">${s.tiers.knowledge??0}</span></b><span class="muted">版本链+仲裁</span></div><div class="arr">⇡ 提取</div>
-      <div><b>偏好 · 长期 <span class="num">${s.preferences??0}</span></b><span class="muted">习惯/风格/策略</span></div>`;
-  }catch(e){}
+      <div><b>当前任务</b><span class="muted">正在处理</span></div><div class="arr">→ 整理</div>
+      <div><b>经历 <span class="num">${s.tiers.episodic??0}</span></b><span class="muted">会话与操作</span></div><div class="arr">→ 提炼</div>
+      <div><b>知识 <span class="num">${s.tiers.knowledge??0}</span></b><span class="muted">事实与方法</span></div><div class="arr">＋</div>
+      <div><b>偏好 <span class="num">${s.preferences??0}</span></b><span class="muted">习惯与选择</span></div>`;
+  }catch(e){$('foot-status').textContent='未连接'}
   api('/api/v1/health').then(h=>{const v=$('foot-ver');if(v&&h&&h.version)v.textContent='v'+h.version}).catch(()=>{});
   loadAudit('dash-audit');
   renderLat();
@@ -687,21 +877,32 @@ async function loadAudit(el){
     `<div class="fi"><time>${ts(x.at)}</time>${auditZh(x)}</div>`).join('')||'<div class="empty">暂无记录</div>';
 }
 async function consolidate(){
-  const r=await fetch('/api/v1/consolidate',{method:'POST'}).then(x=>x.json()).catch(()=>null);
-  $('d-pipe-msg').textContent=r?`蒸馏完成：新增知识 ${r.created??0} 条`:'接口不可用';
-  refreshDash();
+  const b=activeButton(),op=opStart('整理长期知识','正在把情景记忆压缩为可检索知识…',b,16);
+  try{
+    const r=await api('/api/v1/consolidate',{},'POST');
+    $('d-pipe-msg').textContent=`新增 ${r.created??0} 条长期知识`;
+    await refreshDash();
+    opFinish(op,'知识整理完成',$('d-pipe-msg').textContent,'ok',b);
+  }catch(e){$('d-pipe-msg').textContent='整理失败：'+e.message;opFinish(op,'整理失败',e.message,'error',b)}
 }
 async function minePrefs(_,msgEl){
-  const r=await api('/api/v1/preferences/mine',{});
-  if(msgEl)$(msgEl).textContent=r&&r.ok?`规则通道更新 ${(r.updates||[]).length} 项`:'暂无';
-  refreshDash();
+  const b=activeButton(),op=opStart('更新偏好','正在从操作记录识别稳定习惯…',b,18);
+  try{
+    const r=await api('/api/v1/preferences/mine',{});
+    if(msgEl)$(msgEl).textContent=r&&r.ok?`规则通道更新 ${(r.updates||[]).length} 项`:'暂无';
+    await refreshDash();
+    opFinish(op,'偏好更新完成',msgEl?$(msgEl).textContent:'已完成','ok',b);
+  }catch(e){if(msgEl)$(msgEl).textContent='更新失败：'+e.message;opFinish(op,'偏好更新失败',e.message,'error',b)}
 }
 async function extractPrefs(){
-  $('p-msg').textContent='LLM 分析近期会话中…';
-  const r=await api('/api/v1/preferences/extract',{},'POST');
-  $('p-msg').textContent='';
-  toast(r&&r.ok?`会话通道提取 ${r.count??0} 项偏好`:'提取失败或无新偏好');
-  loadPrefs(false);
+  const b=activeButton(),op=opStart('从近期会话更新偏好','正在分析最近会话；未配置 LLM 时使用规则兜底…',b,20);
+  $('p-msg').textContent='分析近期会话中…';
+  try{
+    const r=await api('/api/v1/preferences/extract',{},'POST');
+    $('p-msg').textContent=r&&r.ok?`会话通道提取 ${r.count??0} 项偏好`:'无新偏好';
+    await loadPrefs(false);
+    opFinish(op,'偏好提取完成',$('p-msg').textContent,'ok',b);
+  }catch(e){$('p-msg').textContent='提取失败：'+e.message;opFinish(op,'偏好提取失败',e.message,'error',b)}
 }
 
 /* ---- 记忆库 ---- */
@@ -711,7 +912,7 @@ async function vIngestText(){
   const text=$('v-text').value.trim();if(!text){toast('先粘贴文本');return}
   const lib=($('v-lib').value.trim()||'公共库');
   const evs=chunk(text).map((c,i)=>({type:'conversation',data:{role:'assistant',text:c,scene:lib,source:'manual-import#'+(i+1)}}));
-  await vCommit(evs,`已按 ${evs.length} 块灌入「${lib}」`);
+  await vCommit(evs,`已导入 ${evs.length} 段到「${lib}」`,'导入文本');
 }
 async function vIngestFile(){
   const f=$('v-file').files[0];if(!f){toast('先选择文件');return}
@@ -720,59 +921,91 @@ async function vIngestFile(){
   rd.onload=async()=>{
     const txt=(rd.result||'').toString();
     const evs=chunk(txt).map((c,i)=>({type:'conversation',data:{role:'assistant',text:c,scene:lib,source:f.name+'#'+(i+1)}}));
-    await vCommit(evs,`${f.name} 已分 ${evs.length} 块灌入「${lib}」`);
+    await vCommit(evs,`${f.name} 已导入「${lib}」`,'导入文档');
   };
   rd.readAsText(f);
 }
-async function vCommit(evs,msg){
+async function vCommit(evs,msg,opTitle='导入记忆'){
+  const b=activeButton(),op=opStart(opTitle,`准备写入 ${evs.length} 段内容…`,b,5);
   const bar=$('v-prog'),inner=bar?bar.querySelector('i'):null;
   if(bar){bar.style.display='block';if(inner)inner.style.width='0'}
-  $('v-msg').textContent=`灌入中 0/${evs.length} 块…`;
+  $('v-msg').textContent=`导入中 0/${evs.length}…`;
   const B=8;let ids=[];
-  for(let i=0;i<evs.length;i+=B){
-    const r=await api('/api/v1/memories',{events:evs.slice(i,i+B)});
-    if(!r.ok){$('v-msg').textContent='';if(bar)bar.style.display='none';toast('失败：'+(r.error||''));return}
-    ids=ids.concat(r.ids||[]);
-    const done=Math.min(i+B,evs.length);
-    $('v-msg').textContent=`灌入中 ${done}/${evs.length} 块…`;
-    if(inner)inner.style.width=(done/evs.length*100)+'%';
+  try{
+    for(let i=0;i<evs.length;i+=B){
+      const r=await api('/api/v1/memories',{events:evs.slice(i,i+B)});
+      if(!r.ok)throw new Error(r.error||'写入失败');
+      ids=ids.concat(r.ids||[]);
+      const done=Math.min(i+B,evs.length),pct=done/evs.length*100;
+      $('v-msg').textContent=`导入中 ${done}/${evs.length}…`;
+      if(inner)inner.style.width=pct+'%';
+      opUpdate(op,`已写入 ${done}/${evs.length} 段，正在建立索引…`,pct);
+    }
+    $('v-msg').textContent=`已完成 ${ids.length} 条写入`;
+    if(bar)setTimeout(()=>bar.style.display='none',800);
+    toast(msg+`（id ${ids.slice(0,5).join(',')}…）`,'ok');
+    await Promise.all([vTree(),refreshDash()]);
+    opFinish(op,'导入完成',`${ids.length} 条记忆已可检索`,'ok',b);
+  }catch(e){
+    $('v-msg').textContent='导入失败：'+e.message;if(bar)bar.style.display='none';opFinish(op,'导入失败',e.message,'error',b);
   }
-  $('v-msg').textContent='';
-  if(bar)setTimeout(()=>bar.style.display='none',800);
-  toast(msg+`（id ${ids.slice(0,5).join(',')}…）`);
-  vTree();refreshDash();
 }
 async function vReport(){
-  let evs;try{evs=JSON.parse($('v-json').value)}catch(e){toast('JSON 解析失败');return}
-  const r=await api('/api/v1/ingest/report',{events:evs});
-  if(!r.ok){toast(r.error||'失败');return}
-  $('v-report').innerHTML=`<table class="tb"><tr><th>标题</th><th>归类</th><th>清洗</th><th>敏感</th><th>实体</th><th>校验</th></tr>`+
-   r.rows.map(x=>`<tr><td>${esc(x.title)}</td><td>${KIND_ZH[x.kind]||x.kind}</td><td class="num">${x.raw_len}→${x.clean_len} 字</td><td>${x.sensitivity==='none'?'-':esc(x.sensitivity)}</td><td>${esc((x.entities||[]).join('、')||'-')}</td><td>${x.duplicate?'<b style="color:var(--err)">重复跳过</b>':'<b style="color:var(--ok)">通过</b>'}</td></tr>`).join('')+'</table>';
+  let evs;try{evs=JSON.parse($('v-json').value)}catch(e){toast('JSON 解析失败','error');return}
+  const b=activeButton(),op=opStart('检查导入内容','正在进行清洗、敏感检测和重复校验…',b,30);
+  try{
+    const r=await api('/api/v1/ingest/report',{events:evs});
+    if(!r.ok)throw new Error(r.error||'检查失败');
+    $('v-report').innerHTML=`<table class="tb"><tr><th>标题</th><th>归类</th><th>清洗</th><th>敏感</th><th>实体</th><th>校验</th></tr>`+
+     r.rows.map(x=>`<tr><td>${esc(x.title)}</td><td>${KIND_ZH[x.kind]||x.kind}</td><td class="num">${x.raw_len}→${x.clean_len} 字</td><td>${x.sensitivity==='none'?'-':esc(x.sensitivity)}</td><td>${esc((x.entities||[]).join('、')||'-')}</td><td>${x.duplicate?'<b style="color:var(--err)">重复跳过</b>':'<b style="color:var(--ok)">通过</b>'}</td></tr>`).join('')+'</table>';
+    opFinish(op,'检查完成',`${r.rows.length} 条事件已完成入库前检查`,'ok',b);
+  }catch(e){$('v-report').innerHTML=`<div class="empty" style="color:var(--err)">检查失败：${esc(e.message)}</div>`;opFinish(op,'检查失败',e.message,'error',b)}
 }
 async function vCommitJson(){
-  let evs;try{evs=JSON.parse($('v-json').value)}catch(e){toast('JSON 解析失败');return}
-  const r=await api('/api/v1/memories',{events:evs});
-  toast(r.ok?`入库 ${r.ids.length} 条`:'失败');vReport();vTree();
+  let evs;try{evs=JSON.parse($('v-json').value)}catch(e){toast('JSON 解析失败','error');return}
+  await vCommit(evs,`已入库 ${evs.length} 条 JSON 事件`,'导入 JSON');
+}
+let V_LAST=null;
+function renderSearchHits(hits){
+  return hits.map((h,i)=>`<div class="search-hit" onclick="vDetail(${h.record.id})"><span class="search-rank">${i+1}</span><div><b>${esc(h.record.title||('记忆 #'+h.record.id))}</b><p>${esc((h.snippet||h.record.content||'').slice(0,180))}</p></div><span class="search-score">相关度 ${(h.final_score??0).toFixed(3)}</span></div>`).join('');
 }
 async function vAsk(q){
-  const question=(q||$('v-q').value).trim();if(!question){toast('输入问题');return}
-  const lib=$('v-ask-lib').value;
-  $('v-ans').innerHTML='<span class="muted">检索中…</span>';
+  const question=(q||$('v-q').value).trim();if(!question){toast('请输入问题或关键词','warn');return}
+  if(q)$('v-q').value=question;
+  const b=$('v-search'),op=opStart('搜索记忆','正在合并向量与全文结果…',b,20),lib=$('v-ask-lib').value;
+  $('v-ans').innerHTML=loadingHtml('正在搜索…');
   const t0=performance.now();
-  const sc=lib?{scenes:[lib]}:undefined;
-  const [sr,ar]=await Promise.all([api('/api/v1/search',{query:question,top_k:8,use_graph:false,scenes:sc?sc.scenes:undefined}),api('/api/v1/ask',{question,top_k:8,scene:lib||null})]);
-  const total=((performance.now()-t0)/1000).toFixed(1);
-  if(!ar||ar.error){$('v-ans').textContent='检索失败：'+((ar&&ar.error)||'未知错误');return}
-  $('k-lat').textContent=sr.took_ms+'ms';
-  pushLat(sr.took_ms);
-  const ok=sr.took_ms<=500;
-  const srcs=(ar.sources||[]).slice(0,6);
-  const ans=citeify(ar.answer||'(无答案)',srcs);
-  $('v-ans').innerHTML=`<div style="font-size:15px;line-height:1.8;background:#fff;border:1px solid var(--line);border-radius:9px;padding:13px 15px">${ans}</div>
-   <div class="muted" style="margin-top:6px">纯检索 <b style="color:${ok?'var(--ok)':'var(--err)'}">${sr.took_ms}ms</b>（≤500ms${ok?' ✓':' ✗'}） · 含生成 ${total}s · 命中 ${(sr.hits||[]).length} 条 · 点击引用编号可溯源</div>`+
-   srcs.map((s,i)=>`<div id="src-${i}" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12.5px;cursor:pointer" onclick="vDetail(${s.id})"><span style="display:inline-flex;min-width:20px;height:20px;border-radius:5px;background:var(--blue-weak);color:var(--blue);font-weight:700;font-size:11px;align-items:center;justify-content:center;margin-right:8px">${i+1}</span><b>${esc(s.title||('#'+s.id))}</b><div class="muted" style="margin-left:28px">${esc(s.snippet||'')}</div></div>`).join('');
+  try{
+    const sr=await api('/api/v1/search',{query:question,top_k:8,use_graph:false,scenes:lib?[lib]:undefined});
+    const hits=(sr.hits||[]),wall=Math.max(1,Math.round(performance.now()-t0)),ms=sr.took_ms??wall;
+    V_LAST={question,lib,hits};$('k-lat').textContent=ms+'ms';pushLat(ms);
+    $('v-ans').innerHTML=`<div class="search-summary"><b>${hits.length} 条结果</b><span>后端检索 ${ms}ms</span><span>页面往返 ${wall}ms</span>${hits.length?'<button class="act ghost" id="v-answer-btn" onclick="vAnswer()">整理为回答</button>':''}</div>${hits.length?renderSearchHits(hits):'<div class="empty">没有找到相关记忆。换个关键词或先导入资料。</div>'}`;
+    opFinish(op,'搜索完成',`${hits.length} 条结果，后端检索 ${ms}ms`,'ok',b);
+  }catch(e){V_LAST=null;$('v-ans').innerHTML=`<div class="empty" style="color:var(--err)">搜索失败：${esc(e.message)}</div>`;opFinish(op,'搜索失败',e.message,'error',b)}
+}
+async function vAnswer(){
+  if(!V_LAST)return;
+  const b=$('v-answer-btn'),op=opStart('整理回答','正在根据已检索来源组织回答…',b,35),t0=performance.now();
+  try{
+    const ar=await api('/api/v1/ask',{question:V_LAST.question,top_k:8,scene:V_LAST.lib||null});
+    const total=Math.max(1,Math.round(performance.now()-t0));
+    // 搜索页已经完成一次可靠召回。无模型时不要再次使用 /ask 的
+    // 向量补充结果，否则可能把无关长文本（例如文学样例）带进答案。
+    const direct=ar.answer_mode==='direct';
+    const currentHits=(V_LAST.hits||[]).slice(0,4);
+    const srcs=(direct&&currentHits.length?currentHits:(ar.sources||[]).slice(0,4));
+    const raw=(direct&&currentHits.length
+      ? (currentHits[0].record.content||currentHits[0].snippet||'')
+      : (ar.answer||'')).trim();
+    const text=raw&&raw!=='(无答案)'?raw:'根据现有记忆无法确定。';
+    $('v-ans').innerHTML=`<div style="font-size:15px;line-height:1.8;background:var(--field);border:1px solid var(--line);border-radius:var(--radius-s);padding:13px 15px"><div class="muted" style="margin-bottom:6px">${direct?'直接命中原始记忆':'整理后的回答'}</div>${citeify(text,srcs)}</div><div class="search-summary" style="margin-top:8px"><b>${srcs.length} 条来源</b><span>回答整理 ${total}ms</span><button class="act ghost" onclick="vAsk()">返回检索结果</button></div>${srcs.map((s,i)=>`<div class="search-hit" id="src-${i}" onclick="vDetail(${s.id})"><span class="search-rank">${i+1}</span><div><b>${esc(s.title||('记忆 #'+s.id))}</b><p>${esc(s.snippet||'')}</p></div></div>`).join('')}`;
+    opFinish(op,'回答已整理',`${srcs.length} 条来源，耗时 ${total}ms`,'ok',b);
+  }catch(e){opFinish(op,'回答整理失败',e.message,'error',b)}
 }
 async function vTree(){
+  $('v-tree').setAttribute('aria-busy','true');
+  if(!$('v-tree').querySelector('.lib'))$('v-tree').innerHTML=loadingHtml('正在读取已保存记忆…');
+  try{
   const recs=await api('/api/v1/memories?limit=1000&history=0');
   const libs={};
   (recs||[]).forEach(r=>{const k=r.scene||'公共库';(libs[k]=libs[k]||[]).push(r)});
@@ -781,17 +1014,77 @@ async function vTree(){
   $('v-tree').innerHTML=Object.entries(libs).map(([lib,items])=>
    `<details class="lib"${lib==='公共库'?' open':''}><summary>${esc(lib)}<span class="muted" style="font-weight:400">${items.length} 条</span></summary><div class="bd">${
      items.slice(0,80).map(r=>`<div class="mi" onclick="vDetail(${r.id})"><span class="tag t-${r.tier==='knowledge'?'know':r.tier==='preference'?'pref':'epi'}">${TIER_ZH[r.tier]||r.tier}</span><span class="tag k">${KIND_ZH[r.kind]||r.kind}</span><span class="t">${esc(r.title||r.content.slice(0,40))}</span><span class="muted">${ts(r.created_at)}</span></div>`).join('')||'<div class="empty">空</div>'
-   }</div></details>`).join('')||'<div class="empty">库为空：回「总览」一键灌入演示数据，或在上方灌入你的文档。</div>';
+   }</div></details>`).join('')||'<div class="empty">还没有内容，可以从左侧导入资料。</div>';
+  }catch(e){$('v-tree').innerHTML=`<div class="empty" style="color:var(--err)">读取失败：${esc(e.message)}</div>`}finally{$('v-tree').setAttribute('aria-busy','false')}
 }
 async function vDetail(id){
   const r=await api('/api/v1/memories/'+id);
   const rec=r.record||r;
+  window.__detailMemory=rec;
   $('dr-title').textContent=rec.title||('记忆 #'+id);
-  $('dr-body').innerHTML=`<b>${TIER_ZH[rec.tier]||rec.tier} · ${KIND_ZH[rec.kind]||rec.kind}</b> · ${esc(rec.scene)} · ${ts(rec.created_at)}
-   <div style="margin:10px 0">${esc(rec.content.slice(0,1500))}</div>
-   ${rec.entities&&rec.entities.length?`<div class="muted">实体：${esc(rec.entities.join('、'))}</div>`:''}
-   <div class="muted">敏感级：${rec.sensitivity} · 检索 ${(rec.access_count??0)} 次</div>`;
+  $('dr-body').innerHTML=`<div class="muted">${TIER_ZH[rec.tier]||rec.tier} · ${KIND_ZH[rec.kind]||rec.kind} · ${esc(rec.scene)} · ${ts(rec.created_at)}</div>
+   <label class="field-label" for="dr-edit">内容</label>
+   <textarea id="dr-edit" rows="12" style="width:100%;resize:vertical">${esc(rec.content||'')}</textarea>
+   <div class="row" style="margin-top:10px"><button class="act" onclick="uSave(${rec.id})">保存修改</button><button class="act ghost" onclick="uDelete(${rec.id})">删除</button><span class="muted" id="dr-msg">修改会生成新版本，原内容仍可审计。</span></div>
+   ${rec.entities&&rec.entities.length?`<div class="muted" style="margin-top:12px">实体：${esc(rec.entities.join('、'))}</div>`:''}
+   <div class="muted" style="margin-top:4px">敏感级：${rec.sensitivity} · 检索 ${(rec.access_count??0)} 次 · 版本 ${rec.version_of?'更新版':'初始版'}</div>`;
   $('drawer').classList.add('open');
+}
+
+/* ---- 用户主工作台：只保留增删改查四个动作 ---- */
+let USER_ROWS=[];
+function isUserMemory(r){return r&&r.scene!=='file'&&(r.source==='user-workspace'||r.scene==='我的记忆')}
+function isAgentMemory(r){return r&&r.scene==='hub'&&r.source&&r.source!=='user-workspace'}
+function scopeMemory(r){
+  const scope=$('u-scope')?.value||'all';
+  return scope==='mine'?isUserMemory(r):scope==='agent'?isAgentMemory(r):r&&r.scene!=='file';
+}
+function userMemoryRow(r){
+  const text=String(r.content||'').replace(/^\[[^\]]{1,24}\]\s*/,'');
+  const source=r.source==='user-workspace'?'手动保存':(AGENT_ZH[r.source]||r.source||'本机');
+  return `<div class="daily-memory" onclick="uOpen(${r.id})">
+    <div class="daily-memory-main"><div class="daily-memory-title">${esc(text.slice(0,70)||('记忆 #'+r.id))}</div>
+    <div class="daily-memory-snippet">${esc(text.slice(70,220))}</div>
+    <div class="daily-memory-meta">${esc(source)} · ${esc(r.scene||'我的记忆')} · ${TIER_ZH[r.tier]||r.tier} · ${ts(r.updated_at||r.created_at)}</div></div>
+    <div class="daily-memory-actions"><button title="修改" onclick="event.stopPropagation();uOpen(${r.id})">编辑</button><button title="删除" onclick="event.stopPropagation();uDelete(${r.id})">删除</button></div>
+  </div>`;
+}
+function uRender(rows){
+  USER_ROWS=rows||[];
+  $('u-count').textContent=USER_ROWS.length?`${USER_ROWS.length} 条`:'暂无记忆';
+  $('u-list').innerHTML=USER_ROWS.length?USER_ROWS.slice(0,200).map(userMemoryRow).join(''):'<div class="daily-empty">还没有记忆。先在上方写下一条。</div>';
+}
+async function uRefresh(){
+  const box=$('u-list');if(!box)return;
+  box.innerHTML=loadingHtml('正在读取记忆…');
+  try{const rows=await api('/api/v1/memories?limit=1000&history=0');uRender((rows||[]).filter(scopeMemory));$('u-msg').textContent='内容只保存在本机；可按手动保存或 Agent 导入来源筛选。'}
+  catch(e){box.innerHTML=`<div class="daily-empty" style="color:var(--err)">读取失败：${esc(e.message)}</div>`;$('u-count').textContent=''}
+}
+async function uSearch(){
+  const q=$('u-q').value.trim();if(!q){return uRefresh()}
+  const b=$('u-search'),op=opStart('搜索记忆','正在查找相关内容…',b,24);$('u-list').innerHTML=loadingHtml('搜索中…');
+  const t0=performance.now();
+  try{const r=await api('/api/v1/search',{query:q,top_k:50,use_graph:false});const rows=(r.hits||[]).map(h=>h.record).filter(scopeMemory),wall=Math.max(1,Math.round(performance.now()-t0));uRender(rows);$('u-msg').textContent=`找到 ${rows.length} 条 · 检索 ${r.took_ms??0}ms · 页面往返 ${wall}ms`;pushLat(r.took_ms??wall);opFinish(op,'搜索完成',`找到 ${rows.length} 条，检索 ${r.took_ms??0}ms`,'ok',b)}
+  catch(e){$('u-list').innerHTML=`<div class="daily-empty" style="color:var(--err)">搜索失败：${esc(e.message)}</div>`;opFinish(op,'搜索失败',e.message,'error',b)}
+}
+async function uAdd(){
+  const input=$('u-content'),text=input.value.trim();if(!text){input.focus();toast('先写下要保存的内容','warn');return}
+  const b=$('u-add'),op=opStart('保存记忆','正在检查内容并建立检索索引…',b,18);
+  try{const r=await api('/api/v1/memories',{events:[{type:'conversation',data:{role:'user',text,scene:'我的记忆',source:'user-workspace'}}]});if(!r.ok||!(r.ids||[]).length)throw new Error(r.error||'内容未写入，可能是重复或被安全规则拦截');input.value='';$('u-msg').textContent='已保存，可以继续添加。';await uRefresh();opFinish(op,'记忆已保存','这条内容现在可以搜索和修改。','ok',b)}
+  catch(e){$('u-msg').textContent=e.message;opFinish(op,'保存失败',e.message,'error',b)}
+}
+async function uOpen(id){try{await vDetail(id)}catch(e){toast('读取失败：'+e.message,'error')}}
+async function uDelete(id){
+  if(!confirm('删除这条记忆？删除后会保留审计记录。'))return;
+  const op=opStart('删除记忆','正在写入遗忘记录…',null,30);
+  try{const r=await api('/api/v1/memories/'+id,undefined,'DELETE');if(!r.ok)throw new Error(r.error||'删除失败');$('drawer').classList.remove('open');await uRefresh();opFinish(op,'已删除','这条记忆已从当前列表移除。','ok')}
+  catch(e){opFinish(op,'删除失败',e.message,'error')}
+}
+async function uSave(id){
+  const text=$('dr-edit').value.trim();if(!text){$('dr-msg').textContent='内容不能为空';return}
+  const b=document.querySelector('#dr-body button.act'),op=opStart('保存修改','正在生成新版本并更新索引…',b,20);
+  try{const r=await api('/api/v1/memories/'+id,{content:text},'PUT');if(!r.ok)throw new Error(r.error||'保存失败');$('dr-msg').textContent=`已保存为新版本 #${r.id}`;await uRefresh();await vDetail(r.id);opFinish(op,'修改已保存','旧版本已保留，当前列表显示新版本。','ok',b)}
+  catch(e){$('dr-msg').textContent=e.message;opFinish(op,'保存失败',e.message,'error',b)}
 }
 
 /* ---- 偏好中心 ---- */
@@ -799,10 +1092,10 @@ async function loadPrefs(openKey){
   const r=await api('/api/v1/preferences');
   const live=(r||[]);
   $('p-list').innerHTML=live.length?live.map(x=>
-   `<div class="fi" style="cursor:pointer" onclick="$('p-key').value='${esc(x.key)}';prefTimeline('${esc(x.key)}')">
-     <b>${esc(prefZh(x.key))}</b> <span class="muted">（${esc(x.key)}）</span><br>
-     <span style="font-size:13.5px">= ${esc(JSON.stringify(x.value))}</span>
-     <span class="muted"> · v${x.version} · ${x.source==='manual'?'手动':x.source==='llm'?'会话提取':'规则挖掘'} · 置信 ${Math.round((x.confidence??1)*100)}% · 场景 ${esc((x.scenes||[]).join(',')||'*')}</span></div>`).join(''):'<div class="empty">暂无偏好：灌入手动配置、跑工具调用、或在对话里说一句偏好。</div>';
+   `<div class="fi" style="cursor:pointer" onclick="$('p-key').value='${esc(prefZh(x.key))}';prefTimeline('${esc(x.key)}')">
+     <b>${esc(prefZh(x.key))}</b><br>
+     <span style="font-size:13.5px">${esc(JSON.stringify(x.value))}</span>
+     <span class="muted"> · v${x.version} · ${x.source==='manual'?'手动设置':x.source==='llm'?'来自会话':'自动学习'}</span></div>`).join(''):'<div class="empty">暂无偏好。正常使用后，系统会逐步学习你的习惯。</div>';
   if(openKey)prefTimeline(openKey);
 }
 async function prefTimeline(key){
@@ -835,8 +1128,8 @@ async function kAdd(){
   const r=await api('/api/v1/knowledge',{title,content,scene:'知识库'});
   if(!r.ok){toast(r.error||'失败');return}
   $('k-conf').innerHTML=r.conflicts&&r.conflicts.length
-   ?`<b style="color:var(--warn)">检测到冲突并完成仲裁：</b>`+r.conflicts.map(c=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span><b>${CONF_ZH[c.type]||c.type}</b> → <b style="color:var(--ok)">${RESO_ZH[c.resolution]||c.resolution}</b><div class="muted">${esc(c.reason||'')}</div></div>`).join('')
-   :'<span class="muted">无冲突，作为新知识入库。试试把内容改成同一主题的另一种说法再提交一次。</span>';
+   ?`<b style="color:var(--warn)">发现事实变化：</b>`+r.conflicts.map(c=>`<div class="fi"><b>${CONF_ZH[c.type]||c.type}</b> → <b style="color:var(--ok)">${RESO_ZH[c.resolution]||c.resolution}</b></div>`).join('')
+   :'<span class="muted">已保存</span>';
   loadKnow();refreshDash();
 }
 async function kDemoConflict(){
@@ -850,8 +1143,8 @@ async function kDemoConflict(){
   const r=await api('/api/v1/knowledge',{title,content:alt,entities:ent,scene:'知识库'});
   if(!r||r.error){toast((r&&r.error)||'失败');return}
   $('k-conf').innerHTML=r.conflicts&&r.conflicts.length
-   ?`<b style="color:var(--warn)">检测到冲突并完成仲裁（改值：${esc(m[0])} → ${Number(m[0])+2}）：</b>`+r.conflicts.map(c=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span><b>${CONF_ZH[c.type]||c.type}</b> → <b style="color:var(--ok)">${RESO_ZH[c.resolution]||c.resolution}</b><div class="muted">${esc(c.reason||'')}</div></div>`).join('')
-   :'<span class="muted">两条文本相似度未达 0.8 门槛：保持措辞接近、只改一个数值，更容易触发仲裁。</span>';
+   ?`<b style="color:var(--warn)">已记录 ${esc(m[0])} → ${Number(m[0])+2} 的变化：</b>`+r.conflicts.map(c=>`<div class="fi"><b>${CONF_ZH[c.type]||c.type}</b> → <b style="color:var(--ok)">${RESO_ZH[c.resolution]||c.resolution}</b></div>`).join('')
+   :'<span class="muted">未识别为同一事实，请保持原句只修改数值。</span>';
   loadKnow();refreshDash();
 }
 async function kList(){
@@ -861,13 +1154,13 @@ async function kList(){
 async function kLedger(){
   const r=await api('/api/v1/conflicts');
   $('k-ledger').innerHTML=(r||[]).length?(r||[]).slice(-12).reverse().map(x=>
-   `<div class="fi"><time>${ts(x.at)}</time><b>${CONF_ZH[x.type]||x.type}</b> → <b style="color:var(--ok)">${RESO_ZH[x.resolution]||x.resolution}</b><div class="muted">${esc((x.reason||'').slice(0,64))}</div></div>`).join(''):'<div class="empty">暂无冲突：点「演示冲突」按钮，或只改一个数值重新提交即可触发。</div>';
+   `<div class="fi"><time>${ts(x.at)}</time><b>${CONF_ZH[x.type]||x.type}</b> → <b style="color:var(--ok)">${RESO_ZH[x.resolution]||x.resolution}</b></div>`).join(''):'<div class="empty">暂无事实变化记录。</div>';
 }
 async function hubScan(){
   $('hub-scan-msg').textContent='扫描中…';
   const r=await api('/api/v1/hub/conflicts/scan',{});
   $('hub-scan-msg').textContent='';
-  if(!r||!r.ok){$('hub-conf-list').innerHTML='<div class="empty">'+esc(r&&r.error||'需要先在 Agent 中枢导入 ≥2 个源')+'</div>';return}
+  if(!r||!r.ok){$('hub-conf-list').innerHTML='<div class="empty">'+esc(r&&r.error||'需要先在 Agent 记忆页导入至少 2 个来源')+'</div>';return}
   const cs=r.conflicts||[];
   $('hub-conf-list').innerHTML=cs.length?cs.slice(0,8).map((c,i)=>
    `<div class="fi"><b>${esc(c.entity||'')}</b> 数值不一致<div class="muted">${esc((c.evidences||[]).map(e=>`${AGENT_ZH[e.source]||e.source}:${e.value}`).join('  vs  '))}</div>
@@ -887,57 +1180,86 @@ async function fSearch(q){
   return r.hits||[];
 }
 async function fBefore(){
-  fBeforeHits=await fSearch($('f-q').value.trim());
-  $('f-before-n').textContent=`命中 ${fBeforeHits.length} 条`;
-  $('f-out-before').innerHTML=fBeforeHits.map(h=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span>${esc((h.record.title||h.record.content).slice(0,46))}</div>`).join('')||'<div class="empty">无命中</div>';
+  const b=activeButton(),op=opStart('检查当前结果','正在检索遗忘前的命中范围…',b,35);
+  try{
+    fBeforeHits=await fSearch($('f-q').value.trim());
+    $('f-before-n').textContent=`命中 ${fBeforeHits.length} 条`;
+    $('f-out-before').innerHTML=fBeforeHits.map(h=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span>${esc((h.record.title||h.record.content).slice(0,46))}</div>`).join('')||'<div class="empty">无命中</div>';
+    opFinish(op,'当前结果已记录',`遗忘前命中 ${fBeforeHits.length} 条`,'ok',b);
+  }catch(e){$('f-out-before').innerHTML=`<div class="empty" style="color:var(--err)">检查失败：${esc(e.message)}</div>`;opFinish(op,'检查失败',e.message,'error',b)}
+}
+async function fRemember(){
+  const text=$('f-remember').value.trim();if(!text){toast('先输入要记住的内容','warn');return}
+  const b=$('f-remember-btn'),op=opStart('保存记忆','正在执行敏感检查并建立检索索引…',b,25);
+  try{
+    const r=await api('/api/v1/memories',{events:[{type:'conversation',data:{role:'user',text,scene:'我的记忆',source:'user-workspace'}}]});
+    if(!r.ok||!(r.ids||[]).length)throw new Error(r.error||'内容未写入，可能被安全规则拦截');
+    $('f-remember').value='';$('f-remember-msg').textContent=`已保存 #${r.ids[0]}，现在可以在“验证问题”中检索它`;
+    await refreshDash();opFinish(op,'记忆已保存',`编号 #${r.ids[0]}，可搜索和遗忘`,'ok',b);
+  }catch(e){$('f-remember-msg').textContent='保存失败：'+e.message;opFinish(op,'保存失败',e.message,'error',b)}
 }
 async function fPreview(){
   const instr=$('f-instr').value.trim();if(!instr){toast('输入遗忘指令');return}
-  $('f-msg').textContent='解析指令中…';
-  const pr=await api('/api/v1/forget/parse',{instruction:instr});
-  if(!pr||pr.error){$('f-msg').textContent='';toast(pr&&pr.error||'解析失败');return}
-  window.__fScope=pr.scope;
-  const r=await api('/api/v1/forget/preview',pr.scope);
-  $('f-msg').textContent='';
-  if(!r||r.error){toast(r&&r.error||'预览失败');return}
-  const n=(r.targets||[]).length;
-  $('f-msg').textContent=`解析为范围 ${JSON.stringify(pr.scope.topics||[])} · 命中 ${n} 条`;
-  $('f-exec').disabled=!n;
-  $('f-out-after').innerHTML=n?`<span class="muted">将遗忘：</span>`+(r.targets||[]).slice(0,6).map(t=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span>#${t.id} ${esc((t.title||'').slice(0,36))}（${TIER_ZH[t.tier]||t.tier}·${esc(t.scene)}）</div>`).join(''):'<div class="empty">没有匹配的记忆</div>';
+  const b=activeButton(),op=opStart('预览遗忘影响','先解析指令，再列出将被处理的记忆…',b,15);$('f-msg').textContent='解析指令中…';
+  try{
+    const pr=await api('/api/v1/forget/parse',{instruction:instr});
+    if(!pr||pr.error)throw new Error(pr&&pr.error||'解析失败');
+    window.__fScope=pr.scope;opUpdate(op,'已解析指令，正在计算影响范围…',52);
+    const r=await api('/api/v1/forget/preview',pr.scope);
+    if(!r||r.error)throw new Error(r&&r.error||'预览失败');
+    const n=(r.targets||[]).length;
+    $('f-msg').textContent=`将影响 ${n} 条记忆`;
+    $('f-exec').disabled=!n;
+    $('f-out-after').innerHTML=n?(r.targets||[]).slice(0,6).map(t=>`<div class="fi"><span class="hit-dot" style="background:var(--warn)"></span>${esc((t.title||'记忆 #'+t.id).slice(0,42))}</div>`).join(''):'<div class="empty">没有匹配的记忆</div>';
+    opFinish(op,'影响预览完成',n?`将影响 ${n} 条记忆，确认后才会执行`:'没有匹配的记忆','ok',b);
+  }catch(e){$('f-msg').textContent='预览失败：'+e.message;$('f-exec').disabled=true;opFinish(op,'预览失败',e.message,'error',b)}
 }
 async function fExec(){
   if(!window.__fScope){toast('先预览');return}
-  const r=await api('/api/v1/forget/exec',{scope:window.__fScope,mode:'tombstone'});
-  if(!r||r.error){toast(r&&r.error||'失败');return}
-  toast('已软删除（墓碑·可恢复）');
-  $('f-msg').textContent+=' · 已执行，点「遗忘后再检索」对比';
+  const b=activeButton(),op=opStart('执行遗忘','正在写入墓碑并保留审计记录…',b,35);
+  try{
+    const r=await api('/api/v1/forget/exec',{scope:window.__fScope,mode:'tombstone'});
+    if(!r||r.error)throw new Error(r&&r.error||'执行失败');
+    toast('已遗忘，可从审计记录恢复','ok');
+    $('f-msg').textContent='已遗忘，可再次验证';
+    opFinish(op,'遗忘已执行',`已处理 ${r.affected??r.count??'匹配'} 条记忆，可点击“再次验证”`,'ok',b);
+  }catch(e){$('f-msg').textContent='执行失败：'+e.message;opFinish(op,'遗忘失败',e.message,'error',b)}
 }
 async function fAfter(){
-  const hits=await fSearch($('f-q').value.trim());
-  $('f-out-after').innerHTML=(fBeforeHits&&hits.length<fBeforeHits.length
-   ?`<b style="color:var(--ok)">✓ 记忆已消失：${fBeforeHits.length} → ${hits.length} 条</b>`:`命中 ${hits.length} 条（与遗忘前相同）`)+
-   hits.map(h=>`<div class="fi"><span class="hit-dot" style="background:var(--faint)"></span>${esc((h.record.title||h.record.content).slice(0,46))}</div>`).join('');
-  refreshDash();
+  const b=activeButton(),op=opStart('验证遗忘结果','正在重新检索并对比处理前后的命中数…',b,55);
+  try{
+    const hits=await fSearch($('f-q').value.trim());
+    $('f-out-after').innerHTML=(fBeforeHits&&hits.length<fBeforeHits.length
+     ?`<b style="color:var(--ok)">已生效：${fBeforeHits.length} → ${hits.length} 条</b>`:`仍有 ${hits.length} 条结果`)+
+     hits.map(h=>`<div class="fi"><span class="hit-dot" style="background:var(--faint)"></span>${esc((h.record.title||h.record.content).slice(0,46))}</div>`).join('');
+    await refreshDash();opFinish(op,'验证完成',`当前命中 ${hits.length} 条`,'ok',b);
+  }catch(e){$('f-out-after').innerHTML=`<div class="empty" style="color:var(--err)">验证失败：${esc(e.message)}</div>`;opFinish(op,'验证失败',e.message,'error',b)}
 }
 const SENS_ZH={idcard:'身份证号',bankcard:'银行卡号',phone:'手机号',apikey:'密钥 / Token',email:'邮箱',ip:'IP 地址',password:'密码'};
 async function sensScan(){
-  const r=await api('/api/v1/sensitive/scan',{text:$('sens-in').value});
-  const lv=r.level||'none';
-  const badge=`<span class="tag" style="background:${lv==='blocked'?'var(--err-bg)':lv==='sensitive'?'var(--warn-bg)':'var(--blue-weak)'};color:${lv==='blocked'?'var(--err)':lv==='sensitive'?'var(--warn)':'var(--blue)'}">${lv==='blocked'?'阻断入库':lv==='sensitive'?'敏感·脱敏入库':'未见敏感内容'}</span>`;
-  $('sens-out').innerHTML=(r.findings||[]).length
-   ?`${badge}<div style="margin-top:6px">${(r.findings||[]).map(x=>`<div class="fi"><span class="hit-dot" style="background:${lv==='blocked'?'var(--err)':'var(--warn)'}"></span>${SENS_ZH[x.kind]||x.kind}：<b class="num">${esc(x.matched||'')}</b></div>`).join('')}
-     <div class="fi muted" style="margin-top:4px">脱敏后入库：${esc(r.redacted||'')}</div></div>`
-   :`${badge}`;
+  const b=activeButton(),op=opStart('检查敏感信息','正在识别密钥、身份证号、手机号等敏感字段…',b,40);
+  try{
+    const r=await api('/api/v1/sensitive/scan',{text:$('sens-in').value});
+    const lv=r.level||'none';
+    const badge=`<span class="tag" style="background:${lv==='blocked'?'var(--err-bg)':lv==='sensitive'?'var(--warn-bg)':'var(--blue-weak)'};color:${lv==='blocked'?'var(--err)':lv==='sensitive'?'var(--warn)':'var(--blue)'}">${lv==='blocked'?'阻断入库':lv==='sensitive'?'敏感·脱敏入库':'未见敏感内容'}</span>`;
+    $('sens-out').innerHTML=(r.findings||[]).length
+     ?`${badge}<div style="margin-top:6px">${(r.findings||[]).map(x=>`<span class="tag k" style="margin-right:6px">${SENS_ZH[x.kind]||x.kind}</span>`).join('')}
+       <div class="fi muted" style="margin-top:6px">处理后：${esc(r.redacted||'')}</div></div>`
+     :`${badge}`;
+    opFinish(op,'检查完成',lv==='blocked'?'检测到阻断级敏感内容':lv==='sensitive'?'检测到敏感内容，入库前会脱敏':'未发现敏感内容','ok',b);
+  }catch(e){$('sens-out').innerHTML=`<span style="color:var(--err)">检查失败：${esc(e.message)}</span>`;opFinish(op,'检查失败',e.message,'error',b)}
 }
 
 /* ---- 经验复用 ---- */
 async function xCompile(){
-  $('x-msg').textContent='LLM 提炼近期轨迹中…';
-  const r=await api('/api/v1/experiences/compile',{},'POST');
-  $('x-msg').textContent='';
-  if(!r||r.error){toast(r&&r.error||'编译失败');return}
-  toast(`编译完成：做法 ${r.practice} 条 · 避坑 ${r.pitfall} 条`+(r.skipped_existing?` · 已有跳过 ${r.skipped_existing}`:''));
-  xList();refreshDash();
+  const b=activeButton(),op=opStart('编译经验卡','正在从审计轨迹提取做法、适用条件和避坑…',b,20);$('x-msg').textContent='整理近期操作中…';
+  try{
+    const r=await api('/api/v1/experiences/compile',{},'POST');
+    if(!r||r.error)throw new Error(r&&r.error||'编译失败');
+    $('x-msg').textContent=`已整理：做法 ${r.practice} 条，避坑 ${r.pitfall} 条`;
+    await Promise.all([xList(),refreshDash()]);
+    toast($('x-msg').textContent,'ok');opFinish(op,'经验编译完成',$('x-msg').textContent,'ok',b);
+  }catch(e){$('x-msg').textContent='编译失败：'+e.message;opFinish(op,'经验编译失败',e.message,'error',b)}
 }
 async function xList(){
   const cards=await api('/api/v1/experiences');
@@ -948,14 +1270,14 @@ async function xList(){
       <span class="tag" style="background:${prac?'var(--blue-weak)':'var(--warn-bg)'};color:${prac?'var(--blue)':'var(--warn)'}">${prac?'做法':'避坑'}</span>
       <b>${esc(c.title)}</b>
       <span class="tag" style="background:${c.status==='verified'?'var(--ok-bg)':'var(--warn-bg)'};color:${c.status==='verified'?'var(--ok)':'var(--warn)'}">${c.status==='verified'?'已验证':'草稿'}</span>
-      <span class="muted">· ${esc(c.scene)} · 来源 ${c.source_ids.length} 条轨迹</span><br>
+      <span class="muted">· ${esc(c.scene)}</span><br>
       <span style="font-size:13px">适用：${esc(c.trigger)}</span>
       ${c.steps.length?`<div class="muted" style="margin:2px 0">${c.steps.slice(0,3).map(s=>'· '+esc(s)).join('<br>')}</div>`:''}
       <div class="row" style="margin-top:3px">${rate}
         <button class="act ghost" style="padding:2px 10px" onclick="xFb(${c.id},true)">用过·成功</button>
         <button class="act ghost" style="padding:2px 10px" onclick="xFb(${c.id},false)">用过·失败</button>
         <a href="#" onclick="vDetail(${c.id});return false" class="muted">详情</a></div></div>`;
-  }).join(''):'<div class="empty">还没有经验卡。灌入带任务标签的工具轨迹（或由 Agent 经 MCP 写入）后，点上方按钮编译。</div>';
+  }).join(''):'<div class="empty">暂无经验。完成工具操作后再整理。</div>';
 }
 async function xFb(id,ok){
   const r=await api(`/api/v1/experiences/${id}/feedback`,{ok});
@@ -963,32 +1285,67 @@ async function xFb(id,ok){
   else toast(r&&r.error||'失败');
   xList();loadAudit('dash-audit');
 }
+async function skillTargets(){
+  const r=await api('/api/v1/skills/targets');const ts=r.targets||[];
+  const available=ts.length>0;
+  $('skill-target').innerHTML=available?ts.map(t=>`<option value="${esc(t.id)}">${esc(t.agent)} · ${t.installed?'已发布':'未发布'}</option>`).join(''):'<option value="">未检测到本机 Agent 技能目录</option>';
+  $('skill-target').disabled=!available;
+  ['skill-publish','skill-rollback','skill-remove'].forEach(id=>$(id).disabled=!available);
+  $('skill-state').innerHTML=available?ts.map(t=>`<div class="fi"><b>${esc(t.agent)}</b><span class="tag" style="background:${t.installed?'var(--ok-bg)':'var(--hairline)'};color:${t.installed?'var(--ok)':'var(--sub)'}">${t.installed?'已发布':'未发布'}</span><div class="muted">${esc(displayPath(t.path))}</div></div>`).join(''):'<div class="empty">未发现可发布的 Agent。</div>';
+  if(available)await skillPreview();
+}
+async function skillPreview(){
+  const target=$('skill-target').value,box=$('skill-preview');if(!target||!box)return;
+  try{
+    const [p,cards,prefs]=await Promise.all([api('/api/v1/skills/preview?target='+encodeURIComponent(target)),api('/api/v1/experiences'),api('/api/v1/preferences')]);
+    const m=p.manifest||{},ready=(cards||[]).filter(c=>c.status==='verified').length,draft=(cards||[]).length-ready;
+    if(!p.installed){box.innerHTML=`<div class="fi"><b>待封装内容</b><div class="muted">经验卡 ${(cards||[]).length} 张（已验证 ${ready}，草稿 ${draft}）· 当前偏好 ${(prefs||[]).length} 条</div><div class="muted">点击“发布”后生成 SKILL.md 和 resources/manifest.json。</div></div>`;return}
+    const excerpt=String(p.content||'').slice(0,1200);
+    box.innerHTML=`<div class="fi"><div class="section-title"><b>已生成 lymem-experience</b><span class="tag" style="background:var(--ok-bg);color:var(--ok)">已安装</span></div><div class="muted">版本 ${esc(m.version||'-')} · 经验卡 ${(m.cards||[]).length} 张 · 偏好 ${(m.preferences||[]).length} 条</div><div class="muted">${esc(displayPath(p.target?.path||''))}/SKILL.md</div><pre style="white-space:pre-wrap;max-height:230px;overflow:auto;background:var(--field);border:1px solid var(--line);padding:10px;margin-top:8px;font-size:11.5px">${esc(excerpt)}</pre></div>`;
+  }catch(e){box.innerHTML=`<div class="empty" style="color:var(--err)">技能预览失败：${esc(e.message)}</div>`}
+}
+async function skillPublish(){
+  const target=$('skill-target').value;if(!target){toast('当前没有可发布的 Agent 目标');return}
+  const b=activeButton(),op=opStart('发布 Agent 技能','正在把经验卡和偏好编译成 SKILL.md 并写入目标目录…',b,22);$('skill-msg').textContent='正在编译并发布…';
+  try{
+    const r=await api('/api/v1/skills/publish',{target});
+    if(!r.ok)throw new Error(r.error||'发布失败');
+    $('skill-msg').textContent=`已发布 v${r.report.version}：${r.report.cards} 张经验卡，${r.report.preferences} 条偏好`;
+    await skillTargets();await skillPreview();opFinish(op,'技能发布完成',$('skill-msg').textContent,'ok',b);
+  }catch(e){$('skill-msg').textContent='发布失败：'+e.message;opFinish(op,'技能发布失败',e.message,'error',b)}
+}
+async function skillRollback(){const target=$('skill-target').value,b=activeButton(),op=opStart('回滚 Agent 技能','正在恢复上一份已发布的技能版本…',b,38);try{const r=await api('/api/v1/skills/rollback',{target});$('skill-msg').textContent=r.ok?'已回滚到上一版':'没有可回滚版本';await skillTargets();opFinish(op,'回滚完成',$('skill-msg').textContent,'ok',b)}catch(e){$('skill-msg').textContent='回滚失败：'+e.message;opFinish(op,'回滚失败',e.message,'error',b)}}
+async function skillRemove(){const target=$('skill-target').value,b=activeButton(),op=opStart('撤回 Agent 技能','正在移除受管技能目录，保留版本审计…',b,38);try{const r=await api('/api/v1/skills/remove',{target});$('skill-msg').textContent=r.ok?'技能目录已移除':'目标尚未发布';await skillTargets();opFinish(op,'技能已撤回',$('skill-msg').textContent,'ok',b)}catch(e){$('skill-msg').textContent='撤回失败：'+e.message;opFinish(op,'撤回失败',e.message,'error',b)}}
 
 /* ---- 评测对比 ---- */
 const ARENA={"multiwoz": {"docs": [{"id": "multiwoz-doc-0", "text": "I am looking for a place to stay in the north. Yes I have many options in the moderate price range. Do you need wifi or free parking? Yes, I need both wifi and free parking. How does the acorn guest house sound?  It is in the north part of town, in the moderate price range, and has both free wifi and parking. That sounds great. Can you book it for 6 people starting Tuesday for a total of 2 nights? The Acorn Guest House is unavailable at that time, but I booked you for the Arbury Lodge Guesthouse instead. It has all of the same features.  Okay. May I have the reference number? Reference number is : 3Y3AE0U7. Thank you for booking it.Goodbye. Is there anything else you need?"}, {"id": "multiwoz-doc-1", "text": "Hello, can you help me with my plans as far as finding a place to stay? Of course, do you need anything specific? Yes. The hotel should be 4 stars and located in the west with free parking please. We have three choices, any other preferences? As long as it is a hotel, I would like to book it. How many nights and for how many people? I would like it starting Thursday for 8 people for 5 nights.  I will need the day you want to arrive. I will need to be there on wednesday. There are 2 hotels available, The Huntingdon Marriott and the Cambridge Belfry. Do you want an expensive hotel or a cheap hotel? I'm sorry I actually need it for Thursday, sorry.  Any price range is fine. Okay. Your booking at the Cambridge Belfry was successful. The reference number is LJOEY6H2. Can I help you with anything else today? I am also looking for a train. The train should depart from bishops stortford and should go to cambridge. On what day will you be travelling? I will be traveling on Thursday.  What time would you like to arrive in Cambridge? Arrival time isn't the issue, but I have morning meeting so I can't leave bishops stortford until after 12:15 . There is a train leaving at 13:29 and arriving at 14:07. Would you like me to book that for you? What is the price and travel time? The price is 10.10 pounds, and the travel time is 38 minutes. Thank you so much. I think that's all I need now. Have a safe trip. Thank you for your help. Can I look up anything else for you? That was all I needed. Ok"}, {"id": "multiwoz-doc-2", "text": "I will need to take a train here from london kings cross, I will need ot get here by 19:45. And what day do you want to travel? I would like to leave Wednesday please. Train TR5725 would work for you, would you like me to book you passage? Please, I'll need 6 tickets. OK, you have 6 seats reserved on TR5725, ref# J7XP2Z15. Get to bed early - that's a 05:16 departure! Can I help with anything else today? Yes you can! I'm also looking for information about a place called Cineworld Cinema. Do you have any details about it?  It is a great cinema in the south part of town. They are located at Cambridge Leisure Park, Clifton Way. Their postcode is cb17dy. Their phone number is 00872208000.  Thank you that was all I needed.  Do you need me to book or look up info about anything else? That was all for today, thank you. Have a great day!"}, {"id": "multiwoz-doc-3", "text": "I am looking for a restaurant. What type of food are you looking for? I'm looking for unusual food. And I want a place in the centre of town. I don't have anything matching unusual but I do have an African restaurant in the center of town as well as some gastropubs. Would either interest you? I'll take something that is cheap. There are a total of 15 restaurants that are cheap in the centre. Is there another type you would like to try? Do you recommend a restaurant that is a little more different then the rest? I would recommend golden house Is that Italian? I would like an Italian restaurant, please. Okay, how about the pizza hut city centre? I heard it's pretty good. Okay, that sounds good. I need to make a reservation for 2 people on Tuesday. What time would you like to visit?  How about 13:15? I was able to book the table for you. It will be reserved for 15 minutes. The reference number is 97AAF776. That's great, thank you. Awesome. Have a good day!"}, {"id": "multiwoz-doc-4", "text": "I'd looking for a good restaurant on the east side.  I'd prefer the moderate price range, if possible. Would you prefer Indian or Italian food? I would like Indian please. There is curry prince, and rajmahal, would either of those work for you? I'd like to book curry prince for 6 people at 15:45 on saturday please. Alright, I have you reservation made. The reference number is SMAMRCQ9. Great, thanks for your help.  Is there anything else I can help you with? No, that will be everything today. Thank you. Thank you, goodbye."}], "queries": [{"query": "What is the reference number for the booking at Arbury Lodge Guesthouse in the north for 6 people starting Tuesday for 2 nights with free wifi and parking?", "evidence": ["3Y3AE0U7"]}, {"query": "What time does the train from Bishop's Stortford to Cambridge depart on Thursday after my morning meeting?", "evidence": ["13:29"]}, {"query": "What is the phone number for the Cineworld Cinema in the south part of town you mentioned?", "evidence": ["00872208000"]}, {"query": "What is the reference number for my Pizza Hut City Centre reservation for 2 people on Tuesday at 13:15?", "evidence": ["97AAF776"]}, {"query": "What is the reference number for the curry prince reservation for 6 people on Saturday at 15:45?", "evidence": ["SMAMRCQ9"]}]}, "bpmn": {"docs": [{"id": "bpmn-doc-0", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_05t7lhh\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <bpmn:collaboration id=\"Collaboration_1214ttx\">\n    <bpmn:participant id=\"Participant_0hhyxuq\" name=\"P.Amadeus Service\" processRef=\"Process_07l0ucu\" />\n  </bpmn:collaboration>\n  <bpmn:process id=\"Process_07l0ucu\" isExecutable=\"false\">\n    <bpmn:startEvent id=\"StartEvent_0artoew\" name=\"StartEvent 10\">\n      <bpmn:outgoing>Flow_0o27bwr</bpmn:outgoing>\n    </bpmn:startEvent>\n    <bpmn:task id=\"Activity_14yd03m\" name=\"Search less expensive flight\">\n      <bpmn:incoming>Flow_0o27bwr</bpmn:incoming>\n      <bpmn:outgoing>Flow_002zu91</bpmn:outgoing>\n      <bpmn:property id=\"Property_0mqagpw\" name=\"__targetRef_placeholder\" />\n      <bpmn:dataInputAssociation id=\"DataInputAssociation_0259uan\">\n        <bpmn:sourceRef>DataObjectReference_0329ma9</bpmn:sourceRef>\n        <bpmn:targetRef>Property_0mqagpw</bpmn:targetRef>\n      </bpmn:dataInputAssociation>\n      <bpmn:dataOutputAssociation id=\"DataOutputAssociation_0xugwz9\">\n        <bpmn:targetRef>DataObjectReference_1x0juwz</bpmn:targetRef>\n      </bpmn:dataOutputAssociation>\n    </bpmn:task>\n    <bpmn:endEvent id=\"Event_0xno17b\" name=\"EndEvent 10\">\n      <bpmn:incoming>Flow_002zu91</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:dataObjectReference id=\"DataObjectReference_1x0juwz\" name=\"Flight tickets\" dataObjectRef=\"DataObject_1ywle6h\" />\n    <bpmn:dataObject id=\"DataObject_1ywle6h\" />\n    <bpmn:dataObjectReference id=\"DataObjectReference_0329ma9\" name=\"Itinerary details\" dataObjectRef=\"DataObject_0txg7x5\" />\n    <bpmn:dataObject id=\"DataObject_0txg7x5\" />\n    <bpmn:sequenceFlow id=\"Flow_0o27bwr\" sourceRef=\"StartEvent_0artoew\" targetRef=\"Activity_14yd03m\" />\n    <bpmn:sequenceFlow id=\"Flow_002zu91\" sourceRef=\"Activity_14yd03m\" targetRef=\"Event_0xno17b\" />\n  </bpmn:process>\n  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Collaboration_1214ttx\">\n      <bpmndi:BPMNShape id=\"Participant_0hhyxuq_di\" bpmnElement=\"Participant_0hhyxuq\" isHorizontal=\"true\">\n        <dc:Bounds x=\"156\" y=\"80\" width=\"600\" height=\"335\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_0artoew\" bioc:stroke=\"#205022\" bioc:fill=\"#c8e6c9\" color:background-color=\"#c8e6c9\" color:border-color=\"#205022\">\n        <dc:Bounds x=\"206\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"191\" y=\"255\" width=\"67\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Activity_14yd03m_di\" bpmnElement=\"Activity_14yd03m\">\n        <dc:Bounds x=\"300\" y=\"190\" width=\"100\" height=\"80\" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"Event_0xno17b_di\" bpmnElement=\"Event_0xno17b\" bioc:stroke=\"#831311\" bioc:fill=\"#ffcdd2\" color:background-color=\"#ffcdd2\" color:border-color=\"#831311\">\n        <dc:Bounds x=\"642\" y=\"212\" width=\"36\" height=\"36\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"629\" y=\"255\" width=\"63\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_1x0juwz_di\" bpmnElement=\"DataObjectReference_1x0juwz\">\n        <dc:Bounds x=\"412\" y=\"105\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"399\" y=\"162\" width=\"62\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"DataObjectReference_0329ma9_di\" bpmnElement=\"DataObjectReference_0329ma9\">\n        <dc:Bounds x=\"552\" y=\"115\" width=\"36\" height=\"50\" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x=\"602\" y=\"143\" width=\"75\" height=\"14\" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"Flow_0o27bwr_di\" bpmnElement=\"Flow_0o27bwr\">\n        <di:waypoint x=\"242\" y=\"230\" />\n        <di:waypoint x=\"300\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"Flow_002zu91_di\" bpmnElement=\"Flow_002zu91\">\n        <di:waypoint x=\"400\" y=\"230\" />\n        <di:waypoint x=\"642\" y=\"230\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataInputAssociation_0259uan_di\" bpmnElement=\"DataInputAssociation_0259uan\">\n        <di:waypoint x=\"570\" y=\"165\" />\n        <di:waypoint x=\"570\" y=\"200\" />\n        <di:waypoint x=\"400\" y=\"200\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"DataOutputAssociation_0xugwz9_di\" bpmnElement=\"DataOutputAssociation_0xugwz9\">\n        <di:waypoint x=\"350\" y=\"190\" />\n        <di:waypoint x=\"350\" y=\"125\" />\n        <di:waypoint x=\"412\" y=\"125\" />\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n"}, {"id": "bpmn-doc-1", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn2:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn2=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"sample-diagram\" targetNamespace=\"http://bpmn.io/schema/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\" xsi:schemaLocation=\"http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd\">\n  <bpmn2:process id=\"Process_1\" isExecutable=\"false\" />\n  <bpmn2:collaboration id=\"Collab_Process_1\">\n    <bpmn2:participant id=\"Participant_auto_1755899398911\" processRef=\"Process_auto_1755899398911\" />\n    <bpmn2:participant id=\"Participant_1qny7ss\" name=\"P.Pedriatic Patient\" processRef=\"Process_19yic6m\" />\n    <bpmn2:participant id=\"Participant_10wyygy\" name=\"Medical Sttaff\" processRef=\"Process_0sqcvmd\" />\n    <bpmn2:participant id=\"Participant_0oefxxq\" name=\"Specialised group\" processRef=\"Process_06hv6zd\" />\n    <bpmn2:messageFlow id=\"Flow_0nn7zl5\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:messageFlow id=\"Flow_15hty6q\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:messageFlow id=\"Flow_0ri3iv0\" sourceRef=\"Activity_0ptuabh\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:messageFlow id=\"Flow_0ez29k5\" name=\"Proposal for telecommunication\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Activity_02rh9d7\" />\n    <bpmn2:messageFlow id=\"Flow_0dkjche\" sourceRef=\"Activity_0h91p56\" targetRef=\"Activity_1x5ihib\" />\n    <bpmn2:messageFlow id=\"Flow_0dzqgp0\" sourceRef=\"Activity_0wyll7y\" targetRef=\"Activity_0bwrtbd\" />\n    <bpmn2:messageFlow id=\"Flow_1ra884s\" sourceRef=\"Activity_0l0dwp2\" targetRef=\"Activity_0vcui6z\" />\n    <bpmn2:messageFlow id=\"Flow_0og7oyr\" sourceRef=\"Activity_0bwrtbd\" targetRef=\"Activity_0wyll7y\" />\n  </bpmn2:collaboration>\n  <bpmn2:process id=\"Process_auto_1755899398911\" />\n  <bpmn2:process id=\"Process_19yic6m\">\n    <bpmn2:startEvent id=\"Event_118d1ec\" name=\"StartEvent 7\">\n      <bpmn2:outgoing>Flow_08ytv9g</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:sequenceFlow id=\"Flow_08ytv9g\" sourceRef=\"Event_118d1ec\" targetRef=\"Activity_18966yx\" />\n    <bpmn2:subProcess id=\"Activity_18966yx\" name=\"Patient Hospitalized\">\n      <bpmn2:incoming>Flow_08ytv9g</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1fv0a86</bpmn2:outgoing>\n    </bpmn2:subProcess>\n    <bpmn2:task id=\"Activity_15cggj7\" name=\"Explain symptoms and answer the doctor questions\">\n      <bpmn2:incoming>Flow_1fv0a86</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0qalb0o</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1fv0a86\" sourceRef=\"Activity_18966yx\" targetRef=\"Activity_15cggj7\" />\n    <bpmn2:task id=\"Activity_0869egn\" name=\"Receive appropiated diagnosis\">\n      <bpmn2:incoming>Flow_0qalb0o</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_089tkiz</bpmn2:outgoing>\n      <bpmn2:dataOutputAssociation id=\"DataOutputAssociation_0xgv46j\">\n        <bpmn2:targetRef>DataObjectReference_0l7myph</bpmn2:targetRef>\n      </bpmn2:dataOutputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0qalb0o\" sourceRef=\"Activity_15cggj7\" targetRef=\"Activity_0869egn\" />\n    <bpmn2:endEvent id=\"Event_0gq6cfj\" name=\"EndEvent 4\">\n      <bpmn2:incoming>Flow_089tkiz</bpmn2:incoming>\n    </bpmn2:endEvent>\n    <bpmn2:sequenceFlow id=\"Flow_089tkiz\" sourceRef=\"Activity_0869egn\" targetRef=\"Event_0gq6cfj\" />\n    <bpmn2:dataObjectReference id=\"DataObjectReference_0l7myph\" name=\"Final diagnosis report\" dataObjectRef=\"DataObject_058p317\" />\n    <bpmn2:dataObject id=\"DataObject_058p317\" />\n  </bpmn2:process>\n  <bpmn2:process id=\"Process_0sqcvmd\">\n    <bpmn2:startEvent id=\"Event_0edzmr0\" name=\"StartEvent 3\">\n      <bpmn2:outgoing>Flow_06nltwo</bpmn2:outgoing>\n    </bpmn2:startEvent>\n    <bpmn2:task id=\"Activity_0jnvjmj\" name=\"Receive patient\">\n      <bpmn2:incoming>Flow_06nltwo</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_00uqkd4</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_06nltwo\" sourceRef=\"Event_0edzmr0\" targetRef=\"Activity_0jnvjmj\" />\n    <bpmn2:task id=\"Activity_090jlby\" name=\"Interview patient\">\n      <bpmn2:incoming>Flow_00uqkd4</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_1a4b5dx</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_00uqkd4\" sourceRef=\"Activity_0jnvjmj\" targetRef=\"Activity_090jlby\" />\n    <bpmn2:task id=\"Activity_1lfpz5c\" name=\"consult patient record\">\n      <bpmn2:incoming>Flow_1a4b5dx</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_19inwdj</bpmn2:outgoing>\n      <bpmn2:property id=\"Property_0rxcxkr\" name=\"__targetRef_placeholder\" />\n      <bpmn2:dataInputAssociation id=\"DataInputAssociation_03sv9az\">\n        <bpmn2:sourceRef>DataObjectReference_1aprr83</bpmn2:sourceRef>\n        <bpmn2:targetRef>Property_0rxcxkr</bpmn2:targetRef>\n      </bpmn2:dataInputAssociation>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_1a4b5dx\" sourceRef=\"Activity_090jlby\" targetRef=\"Activity_1lfpz5c\" />\n    <bpmn2:task id=\"Activity_0x0hrmj\" name=\"Perform evaluation\">\n      <bpmn2:incoming>Flow_19inwdj</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0iarlu0</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_19inwdj\" sourceRef=\"Activity_1lfpz5c\" targetRef=\"Activity_0x0hrmj\" />\n    <bpmn2:task id=\"Activity_07wnr7m\" name=\"Ask for telecommunication\">\n      <bpmn2:incoming>Flow_0iarlu0</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_105j123</bpmn2:outgoing>\n    </bpmn2:task>\n    <bpmn2:sequenceFlow id=\"Flow_0iarlu0\" sourceRef=\"Activity_0x0hrmj\" targetRef=\"Activity_07wnr7m\" />\n    <bpmn2:exclusiveGateway id=\"Gateway_15t2lh0\" name=\"Availability?\">\n      <bpmn2:incoming>Flow_105j123</bpmn2:incoming>\n      <bpmn2:outgoing>Flow_0nb7guy</bpmn2:outgoing>\n      <bpmn2:outgoing>Flow_12wqmc7</bpmn2:outgoing>\n    </bpmn2:exclusiveGateway>\n    <bpmn2:sequenceFlow id=\"Flow_105j123\" sourceRef=\"Activity_07wnr7m\" targetRef=\"Gateway_15t2lh0\" />\n  "}, {"id": "bpmn-doc-2", "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bioc=\"http://bpmn.io/schema/bpmn/biocolor/1.0\" xmlns:color=\"http://www.omg.org/spec/BPMN/non-normative/color/1.0\" id=\"sid-38422fae-e03e-43a3-bef4-bd33b32041b2\" targetNamespace=\"http://bpmn.io/bpmn\" exporter=\"bpmn-js (https://demo.bpmn.io)\" exporterVersion=\"18.6.1\">\n  <collaboration id=\"Collaboration_0qkiibk\">\n    <participant id=\"Participant_0k6b4yl\" name=\"Italian NMSP\" processRef=\"Process_1\" />\n    <participant id=\"Participant_1iq49au\" name=\"SWIM governance\" processRef=\"Process_0gajlhu\" />\n    <participant id=\"Participant_04m4avf\" name=\"ATM service provider\" processRef=\"Process_05kz2gi\" />\n    <participant id=\"Participant_1fkys0y\" name=\"SWIM\" processRef=\"Process_023rd33\" />\n    <messageFlow id=\"Flow_16lq3f6\" name=\"Accreditation request\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_1rtgu4b\" />\n    <messageFlow id=\"Flow_0n1gc4t\" name=\"Failure report\" sourceRef=\"Activity_0x044fm\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_0xy8c4g\" name=\"Accreditation\" sourceRef=\"Activity_0zavwiq\" targetRef=\"Event_0yvo7en\" />\n    <messageFlow id=\"Flow_1fn4wae\" name=\"Accreditation\" sourceRef=\"Activity_1ly53ki\" targetRef=\"Event_01fw54c\" />\n    <messageFlow id=\"Flow_0v2k5jr\" name=\"Service description\" sourceRef=\"Activity_1fdig9w\" targetRef=\"Event_1x8h3vn\" />\n  </collaboration>\n  <process id=\"Process_1\" isExecutable=\"false\">\n    <startEvent id=\"Event_18hvqvd\">\n      <outgoing>Flow_0cr5s0h</outgoing>\n    </startEvent>\n    <exclusiveGateway id=\"Gateway_18mrd3l\">\n      <incoming>Flow_0cr5s0h</incoming>\n      <incoming>Flow_1fj8esn</incoming>\n      <outgoing>Flow_0gtjogt</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_08sagin\" name=\"Send accreditation request\">\n      <incoming>Flow_0gtjogt</incoming>\n      <outgoing>Flow_1t26arv</outgoing>\n    </task>\n    <intermediateCatchEvent id=\"Event_0yvo7en\" name=\"Receive failure/ accreditation\">\n      <incoming>Flow_1t26arv</incoming>\n      <outgoing>Flow_0xliwsb</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0s68d4q\">\n        <targetRef>DataObjectReference_0mlzisl</targetRef>\n      </dataOutputAssociation>\n      <messageEventDefinition id=\"MessageEventDefinition_0uoc8r5\" />\n    </intermediateCatchEvent>\n    <dataObjectReference id=\"DataObjectReference_0mlzisl\" name=\"Failure report\" dataObjectRef=\"DataObject_0s8flnj\" />\n    <dataObject id=\"DataObject_0s8flnj\" />\n    <exclusiveGateway id=\"Gateway_19qguzv\" name=\"Report error?\">\n      <incoming>Flow_0xliwsb</incoming>\n      <outgoing>Flow_092prz9</outgoing>\n      <outgoing>Flow_05nf29i</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_06z182s\" name=\"Examine report\">\n      <incoming>Flow_092prz9</incoming>\n      <outgoing>Flow_1uw1wi8</outgoing>\n    </task>\n    <exclusiveGateway id=\"Gateway_1kcy9wn\" name=\"Problems with QoS?\">\n      <incoming>Flow_1uw1wi8</incoming>\n      <outgoing>Flow_10pcgx7</outgoing>\n      <outgoing>Flow_00rcvuy</outgoing>\n    </exclusiveGateway>\n    <task id=\"Activity_0g3krp9\" name=\"Tune QoS\">\n      <incoming>Flow_10pcgx7</incoming>\n      <outgoing>Flow_1fj8esn</outgoing>\n    </task>\n    <task id=\"Activity_0xmlo79\" name=\"Manage failure report\">\n      <incoming>Flow_00rcvuy</incoming>\n      <outgoing>Flow_0wr5vrh</outgoing>\n    </task>\n    <endEvent id=\"Event_0kfvamv\" name=\"End Event 2\">\n      <incoming>Flow_0wr5vrh</incoming>\n    </endEvent>\n    <task id=\"Activity_1kgdap0\" name=\"Store accreditation\">\n      <incoming>Flow_05nf29i</incoming>\n      <outgoing>Flow_1l6jskx</outgoing>\n      <property id=\"Property_1jdqoi0\" name=\"__targetRef_placeholder\" />\n      <dataInputAssociation id=\"DataInputAssociation_1n171qm\">\n        <sourceRef>DataObjectReference_11smnhx</sourceRef>\n        <targetRef>Property_1jdqoi0</targetRef>\n      </dataInputAssociation>\n    </task>\n    <endEvent id=\"Event_1cunj4v\" name=\"End Event 1\">\n      <incoming>Flow_1l6jskx</incoming>\n    </endEvent>\n    <dataObjectReference id=\"DataObjectReference_11smnhx\" name=\"Accreditation\" dataObjectRef=\"DataObject_1h4sv4u\" />\n    <dataObject id=\"DataObject_1h4sv4u\" />\n    <sequenceFlow id=\"Flow_0cr5s0h\" sourceRef=\"Event_18hvqvd\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_1fj8esn\" sourceRef=\"Activity_0g3krp9\" targetRef=\"Gateway_18mrd3l\" />\n    <sequenceFlow id=\"Flow_0gtjogt\" sourceRef=\"Gateway_18mrd3l\" targetRef=\"Activity_08sagin\" />\n    <sequenceFlow id=\"Flow_1t26arv\" sourceRef=\"Activity_08sagin\" targetRef=\"Event_0yvo7en\" />\n    <sequenceFlow id=\"Flow_0xliwsb\" sourceRef=\"Event_0yvo7en\" targetRef=\"Gateway_19qguzv\" />\n    <sequenceFlow id=\"Flow_092prz9\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_06z182s\" />\n    <sequenceFlow id=\"Flow_05nf29i\" sourceRef=\"Gateway_19qguzv\" targetRef=\"Activity_1kgdap0\" />\n    <sequenceFlow id=\"Flow_1uw1wi8\" sourceRef=\"Activity_06z182s\" targetRef=\"Gateway_1kcy9wn\" />\n    <sequenceFlow id=\"Flow_10pcgx7\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0g3krp9\" />\n    <sequenceFlow id=\"Flow_00rcvuy\" sourceRef=\"Gateway_1kcy9wn\" targetRef=\"Activity_0xmlo79\" />\n    <sequenceFlow id=\"Flow_0wr5vrh\" sourceRef=\"Activity_0xmlo79\" targetRef=\"Event_0kfvamv\" />\n    <sequenceFlow id=\"Flow_1l6jskx\" sourceRef=\"Activity_1kgdap0\" targetRef=\"Event_1cunj4v\" />\n  </process>\n  <process id=\"Process_0gajlhu\">\n    <startEvent id=\"Event_1rtgu4b\" name=\"Start Event 2\">\n      <outgoing>Flow_0bd9nsu</outgoing>\n    </startEvent>\n    <task id=\"Activity_1tg8om5\" name=\"Examine request\">\n      <incoming>Flow_0bd9nsu</incoming>\n      <outgoing>Flow_0ehufg4</outgoing>\n      <dataOutputAssociation id=\"DataOutputAssociation_0tvt8xz\">\n        <targetRef>DataObjectReference_0c8fqol</targetRef>\n      </dataOutputAssociation>\n    </task>\n    <dataObjectReference id=\"DataObjectReference_0c"}], "queries": [{"query": "What is the name of the task that produces the 'Flight tickets' output in the Amadeus service process?", "evidence": ["Search less expensive flight"]}, {"query": "Which task does the Pediatric Patient perform immediately after the 'Patient Hospitalized' sub-process completes and before receiving the appropriate diagnosis?", "evidence": ["Explain symptoms and answer the doctor questions"]}, {"query": "After completing the 'Send accreditation request' task in the Italian NMSP process, which intermediate catch event does the process wait for to receive either a failure report or an accreditation response?", "evidence": ["Receive failure/ accreditation"]}]}};
 async function loadArena(){qMatrix()}
 async function qArena(name){
   const ds=ARENA[name];if(!ds)return;
-  $('q-arena').innerHTML='<span class="muted">灌入样例并评测中…</span>';
+  const b=activeButton(),op=opStart('运行记忆评测','正在灌入标准题目并逐题检索…',b,8);
+  $('q-arena').innerHTML=loadingHtml('灌入样例并评测中…');
   const scene='arena-'+name;
-  await api('/api/v1/memories',{events:ds.docs.map(d=>({type:'conversation',data:{role:'assistant',text:d.text,scene,source:'arena/'+d.id}}))});
-  const r=await api('/api/v1/arena/run',{queries:ds.queries,top_k:5,scene});
-  if(!r||r.error){$('q-arena').textContent='失败';return}
-  $('q-arena').innerHTML=`<b class="num" style="font-size:16px">hit@5 = ${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · 延迟 p50 <b class="num">${r.p50_ms}ms</b> / p99 <b class="num">${r.p99_ms}ms</b>
-   <table class="tb" style="margin-top:8px">${r.rows.map(x=>`<tr><td style="width:24px"><span class="hit-dot" style="background:${x.hit?'var(--ok)':'var(--err)'}"></span></td><td>${esc(x.query.slice(0,66))}</td><td class="num muted">${x.latency_ms}ms</td></tr>`).join('')}</table>`;
+  try{
+    await api('/api/v1/memories',{events:ds.docs.map(d=>({type:'conversation',data:{role:'assistant',text:d.text,scene,source:'arena/'+d.id}}))});
+    opUpdate(op,`样例已写入，正在运行 ${ds.queries.length} 道题…`,38);
+    const r=await api('/api/v1/arena/run',{queries:ds.queries,top_k:5,scene});
+    if(!r||r.error)throw new Error(r&&r.error||'评测失败');
+    $('q-arena').innerHTML=`<b class="num" style="font-size:16px">hit@5 = ${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · 延迟 p50 <b class="num">${r.p50_ms}ms</b> / p99 <b class="num">${r.p99_ms}ms</b>
+     <table class="tb" style="margin-top:8px">${r.rows.map(x=>`<tr><td style="width:24px"><span class="hit-dot" style="background:${x.hit?'var(--ok)':'var(--err)'}"></span></td><td>${esc(x.query.slice(0,66))}</td><td class="num muted">${x.latency_ms}ms</td></tr>`).join('')}</table>`;
+    opFinish(op,'评测完成',`hit@5 ${(r.recall_at_k*100).toFixed(1)}%，p99 ${r.p99_ms}ms`,'ok',b);
+  }catch(e){$('q-arena').innerHTML=`<div class="empty" style="color:var(--err)">评测失败：${esc(e.message)}</div>`;opFinish(op,'评测失败',e.message,'error',b)}
 }
 function qCustomToggle(){$('q-custom').style.display=$('q-custom').style.display==='none'?'block':'none';$('q-custom-row').style.display=$('q-custom-row').style.display==='none'?'flex':'none'}
 async function qArenaCustom(){
   const qs=[];$('q-custom').value.trim().split('\n').forEach(l=>{if(!l.trim())return;try{const o=JSON.parse(l);if(o.query&&o.evidence)qs.push(o)}catch(e){}});
   if(!qs.length){toast('无有效行');return}
-  const r=await api('/api/v1/arena/run',{queries:qs,top_k:5});
-  if(r&&!r.error)$('q-arena').innerHTML=`<b>我的数据</b>：hit@5 = <b class="num">${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · p99 <b class="num">${r.p99_ms}ms</b>`;
+  const b=activeButton(),op=opStart('评测自定义题目',`正在运行 ${qs.length} 道题…`,b,24);try{const r=await api('/api/v1/arena/run',{queries:qs,top_k:5});if(!r||r.error)throw new Error(r&&r.error||'评测失败');$('q-arena').innerHTML=`<b>我的数据</b>：hit@5 = <b class="num">${(r.recall_at_k*100).toFixed(1)}%</b>（${r.hit_at_k}/${r.n}） · p99 <b class="num">${r.p99_ms}ms</b>`;opFinish(op,'自定义评测完成',`hit@5 ${(r.recall_at_k*100).toFixed(1)}%`,'ok',b)}catch(e){$('q-arena').innerHTML=`<div class="empty" style="color:var(--err)">评测失败：${esc(e.message)}</div>`;opFinish(op,'评测失败',e.message,'error',b)}
 }
 function qMatrix(){
   const G=[
-   {title:'偏好提取准确率 <span class="hint">目标 ≥85%</span>',rows:[
-     ['PrefEval 偏好遵循 · 100 题',98.0,73.0,53.0],
-     ['MemBench 记忆能力 · 100 题',94.0,55.0,28.0]]},
+   {title:'偏好记忆任务准确率 <span class="hint">目标 ≥85%</span>',rows:[
+     ['PrefEval 偏好遵循 · 100 题',99.0,99.0,0],
+     ['MemBench 记忆能力 · 100 题',91.0,88.0,0]]},
    {title:'知识检索召回率 <span class="hint">目标 ≥85%</span>',rows:[
      ['整本书问答 · 三国（自建中文长文档）· 51 题',96.1,73.6,0],
      ['MS MARCO 网页检索（公开评测集）· 200 题',97.0,100.0,0],
@@ -1012,32 +1369,51 @@ function qMatrix(){
      </div></div>`).join('')}</div></div>`).join('')+
    `<div class="card"><h3>检索响应延迟 <span class="hint">目标 ≤500ms</span></h3>
      <div class="row" style="gap:18px;font-size:13.5px">
-      <span>p50 <b class="num">27ms</b></span><span>p95 <b class="num">44ms</b></span>
-      <span>p99 <b class="num">55ms</b></span><span>max <b class="num">100ms</b></span>
+      <span>p50 <b class="num">40~88ms</b></span><span>max <b class="num">152ms</b></span>
       <span>超标 <b class="num" style="color:var(--ok)">0 / 442</b></span>
-      <span class="muted">七站 442 查询逐题实测 · 全配置 1–173ms</span></div></div>`;
+      <span class="muted">银河麒麟后端 · 七站 442 查询逐题实测 · 含嵌入往返与融合检索</span></div></div>`;
 }
 
-/* ---- Agent 中枢 ---- */
-/* ---- Agent 中枢 ---- */
-async function loadHub(){
-  const [src,tgt]=await Promise.all([api('/api/v1/hub/sources'),api('/api/v1/hub/targets')]);
-  const live=(src.sources||[]).filter(s=>s.exists);
-  $('hub-sources').innerHTML=live.length?live.map(s=>
-   `<div class="fi"><b>${AGENT_ZH[s.id.split('/')[0]]||s.id}</b><span class="muted">（${esc(s.path)}）</span>
-     <span class="tag" style="background:var(--ok-bg);color:var(--ok)">已发现</span>
-     <span class="muted">${s.items||'?'} 条 · 已导入 ${s.imported||0}</span>
-     <button class="act ghost" style="padding:2px 10px;margin-left:6px" onclick="hubImportOne('${esc(s.id)}')">导入</button></div>`).join(''):'<div class="empty">本机未发现其他 Agent 的记忆文件。</div>';
-  $('hub-target').innerHTML=(tgt.targets||tgt||[]).map(t=>`<option value="${esc(t.id)}">${AGENT_ZH[t.id.split('/')[0]]||t.id}（${esc(t.path)}）</option>`).join('')||'<option>无目标</option>';
-  hubHealth();hubTopics();
+/* ---- Agent 记忆：发现、预览、增量导入、受管分发 ---- */
+const SOURCE_KIND_ZH={memory_md:'记忆文件',rules_md:'规则文件',codex_sqlite:'Codex 摘要库',session_jsonl:'会话历史',json:'配置存储'};
+function fmtBytes(n){if(!n)return '0 B';if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
+async function loadHub(showOp=false){
+  const b=showOp?$('hub-scan'):null,op=showOp?opStart('扫描本机 Agent','正在检查常见记忆目录和数据库…',b,25):null;
+  $('hub-sources').innerHTML=loadingHtml('正在扫描本机 Agent…');
+  try{
+    const [src,tgt]=await Promise.all([api('/api/v1/hub/sources'),api('/api/v1/hub/targets')]),live=(src.sources||[]).filter(s=>s.exists);
+    window.HUB_SOURCES=live;const useful=live.filter(s=>s.items>0),total=useful.reduce((n,s)=>n+s.items,0);
+    $('hub-summary').textContent=`发现 ${live.length} 个来源，${total} 条可读取内容`;
+    $('hub-import-all').disabled=!useful.length;
+    $('hub-sources').innerHTML=live.length?`<div class="source-list">${live.map(s=>{
+      const name=AGENT_ZH[s.agent]||s.agent,newCount=Math.max(0,(s.items||0)-(s.imported||0)),emptyHint=s.kind==='codex_sqlite'?'摘要任务尚未生成内容，可导入同页的 Codex 会话历史':'已找到文件，暂无可导入内容',state=s.note?`读取异常：${esc(s.note)}`:s.items?`${s.items} 条 · 已导入 ${s.imported||0}${newCount?` · 待处理 ${newCount}`:' · 已同步'}`:emptyHint;
+      return `<div class="source-row"><div class="source-main"><b>${esc(name)}</b><span class="muted" title="${esc(s.path)}">${esc(displayPath(s.path))}</span></div><div class="source-state"><b>${SOURCE_KIND_ZH[s.kind]||s.kind}</b><br>${state} · ${fmtBytes(s.bytes)}</div><div class="source-actions"><button class="act ghost" ${s.items?'':'disabled'} onclick="hubPreview('${encodeURIComponent(s.id)}')">预览</button><button class="act" ${s.items?'':'disabled'} onclick="hubImportOne('${encodeURIComponent(s.id)}')">导入</button></div></div>`
+    }).join('')}</div>`:'<div class="empty">未发现可读取的 Agent 记忆。先运行 Codex、Claude Code 或配置自定义来源。</div>';
+    $('hub-target').innerHTML=(tgt.targets||tgt||[]).map(t=>`<option value="${esc(t.id)}">${AGENT_ZH[t.agent]||t.agent}（${esc(displayPath(t.path))}）</option>`).join('')||'<option value="">无可用目标</option>';
+    await Promise.all([hubHealth(),hubTopics()]);
+    if(op)opFinish(op,'扫描完成',`${live.length} 个来源，${total} 条可读取内容`,'ok',b);
+  }catch(e){$('hub-summary').textContent='扫描失败';$('hub-sources').innerHTML=`<div class="empty" style="color:var(--err)">${esc(e.message)}</div>`;if(op)opFinish(op,'扫描失败',e.message,'error',b)}
 }
-async function hubImportOne(id){const r=await api('/api/v1/hub/import',{source:id});toast(r.ok?`导入完成：新增 ${r.report.imported} 条`:'失败');loadHub()}
+async function hubPreview(encoded){
+  const id=decodeURIComponent(encoded),src=(window.HUB_SOURCES||[]).find(s=>s.id===id),b=activeButton(),op=opStart('预览 Agent 记忆','只读取内容，不会写入记忆库…',b,30);
+  $('hub-preview').innerHTML=loadingHtml('正在读取来源…');
+  try{const r=await api('/api/v1/hub/source/items?source='+encodeURIComponent(id)),items=r.items||[];$('hub-preview').innerHTML=`<div class="muted" style="margin:5px 0 9px">${esc(AGENT_ZH[src?.agent]||src?.agent||id)} · 共 ${r.total||0} 条，当前显示 ${items.length} 条</div><div class="feed" style="max-height:360px">${items.map((x,i)=>`<div class="fi"><b>${i+1}. ${esc(x.title||'未命名')}</b><div class="muted">${esc((x.content||'').replace(/\s+/g,' ').slice(0,150))}</div></div>`).join('')||'<div class="empty">该来源目前没有可导入内容。</div>'}</div>`;opFinish(op,'预览完成',`读取 ${r.total||0} 条，不会自动导入`,'ok',b)}catch(e){$('hub-preview').innerHTML=`<div class="empty" style="color:var(--err)">${esc(e.message)}</div>`;opFinish(op,'预览失败',e.message,'error',b)}
+}
+let HUB_LAST_IDS=[];
+async function hubImportOne(encoded){const id=decodeURIComponent(encoded),b=activeButton(),op=opStart('导入 Agent 记忆','正在清洗、脱敏、去重并建立索引…',b,28);try{const r=await api('/api/v1/hub/import',{source:id}),x=r.report||{};HUB_LAST_IDS=x.ids||[];await loadHub();const msg=`新增 ${x.imported||0} 条 · 本来源已导入 ${x.skipped_known||0} 条 · 跨来源重复 ${x.skipped_dup||0} 条 · 敏感拦截 ${x.blocked||0} 条`;toast(msg,'ok');opFinish(op,'Agent 记忆导入完成',msg,'ok',b)}catch(e){opFinish(op,'导入失败',e.message,'error',b)}}
+async function hubEnrich(){
+  if(!HUB_LAST_IDS.length){toast('请先导入一批 Agent 记忆','warn');return}
+  const b=$('hub-enrich'),op=opStart('提取实体关系','模型正在从最近导入的记忆中提取主体、关系和客体…',b,20);
+  try{const r=await api('/api/v1/hub/enrich',{memory_ids:HUB_LAST_IDS});if(!r.ok)throw new Error(r.error||'提取失败');opFinish(op,'关系提取完成',`新增 ${r.relations||0} 条语义关系`,'ok',b);await gLoad()}catch(e){opFinish(op,'关系提取失败',e.message,'error',b)}
+}
 async function hubImportAll(){
-  const src=await api('/api/v1/hub/sources');
-  const live=(src.sources||[]).filter(s=>s.exists);
-  if(!live.length){toast('没有可导入的源');return}
-  let n=0;for(const s of live){const r=await api('/api/v1/hub/import',{source:s.id});if(r.ok)n+=r.report.imported||0}
-  toast(`全部导入完成：新增 ${n} 条`);loadHub();
+  const b=$('hub-import-all'),op=opStart('导入 Agent 记忆','正在逐个清洗、去重并建立索引…',b,8);
+  try{
+    const src=await api('/api/v1/hub/sources');const live=(src.sources||[]).filter(s=>s.exists&&s.items>0);
+    if(!live.length)throw new Error('没有可导入的源');
+    let n=0,known=0,dup=0,blocked=0;for(let i=0;i<live.length;i++){const s=live[i],r=await api('/api/v1/hub/import',{source:s.id}),x=r.report||{};n+=x.imported||0;known+=x.skipped_known||0;dup+=x.skipped_dup||0;blocked+=x.blocked||0;opUpdate(op,`已处理 ${i+1}/${live.length}：${AGENT_ZH[s.agent]||s.agent}`,8+((i+1)/live.length)*82)}
+    await loadHub();const msg=`新增 ${n} 条 · 已同步 ${known} 条 · 重复 ${dup} 条 · 拦截 ${blocked} 条`;toast(msg,'ok');opFinish(op,'全部来源处理完成',msg,'ok',b);
+  }catch(e){opFinish(op,'批量导入失败',e.message,'error',b)}
 }
 async function hubHealth(){
   try{
@@ -1051,10 +1427,8 @@ async function hubHealth(){
   }catch(e){$('hub-health').innerHTML='<div class="empty">不可用</div>'}
 }
 async function hubClean(){
-  const m=await api('/api/v1/hub/maintenance');
-  const ids=(m.items||[]).map(x=>x.id).slice(0,50);
-  const r=await api('/api/v1/hub/maintenance/exec',{ids,action:'purge_tombstones'});
-  toast(r.ok?`清理完成，影响 ${r.affected} 条`:'执行完成');hubHealth();
+  const b=activeButton(),op=opStart('清理记忆库','正在清理重复指纹和长期未使用的墓碑…',b,25);
+  try{const m=await api('/api/v1/hub/maintenance');const ids=(m.items||[]).map(x=>x.id).slice(0,50);const r=await api('/api/v1/hub/maintenance/exec',{ids,action:'purge_tombstones'});if(!r.ok)throw new Error(r.error||'清理失败');await hubHealth();opFinish(op,'清理完成',`影响 ${r.affected??0} 条记录`,'ok',b)}catch(e){opFinish(op,'清理失败',e.message,'error',b)}
 }
 async function hubTopics(){
   try{
@@ -1066,13 +1440,13 @@ async function hubTopics(){
 }
 async function hubDispatch(){
   const t=$('hub-target').value,q=$('hub-q').value.trim();
-  const r=await api('/api/v1/hub/dispatch',{target:t,query:q||undefined,limit:8});
-  $('hub-disp').textContent=r.ok?`已分发 ${(r.lines||r.count||0)} 条到 ${t}（受管区块内，可随时撤回）`:'失败：'+(r.error||'');
+  const b=activeButton(),op=opStart('分发记忆给 Agent','正在按条件生成受管区块并写入目标规则文件…',b,35);
+  try{const r=await api('/api/v1/hub/dispatch',{target:t,query:q||undefined,limit:8});if(!r.ok)throw new Error(r.error||'分发失败');const count=r.report?.items??r.block?.length??0;$('hub-disp').textContent=`已分发 ${count} 条到 ${t}（受管区块内，可随时撤回）`;opFinish(op,'分发完成',$('hub-disp').textContent,'ok',b)}catch(e){$('hub-disp').textContent='分发失败：'+e.message;opFinish(op,'分发失败',e.message,'error',b)}
 }
 async function hubDispatchRemove(){
   const t=$('hub-target').value;
-  const r=await api('/api/v1/hub/dispatch',{target:t,mode:'remove'});
-  $('hub-disp').textContent=r.ok?`已从 ${t} 撤回受管区块`:'失败';
+  const b=activeButton(),op=opStart('撤回 Agent 记忆','正在移除目标规则文件中的受管区块…',b,45);
+  try{const r=await api('/api/v1/hub/dispatch',{target:t,mode:'remove'});if(!r.ok)throw new Error(r.error||'撤回失败');$('hub-disp').textContent=`已从 ${t} 撤回受管区块`;opFinish(op,'撤回完成',$('hub-disp').textContent,'ok',b)}catch(e){$('hub-disp').textContent='撤回失败：'+e.message;opFinish(op,'撤回失败',e.message,'error',b)}
 }
 
 /* ---- 文件雷达 ---- */
@@ -1083,20 +1457,15 @@ async function radarDirs(){
 }
 async function radarAdd(){
   const p=$('rd-dir').value.trim();if(!p){toast('先填目录路径');return}
-  const r=await api('/api/v1/radar/dirs',{path:p});
-  if(r.ok){$('rd-dir').value='';radarDirs();radarStatus();toast('已授权 '+r.dirs.length+' 个目录')}else toast(r.error||'添加失败');
+  const b=activeButton(),op=opStart('授权文件目录','正在校验路径并加入扫描范围…',b,35);try{const r=await api('/api/v1/radar/dirs',{path:p});if(!r.ok)throw new Error(r.error||'添加失败');$('rd-dir').value='';await Promise.all([radarDirs(),radarStatus()]);opFinish(op,'目录已授权',`当前共 ${r.dirs.length} 个授权目录`,'ok',b)}catch(e){opFinish(op,'授权失败',e.message,'error',b)}
 }
 async function radarRemove(enc){
   const d=decodeURIComponent(enc);
-  const r=await api('/api/v1/radar/dirs',{path:d,purge:true},'DELETE');
-  if(r.ok){radarDirs();radarStatus();toast(`已删除授权，清除 ${r.purged} 条索引`)}else toast(r.error||'删除失败');
+  const b=activeButton(),op=opStart('移除文件目录','正在撤销授权并清除该目录的索引…',b,35);try{const r=await api('/api/v1/radar/dirs',{path:d,purge:true},'DELETE');if(!r.ok)throw new Error(r.error||'删除失败');await Promise.all([radarDirs(),radarStatus()]);opFinish(op,'目录已移除',`清除 ${r.purged??0} 条索引`,'ok',b)}catch(e){opFinish(op,'移除失败',e.message,'error',b)}
 }
 async function radarScan(){
-  const m=$('rd-scan-msg');m.textContent='扫描中…（逐文件抽取并嵌入，首次较慢）';
-  const r=await api('/api/v1/radar/scan',{});
-  if(r.ok){m.textContent=`完成：新索引 ${r.indexed} · 更新 ${r.updated} · 跳过 ${r.skipped} · 拦截 ${r.blocked} · 不支持 ${r.unsupported}（${(r.elapsed_ms/1000).toFixed(1)}s）`}
-  else m.textContent=r.error||'扫描失败';
-  radarStatus();
+  const b=activeButton(),op=opStart('更新文件索引','正在逐文件读取、脱敏并建立可检索索引…',b,12),m=$('rd-scan-msg');m.textContent='扫描中…（首次扫描可能较慢）';
+  try{const r=await api('/api/v1/radar/scan',{});if(!r.ok)throw new Error(r.error||'扫描失败');m.textContent=`完成：新索引 ${r.indexed} · 更新 ${r.updated} · 跳过 ${r.skipped} · 拦截 ${r.blocked} · 不支持 ${r.unsupported}（${(r.elapsed_ms/1000).toFixed(1)}s）`;await radarStatus();opFinish(op,'文件索引完成',`新增 ${r.indexed||0}，更新 ${r.updated||0}，拦截 ${r.blocked||0}`,'ok',b)}catch(e){m.textContent='扫描失败：'+e.message;opFinish(op,'扫描失败',e.message,'error',b)}
 }
 async function radarStatus(){
   const r=await api('/api/v1/radar/status');
@@ -1106,12 +1475,8 @@ async function radarStatus(){
 }
 async function radarSearch(){
   const q=$('rd-q').value.trim();if(!q)return;
-  const m=$('rd-msg');m.textContent='检索中…';
-  const r=await api('/api/v1/search',{query:q,scenes:['file'],top_k:10});
-  if(r.took_ms)pushLat(r.took_ms);
-  const hits=r.hits||[];
-  m.textContent=`${hits.length} 条命中 · ${r.took_ms}ms`;
-  $('rd-hits').innerHTML=hits.map(h=>`<div class="mi" onclick="vDetail(${h.record.id})"><span class="tag k">文件</span><span class="t">${esc(h.record.title)}</span><span class="muted" style="flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((h.snippet||'').slice(0,90))}</span></div>`).join('')||'<div class="empty">没有命中。换个描述试试，或先「扫描全部目录」。</div>';
+  const b=activeButton(),op=opStart('检索文件','正在按内容查找已索引文件…',b,28),m=$('rd-msg');m.textContent='检索中…';
+  try{const r=await api('/api/v1/search',{query:q,scenes:['file'],top_k:10});if(r.took_ms)pushLat(r.took_ms);const hits=r.hits||[];m.textContent=`${hits.length} 条命中 · ${r.took_ms}ms`;$('rd-hits').innerHTML=hits.map(h=>`<div class="mi" onclick="vDetail(${h.record.id})"><span class="tag k">文件</span><span class="t">${esc(h.record.title)}</span><span class="muted" style="flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((h.snippet||'').slice(0,90))}</span></div>`).join('')||'<div class="empty">没有命中。换个描述试试，或先「扫描全部目录」。</div>';opFinish(op,'文件检索完成',`${hits.length} 条命中`,'ok',b)}catch(e){m.textContent='检索失败：'+e.message;opFinish(op,'文件检索失败',e.message,'error',b)}
 }
 
 /* ---- 偏好时间机器 ---- */
@@ -1206,14 +1571,14 @@ async function gLoad(){
   const top=$('g-top').value;
   const r=await api('/api/v1/hub/index/graph?top='+top);
   const junk=n=>!n.name||n.name==='__none__'||n.name==='none';
-  if(!r.nodes||r.nodes.filter(n=>!junk(n)).length<2){$('g-msg').textContent='图数据为空：先构建全局关联索引（需要有实体与记忆）。';return}
+  if(!r.nodes||r.nodes.filter(n=>!junk(n)).length<2||!(r.edges||[]).length){$('g-msg').textContent='暂无语义关系：请先配置模型，并点击“模型提取关系”。';return}
   G.w=cv.clientWidth||900;G.h=380;
   cv.width=G.w*devicePixelRatio;cv.height=G.h*devicePixelRatio;cv.style.height=G.h+'px';
   G.nodes=r.nodes.filter(n=>!junk(n)).map((n,i)=>{const a=2*Math.PI*i/r.nodes.length;return{name:n.name,deg:n.degree||1,mems:n.memories||0,x:G.w/2+R0(i,r.nodes.length,G.w,G.h),y:0,vx:0,vy:0,c:0}});
   function R0(i,n,W,H){const a=2*Math.PI*i/n,R=Math.min(W,H)*0.36;return W/2+R*Math.cos(a)}
   G.nodes.forEach((n,i)=>{const a=2*Math.PI*i/G.nodes.length,R=Math.min(G.w,G.h)*0.36;n.y=G.h/2+R*Math.sin(a)});
   const idx={};G.nodes.forEach((n,i)=>idx[n.name]=i);
-  G.links=(r.edges||[]).map(e=>({s:idx[e.a],t:idx[e.b],w:e.w||1})).filter(l=>l.s!==undefined&&l.t!==undefined&&l.s!==l.t);
+  G.links=(r.edges||[]).map(e=>({s:idx[e.a],t:idx[e.b],w:e.w||1,relation:e.relation||'共现'})).filter(l=>l.s!==undefined&&l.t!==undefined&&l.s!==l.t);
   // 连通分量=主题簇,着色
   const pa=G.nodes.map((_,i)=>i);const find=x=>pa[x]===x?x:(pa[x]=find(pa[x]));
   for(const l of G.links){pa[find(l.s)]=find(l.t)}
@@ -1223,7 +1588,8 @@ async function gLoad(){
   G.nodes.forEach(n=>{if(!(n.c in cmap))cmap[n.c]=hues[ci++%hues.length];n.color=cmap[n.c]});
   G.scale=1;G.ox=0;G.oy=0;
   const comps=new Set(G.nodes.map(n=>n.c)).size;
-  $('g-msg').textContent=`${G.nodes.length} 个实体 · ${G.links.length} 条共现边 · ${comps} 个主题簇`;
+  const semantic=G.links.filter(l=>l.relation!=='co').length;
+  $('g-msg').textContent=`${G.nodes.length} 个实体 · ${G.links.length} 条语义关系 · ${comps} 个主题簇`;
   gKick();
 }
 function gKick(){if(!G.raf)gStep()}
@@ -1262,6 +1628,9 @@ function gDraw(){
     const a=G.nodes[l.s],b=G.nodes[l.t];
     ctx.lineWidth=Math.min(4,0.6+l.w*0.08);
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    if(l.relation&&l.relation!=='co'){
+      ctx.save();ctx.fillStyle=line;ctx.font='11px '+fam;ctx.textAlign='center';ctx.fillText(l.relation,(a.x+b.x)/2,(a.y+b.y)/2-4);ctx.restore();
+    }
   }
   ctx.globalAlpha=1;
   for(const n of G.nodes){
@@ -1332,10 +1701,11 @@ async function acRun(){
   if(!mods.length){toast('至少勾选一个模块');return}
   const scene=$('ac-scene').value||null;
   const flags={'全通道':[1,1,1],'向量+BM25':[1,1,0],'纯 BM25':[0,1,0],'纯向量':[1,0,0],'BM25+图':[0,1,1]};
-  $('ac-msg').textContent='各模块检索中…';
+  const b=activeButton(),op=opStart('比较检索通道','正在并行运行各模块并收集延迟与命中结果…',b,22);$('ac-msg').textContent='各模块检索中…';
   const modules=mods.map(m=>({name:m,use_vec:flags[m][0]===1,use_bm25:flags[m][1]===1,use_graph:flags[m][2]===1}));
+  try{
   const r=await api('/api/v1/arena/compare',{query:q,top_k:5,scene,modules});
-  $('ac-msg').textContent='';
+  $('ac-msg').textContent='';opUpdate(op,'各模块已返回，正在绘制对比结果…',80);
   const maxT=Math.max(1,...(r.results||[]).map(x=>x.took_ms));
   $('ac-out').innerHTML=(r.results||[]).map(blk=>{
     const w=Math.min(100,blk.took_ms/maxT*100);
@@ -1347,22 +1717,44 @@ async function acRun(){
     const hits=(m.hits||[]).map(h=>`<div class="fi"><b>${esc(h.title||'#'+h.id)}</b> <span class="muted">${esc(h.scene||'')}</span><div class="muted" style="margin-left:6px">${esc((h.snippet||'').slice(0,110))}</div></div>`).join('')||'<div class="empty">无结果</div>';
     return `<div class="card" style="margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><b style="font-size:14.5px">${esc(m.module)}</b><span class="muted">${m.took_ms}ms · ${(m.hits||[]).length} 条</span><div class="pbar" style="flex:1;margin:0"><i style="width:${w}%"></i></div></div><div class="feed" style="max-height:200px;margin-top:8px">${hits}</div></div>`;
   }
+  opFinish(op,'比较完成',`${(r.results||[]).length} 个模块已完成对照`,'ok',b);
+  }catch(e){$('ac-msg').textContent='比较失败：'+e.message;$('ac-out').innerHTML=`<div class="empty" style="color:var(--err)">比较失败：${esc(e.message)}</div>`;opFinish(op,'比较失败',e.message,'error',b)}
 }
 
 /* ---- 演示模式(答辩动线) ---- */
 const TOUR=[
- {page:'dash',sel:'#btn-demo-seed',t:'一键灌入演示数据',d:'工具轨迹、会话、手动配置、行为、知识五类数据一次入库,隔离在「演示」场景,随时可清。',act:()=>demoSeed()},
- {page:'vault',sel:'#v-q',t:'库内检索问答',d:'答案带记忆引用编号(可点击跳转)与端侧延迟。现场建议亲手提一个问题。'},
- {page:'prefs',sel:'#p-list',t:'偏好双通道 + 版本链',d:'规则挖掘与会话提取自动捕捉偏好;点击任一条查看版本历史,支持手动改值。'},
- {page:'know',sel:'#k-ledger',t:'冲突四步管道',d:'新旧知识碰撞自动检测、分类、仲裁、版本化;下方调解台可人工改判。'},
- {page:'know',sel:'#x-list',t:'经验复用卡',d:'成功轨迹编译为「做法」,失败轨迹编译为「避坑」;复用达标自动转已验证。',act:()=>xCompile()},
- {page:'forget',sel:'section[data-page=forget] .card',t:'精准遗忘四步',d:'遗忘前后同题对比,直观看到记忆消失;软删除可恢复。'},
- {page:'arena',sel:'section[data-page=arena] .card',t:'一键在线评测',d:'内置数据集即点即测,hit@5 与延迟分位数当场出分。'},
- {page:'hub',sel:'#g-canvas',t:'记忆关系图谱',d:'实体共现网络。点「加载图谱」后可拖拽、缩放,点击实体看关联记忆。'},
+ {page:'dash',sel:'#btn-demo-seed',t:'准备体验数据',d:'载入会话、操作、偏好和事实变化样例。',act:()=>demoSeed()},
+ {page:'vault',sel:'#v-ans',t:'搜索并查看来源',d:'同一事实存在多个版本时，结果会保留各自来源。',act:()=>{$('v-q').value='办公区打印服务器地址是什么？';vAsk()}},
+ {page:'prefs',sel:'#p-timeline',t:'查看偏好变化',d:'新值生效，旧值仍可回看。',act:async()=>{await loadPrefs(false);$('p-key').value='导出格式';await prefTimeline('导出格式')}},
+ {page:'know',sel:'#k-ledger',t:'确认事实变化',d:'系统记录冲突类型和当前采用的版本。',act:()=>loadKnow()},
+ {page:'know',sel:'#x-list',t:'整理可复用经验',d:'成功操作成为做法，失败与重试成为避坑。',act:()=>xCompile()},
+ {page:'know',sel:'#skill-state',t:'发布给 Agent',d:'经验和偏好可生成 Agent 直接加载的 SKILL.md。',act:()=>skillTargets()},
+ {page:'forget',sel:'section[data-page=forget] .card:first-of-type',t:'先预览，再遗忘',d:'导览只展示影响范围，不会自动删除。',act:()=>tourForgetPreview()},
+ {page:'forget',sel:'#sens-out',t:'检查敏感内容',d:'密钥会被阻断，其他敏感信息按规则脱敏。',act:()=>sensScan()},
+ {page:'arena',sel:'#agent-ab',t:'验证记忆收益',d:'相同模型和题目，仅挂载 lymem 后端进行 A/B。'},
 ];
+async function tourForgetPreview(){
+  $('f-q').value='办公区打印服务器地址是什么？';
+  $('f-instr').value='忘掉关于打印服务器的记忆';
+  await fBefore();
+  await fPreview();
+}
 let TOUR_I=-1,TOUR_AUTO=null;
-function tourStart(){TOUR_I=-1;$('tour-layer').style.display='block';tourGoto(0)}
-function tourStop(){TOUR_I=-1;clearInterval(TOUR_AUTO);TOUR_AUTO=null;$('tour-layer').style.display='none';$('tour-layer').innerHTML=''}
+function tourStart(){
+  if(document.documentElement.dataset.record!=='1'){
+    window.__tourTheme=document.documentElement.dataset.theme||'classic';
+    document.documentElement.dataset.record='1';
+    setTheme('github');
+  }
+  TOUR_I=-1;$('tour-layer').style.display='block';tourGoto(0)
+}
+function tourStop(){
+  TOUR_I=-1;clearInterval(TOUR_AUTO);TOUR_AUTO=null;$('tour-layer').style.display='none';$('tour-layer').innerHTML='';
+  if(new URLSearchParams(location.search).get('record')!=='1'){
+    delete document.documentElement.dataset.record;
+    if(window.__tourTheme)setTheme(window.__tourTheme);
+  }
+}
 function tourGoto(i){
   if(i<0||i>=TOUR.length){tourStop();return}
   TOUR_I=i;const st=TOUR[i];
@@ -1436,6 +1828,7 @@ function renderLat(){
 
 /* ---- 问答引用可点击 ---- */
 function citeify(text,sources){
+  // [ip:11] 等是记忆内容中的脱敏标记，不应被误识别为引用编号。
   return esc(text).replace(/\[(\d{1,2})\]/g,(m,n)=>{
     const i=Number(n)-1;
     return sources&&sources[i]?`<span class="cite" onclick="citeGo(${i})">[${n}]</span>`:m;
@@ -1449,6 +1842,7 @@ function citeGo(i){
 }
 
 refreshDash();
+uRefresh();
 goHash();
 </script>
 </body>

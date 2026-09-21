@@ -1,6 +1,6 @@
 # lymem × DeepSeek Harness（DSH）
 
-把 lymem（麟忆尽智）作为 deepseek-harness 的记忆模块插件。
+把 lymem（麟忆尽智）作为 deepseek-harness 的记忆模块插件，并让 Agent 可以把验证过的经验发布为可直接加载的技能。
 
 ## 架构
 
@@ -10,7 +10,7 @@ DSH Agent ──(MCP Streamable HTTP)──> lymem-server :8801/mcp
                           ┌─────────────┼──────────────┐
                     混合检索(向量+BM25+图)  偏好版本链   冲突仲裁/遗忘
                                         │
-                          麒麟端侧嵌入（DBus/kytensor 自愈双通道）
+                          麒麟端侧嵌入（Embedding SDK 的 D-Bus 接入 / kytensor 降级）
 ```
 
 ## 启用步骤
@@ -29,7 +29,7 @@ DSH Agent ──(MCP Streamable HTTP)──> lymem-server :8801/mcp
    dsh web --patch /path/to/lymem.cordis.yml
    ```
 
-3. 验证：agent 中模型应能调用 `mcp__lymem__memory_search` 等工具。
+3. 验证：agent 中模型应能调用 `mcp__lymem__memory_search`、`mcp__lymem__experience_compile` 和 `mcp__lymem__skill_publish` 等工具。
 
 ## Agent 侧推荐工作流（写入 AGENTS.md）
 
@@ -38,6 +38,8 @@ DSH Agent ──(MCP Streamable HTTP)──> lymem-server :8801/mcp
 - 回复风格遵循 mcp__lymem__preference_list 的当前偏好
 - 会话中的关键事实/工具结果/用户纠错：mcp__lymem__memory_add 写回
 - 用户要求删除信息：mcp__lymem__memory_forget（先 preview 再执行）
+- 相似任务完成后：`mcp__lymem__memory_feedback` 回报经验复用成败
+- 需要固化过程知识时：`mcp__lymem__experience_compile` → `mcp__lymem__skill_publish`
 ```
 
 ## 故障排查

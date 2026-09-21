@@ -42,24 +42,26 @@ fn main() {
     );
     println!("cargo:rustc-link-search=native={}", out.display());
     let system_library = [
-        // 容器/隔离环境:宿主根经 /proc/<引擎进程>/root 或 /run/host 可见
-        "/proc/2184/root/usr/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so.1",
-        "/run/host/usr/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so.1",
-        // 用户级安装目录(无 root 部署)
-        "/home/ez/.local/lib/kylin-vector/libkysdk-vector-engine-client.so.1",
         "/usr/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so",
         "/usr/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so.1",
         "/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so.1",
+        // 容器/隔离环境：宿主根经 /run/host 可见。
+        "/run/host/usr/lib/x86_64-linux-gnu/libkysdk-vector-engine-client.so.1",
+        // 用户级安装目录（无 root 部署）。
+        "/home/ez/.local/lib/kylin-vector/libkysdk-vector-engine-client.so.1",
     ]
     .iter()
     .map(PathBuf::from)
     .find(|path| path.exists())
     .unwrap_or_else(|| panic!("libkysdk-vector-engine-client runtime library is not installed"));
     let link_name = out.join("libkysdk-vector-engine-client.so");
-    if !link_name.exists() {
-        std::os::unix::fs::symlink(&system_library, &link_name)
-            .unwrap_or_else(|e| panic!("failed to link {}: {e}", system_library.display()));
+    // OUT_DIR 可能从容器构建缓存恢复；旧软链的目标进程或挂载点可能已经消失。
+    if std::fs::symlink_metadata(&link_name).is_ok() {
+        std::fs::remove_file(&link_name)
+            .unwrap_or_else(|e| panic!("failed to replace {}: {e}", link_name.display()));
     }
+    std::os::unix::fs::symlink(&system_library, &link_name)
+        .unwrap_or_else(|e| panic!("failed to link {}: {e}", system_library.display()));
     println!("cargo:rustc-link-lib=static=lymem_kylin_vector_bridge");
     println!("cargo:rustc-link-lib=dylib=kysdk-vector-engine-client");
     println!("cargo:rustc-link-lib=dylib=stdc++");

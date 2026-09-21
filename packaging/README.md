@@ -5,7 +5,7 @@
 偏好双通道自动提取与版本回溯、知识冲突检测仲裁、敏感信息分级与自然语言精准遗忘、
 多 Agent 记忆汇聚分发，以及内置数据集的量化评测。全部数据留在本机。
 
-安装后自带 Web 管理台：<http://127.0.0.1:8801/viewer>
+安装后自带 Web 用户工作台：<http://127.0.0.1:8801/app>（`/viewer` 为同一页面，演示路线可展开高级能力）
 
 ---
 
@@ -42,12 +42,12 @@ lymem stop      # 停止服务
 lymem logs      # 跟踪日志
 ```
 
-## 界面操作说明（8 页）
+## 界面操作说明
 
-管理台左侧分「记忆」「评测与集成」两组。界面提供 4 套可切换主题（侧栏底部「主题」下拉，
+普通模式打开统一的“我的记忆”工作台，只保留保存、搜索、修改、删除四个动作。点击“演示路线”后再展开评测与集成页面。界面提供 4 套可切换主题（侧栏底部「主题」下拉，
 选择即记住）：经典藏青（默认）、清朗白（GitHub 风）、暖纸衬线（Claude 风）、夜间；
 也可用 URL 参数直达，如 `http://127.0.0.1:8801/viewer?theme=claude`。
-首次使用：在**总览**页点「灌入演示数据」，
+首次演示：进入演示路线后在**总览**页点「灌入演示数据」，
 一组隔离在「演示」场景的示例数据（工具轨迹/会话/配置/行为/知识与冲突）即刻入库，
 按下面的动线逐页体验；随时可点「清除演示数据」一键回收（真实数据不受影响）。
 
@@ -94,6 +94,8 @@ lymem logs      # 跟踪日志
 「本机记忆源」自动发现本机各终端 Agent 的记忆载体，一键导入全部（清洗分级后入库）；
 「库健康」总管巡检（重复指纹/失活记忆/墓碑积压）；「全局关联索引」实体共现自动聚类主题簇；
 「记忆分发」选目标 Agent + 检索词，把相关记忆写进其规则文件（只写受管区块，可一键撤回）。
+「技能发布」进一步把经验卡与当前偏好编译成标准 `SKILL.md` 技能目录，支持 Codex、
+Claude Code、OpenCode、DeepSeek Harness，并保留上一版本用于回滚。
 
 ### 五分钟体验动线
 
@@ -115,6 +117,22 @@ lymem logs      # 跟踪日志
 不配置 LLM Key 也能使用：灌入、检索、遗忘、评测全部可用；
 「检索问答」的生成直答与「会话偏好提取」将走规则兜底（功能演示建议配置）。
 
+## 源码安装复核
+
+源码安装适合开发机和评委复核。仓库根目录执行：
+
+```bash
+cargo build --release --locked
+LYMEM_PORT=8891 \
+LYMEM_DATA_DIR=/tmp/lymem-source-check \
+LYMEM_EMBEDDER=hash \
+./target/release/lymem-server
+```
+
+本项目已复测：构建成功；健康接口返回 `status=ok`；状态接口显示 `hash`、64 维、
+`sqlite-vec`、`rules-only`；`/app` 与 `/viewer` 返回 HTTP 200。该路径用于无麒麟运行时的
+开发验证，不代表正式端侧性能。银河麒麟验收应使用桌面用户、麒麟 SDK 和 `LYMEM_EMBEDDER=auto`。
+
 ## 数据与迁移
 
 全部数据（数据库 + 全文索引）在 `~/.local/share/lymem/`，备份/迁移即整目录拷贝。
@@ -133,5 +151,9 @@ lymem logs      # 跟踪日志
 knowledge / conflicts / forget / sensitive / arena / experiences / demo / hub …）与
 OpenAI 兼容嵌入代理（`/v1/embeddings`），可供本机其他 Agent 接入。
 
-把 lymem 接入 DSH / Cline 等支持 MCP 的 Agent（8 个记忆工具，含经验卡工具）：
+把 lymem 接入 DSH / Cline 等支持 MCP 的 Agent（11 个工具，含经验编译与技能发布）：
 见源码包 `integrations/deepseek-harness/README.md`。
+
+命令行除了 `start/stop/status/open/logs` 服务控制命令，还支持 `lymem experience ...`、
+`lymem skill ...`、`lymem search` 等记忆操作；安装包会同时提供 `lymem-cli`，由同一个
+`lymem` 入口按子命令转发。
